@@ -26,6 +26,13 @@ export default function ChatScreen() {
   const { peerId: peerIdParam } = useLocalSearchParams<{ peerId: string }>();
   const peerId = Number(peerIdParam);
   const me = useAuthStore((s) => s.user);
+
+  // Defense in depth — see (tabs)/messages/index.tsx for why this doesn't
+  // need a timeout: the root layout already blocks all rendering until
+  // auth hydration finishes, so `me` is reliably known by the time this runs.
+  useEffect(() => {
+    if (!me) router.replace("/(auth)/login");
+  }, [me]);
   const echo = useContext(EchoContext);
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList>(null);

@@ -24,6 +24,17 @@ interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   json?: boolean; // JSON.stringify a plain-object body (default true unless body is FormData)
 }
 
+// The web app ended up patching "clear the stale token on 401" into several
+// separate call sites (useCurrentUser, NewPerceptionForm) as bugs surfaced
+// one at a time. Centralizing it here means any authenticated request that
+// comes back 401 anywhere in the app triggers the same single cleanup path
+// — registered by useAuthStore at startup, so this module never has to
+// import the store directly (would be circular).
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: () => void): void {
+  onUnauthorized = fn;
+}
+
 export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { auth = true, json, body, headers, ...rest } = options;
 
@@ -32,9 +43,13 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
     ...(headers as Record<string, string>),
   };
 
+  let sentAuthHeader = false;
   if (auth) {
     const token = await getToken();
-    if (token) finalHeaders.Authorization = `Bearer ${token}`;
+    if (token) {
+      finalHeaders.Authorization = `Bearer ${token}`;
+      sentAuthHeader = true;
+    }
   }
 
   let finalBody: BodyInit | null | undefined;
@@ -58,6 +73,12 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
   const data = text ? JSON.parse(text) : null;
 
   if (!res.ok) {
+    // Only a *stale/expired session* should trigger a global logout — a 401
+    // on a request that never carried a token (e.g. an anonymous guest
+    // browsing) is not a session expiry, it's just "this needs login."
+    if (res.status === 401 && sentAuthHeader) {
+      onUnauthorized?.();
+    }
     throw new ApiError(res.status, data, typeof data?.detail === "string" ? data.detail : undefined);
   }
 

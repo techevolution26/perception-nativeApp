@@ -9,6 +9,8 @@ import Avatar from "../../components/ui/Avatar";
 import Button from "../../components/ui/Button";
 import { usePerceptionDetail } from "../../hooks/usePerceptionDetail";
 import useLikeToggle from "../../hooks/useLikeToggle";
+import useGuardAction from "../../hooks/useGuardAction";
+import VantageMark from "../../components/ui/VantageMark";
 import useAuthStore from "../../store/useAuthStore";
 import { apiFetch } from "../../lib/api";
 import type { Comment } from "../../types/models";
@@ -92,6 +94,8 @@ export default function PerceptionDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const me = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const guard = useGuardAction();
   const toggleLike = useLikeToggle();
   const { perception, comments, loading, error, setPerception, setComments } = usePerceptionDetail(id);
 
@@ -138,6 +142,7 @@ export default function PerceptionDetailScreen() {
   }
 
   const isOwner = me?.id === perception.user.id;
+  const hasCommented = comments.some((c) => c.user.id === me?.id);
 
   return (
     <KeyboardAvoidingView className="flex-1 bg-background" style={{ paddingTop: insets.top }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -150,7 +155,10 @@ export default function PerceptionDetailScreen() {
 
       <ScrollView className="flex-1 px-4" keyboardShouldPersistTaps="handled">
         {!isOwner && (
-          <Pressable onPress={() => router.push(`/(tabs)/messages/${perception.user.id}`)} className="mb-3 flex-row items-center gap-1.5">
+          <Pressable
+            onPress={() => guard(() => router.push(`/(tabs)/messages/${perception.user.id}`))}
+            className="mb-3 flex-row items-center gap-1.5"
+          >
             <Feather name="message-circle" size={15} color="#f2a33c" />
             <Text className="font-sans-medium text-sm text-accent">Message {perception.user.name}</Text>
           </Pressable>
@@ -161,33 +169,68 @@ export default function PerceptionDetailScreen() {
           detailView
           isOwner={isOwner}
           onLike={() =>
-            toggleLike(perception, (likedId, liked, count) =>
-              setPerception((p) => (p && p.id === likedId ? { ...p, liked_by_user: liked, likes_count: count } : p))
+            guard(() =>
+              toggleLike(perception, (likedId, liked, count) =>
+                setPerception((p) => (p && p.id === likedId ? { ...p, liked_by_user: liked, likes_count: count } : p))
+              )
             )
           }
         />
 
         <Text className="mb-3 mt-6 font-sans-semibold text-lg text-foreground">Perceive</Text>
 
-        <View className="mb-5 rounded-card border border-border-hairline bg-surface p-3.5">
-          <TextInput
-            value={commentBody}
-            onChangeText={setCommentBody}
-            placeholder="What's your take on this?"
-            placeholderTextColor="#8b91a0"
-            multiline
-            className="min-h-[80px] rounded-control border border-border-hairline bg-surface-sunken p-2.5 font-sans text-sm text-foreground"
-          />
-          <View className="mt-2.5 flex-row justify-end">
-            <Button label={posting ? "Posting…" : "Share perception"} variant="accent" size="sm" loading={posting} onPress={submitComment} />
+        {token ? (
+          <View className="mb-5 rounded-card border border-border-hairline bg-surface p-3.5">
+            <TextInput
+              value={commentBody}
+              onChangeText={setCommentBody}
+              placeholder="What's your take on this?"
+              placeholderTextColor="#8b91a0"
+              multiline
+              className="min-h-[80px] rounded-control border border-border-hairline bg-surface-sunken p-2.5 font-sans text-sm text-foreground"
+            />
+            <View className="mt-2.5 flex-row justify-end">
+              <Button label={posting ? "Posting…" : "Share perception"} variant="accent" size="sm" loading={posting} onPress={submitComment} />
+            </View>
           </View>
-        </View>
+        ) : (
+          <Pressable
+            onPress={() => router.push("/(auth)/login")}
+            className="mb-5 items-center rounded-card border border-dashed border-border-hairline bg-surface/50 p-5"
+          >
+            <Text className="text-center font-sans text-sm text-foreground-muted">
+              Have a unique take on this?{" "}
+              <Text className="font-sans-semibold text-accent">Log in to join the discussion.</Text>
+            </Text>
+          </Pressable>
+        )}
 
-        <View className="pb-10">
-          {comments.map((c) => (
-            <CommentItem key={c.id} comment={c} onReplyAdded={addReply} />
-          ))}
-        </View>
+        {/* Guests always see the "unlock others' perspectives" nudge — same as
+            a logged-in user who hasn't commented yet. */}
+        {!token ? (
+          <Pressable
+            onPress={() => router.push("/(auth)/login")}
+            className="mx-auto mb-10 flex-row items-center gap-2 self-center rounded-card border border-accent/25 bg-accent-soft px-5 py-4"
+          >
+            <VantageMark size={18} color="#c97412" />
+            <Text className="max-w-[80%] text-center font-sans text-sm text-accent-strong">
+              Sign in and share your perception to unlock others&rsquo; perspectives.
+            </Text>
+          </Pressable>
+        ) : isOwner || hasCommented || comments.length === 0 ? (
+          <View className="pb-10">
+            {comments.map((c) => (
+              <CommentItem key={c.id} comment={c} onReplyAdded={addReply} />
+            ))}
+          </View>
+        ) : (
+          <View className="mx-auto mb-10 flex-row items-center gap-2 self-center rounded-card border border-accent/25 bg-accent-soft px-5 py-4">
+            <VantageMark size={18} color="#c97412" />
+            <Text className="max-w-[80%] text-center font-sans text-sm text-accent-strong">
+              Share your perception to see others&rsquo; perspectives.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

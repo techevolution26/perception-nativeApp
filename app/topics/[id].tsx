@@ -9,6 +9,7 @@ import VantageMark from "../../components/ui/VantageMark";
 import { apiFetch } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useLikeToggle from "../../hooks/useLikeToggle";
+import useGuardAction from "../../hooks/useGuardAction";
 import type { Topic, Perception, LikeToggle } from "../../types/models";
 
 export default function TopicScreen() {
@@ -16,6 +17,7 @@ export default function TopicScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useCurrentUser();
   const toggleLike = useLikeToggle();
+  const guard = useGuardAction();
 
   const [topic, setTopic] = useState<Topic | null>(null);
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
@@ -75,14 +77,17 @@ export default function TopicScreen() {
             <Text className="font-sans text-sm text-foreground-subtle">No perceptions yet in {topic.name}.</Text>
           </View>
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <PerceptionCard
             perception={item}
+            index={index}
             isOwner={user?.id === item.user.id}
             onLike={() =>
-              toggleLike(item, (likedId, liked, likes_count) =>
-                setPerceptions((curr) =>
-                  curr.map((p) => (p.id === likedId ? { ...p, liked_by_user: liked, likes_count } : p))
+              guard(() =>
+                toggleLike(item, (likedId, liked, likes_count) =>
+                  setPerceptions((curr) =>
+                    curr.map((p) => (p.id === likedId ? { ...p, liked_by_user: liked, likes_count } : p))
+                  )
                 )
               )
             }

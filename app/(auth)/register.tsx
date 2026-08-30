@@ -31,7 +31,11 @@ export default function RegisterScreen() {
     }
 
     try {
-      await register(name, email, password, confirm);
+      // SANITIZE USER INPUT: same fix as login.tsx — trim/lowercase email,
+      // leave the password untouched.
+      const sanitizedEmail = email.trim().toLowerCase();
+      const sanitizedName = name.trim();
+      await register(sanitizedName, sanitizedEmail, password, confirm);
       router.replace("/(tabs)");
     } catch (err) {
       if (err instanceof ApiError) {

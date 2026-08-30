@@ -1,4 +1,5 @@
 // app/(tabs)/messages/index.tsx
+import { useEffect } from "react";
 import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -9,8 +10,19 @@ import useCurrentUser from "../../../hooks/useCurrentUser";
 
 export default function ConversationsScreen() {
   const insets = useSafeAreaInsets();
-  const { user } = useCurrentUser();
+  const { user, loading } = useCurrentUser();
   const { data: conversations = [], isLoading } = useConversations(Boolean(user));
+
+  // Defense in depth — the tab bar already blocks guests from reaching this
+  // via the tab press, but it's still a directly-addressable route. Waits
+  // for auth hydration to actually finish (not a guessed timeout) before
+  // deciding there's no session — otherwise a genuinely logged-in user
+  // could get bounced to login while their token is still being restored.
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [loading, user]);
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>

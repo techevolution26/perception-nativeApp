@@ -6,7 +6,7 @@
 // instead of re-reading storage on every render. This store is that source
 // of truth — hydrated once at launch, updated on login/logout.
 import { create } from "zustand";
-import { apiFetch, ApiError } from "../lib/api";
+import { apiFetch, ApiError, setUnauthorizedHandler } from "../lib/api";
 import { getToken, setToken, clearToken } from "../lib/storage";
 import type { UserMe, AuthResponse } from "../types/models";
 
@@ -90,3 +90,10 @@ const useAuthStore = create<AuthState>((set, get) => ({
 
 export { ApiError };
 export default useAuthStore;
+
+// Any authenticated request that comes back 401 anywhere in the app clears
+// the (now-invalid) session — see lib/api.ts for why this lives here
+// instead of being scattered across every screen that calls apiFetch.
+setUnauthorizedHandler(() => {
+  useAuthStore.getState().logout();
+});

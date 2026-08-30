@@ -1,5 +1,5 @@
 // app/new-perception.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -19,9 +19,17 @@ import useTopics from "../hooks/useTopics";
 import { apiFetch, API_BASE } from "../lib/api";
 import { getToken } from "../lib/storage";
 import usePerceptionsStore from "../store/usePerceptionsStore";
+import useAuthStore from "../store/useAuthStore";
 import type { Perception } from "../types/models";
 
 export default function NewPerceptionModal() {
+  // Defense in depth — the tab bar already blocks guests from reaching this
+  // screen via the tab press, but it's still a directly-addressable route
+  // (deep link, programmatic push), so it checks for itself too.
+  const token = useAuthStore((s) => s.token);
+  useEffect(() => {
+    if (!token) router.replace("/(auth)/login");
+  }, [token]);
   const { data: topics = [] } = useTopics();
   const [body, setBody] = useState("");
   const [topicId, setTopicId] = useState<number | null>(null);

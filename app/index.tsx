@@ -1,8 +1,13 @@
 // app/index.tsx
+//
+// Previously redirected guests straight to /login — matching the web app's
+// old behavior, where the home feed itself was gated. The web app dropped
+// that gate (see app/page.tsx: home feed and perception details are public
+// now; only actions like liking, commenting, posting, and messaging require
+// a session, each guarded individually via guardAction). Mirrored here:
+// everyone lands in the tab navigator, token or not.
 import { Redirect } from "expo-router";
-import useAuthStore from "../store/useAuthStore";
 
 export default function Index() {
-  const token = useAuthStore((s) => s.token);
-  return <Redirect href={token ? "/(tabs)" : "/(auth)/login"} />;
+  return <Redirect href="/(tabs)" />;
 }

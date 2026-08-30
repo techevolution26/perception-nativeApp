@@ -10,12 +10,14 @@ import Button from "../../components/ui/Button";
 import PerceptionCard from "../../components/PerceptionCard";
 import { apiFetch } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import useGuardAction from "../../hooks/useGuardAction";
 import type { UserProfile, Perception } from "../../types/models";
 
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user: me } = useCurrentUser();
+  const guard = useGuardAction();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +104,7 @@ export default function UserProfileScreen() {
                 variant="outline"
                 size="sm"
                 icon={<Feather name="message-circle" size={14} color="#666c7a" />}
-                onPress={() => router.push(`/(tabs)/messages/${user.id}`)}
+                onPress={() => guard(() => router.push(`/(tabs)/messages/${user.id}`))}
               />
             </View>
           )}
@@ -124,8 +126,8 @@ export default function UserProfileScreen() {
           <Text className="py-8 text-center font-sans italic text-foreground-subtle">No perceptions yet.</Text>
         ) : (
           <View className="gap-4">
-            {perceptions.map((p) => (
-              <PerceptionCard key={p.id} perception={p} isOwner={isOwnProfile} />
+            {perceptions.map((p, i) => (
+              <PerceptionCard key={p.id} perception={p} index={i} isOwner={isOwnProfile} />
             ))}
           </View>
         )}
