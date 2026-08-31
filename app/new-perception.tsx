@@ -22,6 +22,7 @@ import usePerceptionsStore from "../store/usePerceptionsStore";
 import useAuthStore from "../store/useAuthStore";
 import { playPostSuccessSound } from "../lib/sound";
 import type { Perception } from "../types/models";
+import { File } from "expo-file-system";
 
 export default function NewPerceptionModal() {
   // Defense in depth — the tab bar already blocks guests from reaching this
@@ -42,7 +43,10 @@ export default function NewPerceptionModal() {
   const pickMedia = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow photo library access to attach media.");
+      Alert.alert(
+        "Permission needed",
+        "Allow photo library access to attach media.",
+      );
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -56,48 +60,72 @@ export default function NewPerceptionModal() {
 
   const handleSubmit = async () => {
     if (!body.trim() || !topicId) return;
+
     setLoading(true);
 
     try {
       const form = new FormData();
+
       form.append("body", body.trim());
       form.append("topic_id", String(topicId));
+
       if (media) {
-        form.append("media", {
-          uri: media.uri,
-          name: media.fileName || `upload.${media.uri.split(".").pop()}`,
-          type: media.mimeType || (media.type === "video" ? "video/mp4" : "image/jpeg"),
-        } as unknown as Blob);
+        const file = new File(media.uri);
+
+        form.append("media", file);
       }
 
       const token = await getToken();
+
       const res = await fetch(`${API_BASE}/api/perceptions`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: form,
       });
-      if (!res.ok) throw new Error(await res.text());
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
       const created: Perception = await res.json();
+
       addPerception(created);
       playPostSuccessSound();
+
       router.back();
     } catch (err) {
-      Alert.alert("Couldn't post", err instanceof Error ? err.message : "Please try again.");
+      Alert.alert(
+        "Couldn't post",
+        err instanceof Error ? err.message : "Please try again.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-background" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      className="flex-1 bg-background"
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <View className="flex-row items-center justify-between border-b border-border-hairline px-4 py-3.5">
-        <Text className="font-sans-semibold text-lg text-foreground">New Perception</Text>
-        <Pressable onPress={() => router.back()} className="rounded-control p-1.5">
+        <Text className="font-sans-semibold text-lg text-foreground">
+          New Perception
+        </Text>
+        <Pressable
+          onPress={() => router.back()}
+          className="rounded-control p-1.5"
+        >
           <Feather name="x" size={20} color="#8b91a0" />
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1 px-4 py-4" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        className="flex-1 px-4 py-4"
+        keyboardShouldPersistTaps="handled"
+      >
         <TextInput
           value={body}
           onChangeText={setBody}
@@ -110,7 +138,11 @@ export default function NewPerceptionModal() {
 
         {media && (
           <View className="relative mt-3">
-            <Image source={{ uri: media.uri }} style={{ width: "100%", height: 180, borderRadius: 10 }} contentFit="cover" />
+            <Image
+              source={{ uri: media.uri }}
+              style={{ width: "100%", height: 180, borderRadius: 10 }}
+              contentFit="cover"
+            />
             <Pressable
               onPress={() => setMedia(null)}
               className="absolute -right-2 -top-2 rounded-full bg-foreground p-1.5"
@@ -132,7 +164,9 @@ export default function NewPerceptionModal() {
                 onPress={() => setTopicId(topic.id)}
                 className={`rounded-control border px-3 py-2 ${selected ? "border-accent/60 bg-accent-soft" : "border-border-hairline"}`}
               >
-                <Text className={`font-sans text-sm ${selected ? "text-accent-strong" : "text-foreground-muted"}`}>
+                <Text
+                  className={`font-sans text-sm ${selected ? "text-accent-strong" : "text-foreground-muted"}`}
+                >
                   {topic.name}
                 </Text>
               </Pressable>
@@ -140,9 +174,14 @@ export default function NewPerceptionModal() {
           })}
         </View>
 
-        <Pressable onPress={pickMedia} className="mt-5 flex-row items-center gap-2 self-start rounded-control border border-border-hairline px-3.5 py-2.5">
+        <Pressable
+          onPress={pickMedia}
+          className="mt-5 flex-row items-center gap-2 self-start rounded-control border border-border-hairline px-3.5 py-2.5"
+        >
           <Feather name="image" size={16} color="#666c7a" />
-          <Text className="font-sans text-sm text-foreground-muted">{media ? "Change media" : "Add photo or video"}</Text>
+          <Text className="font-sans text-sm text-foreground-muted">
+            {media ? "Change media" : "Add photo or video"}
+          </Text>
         </Pressable>
       </ScrollView>
 
