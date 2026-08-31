@@ -7,9 +7,8 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useColorScheme as useNativeWindColorScheme } from "nativewind";
-import { useColorScheme as useSystemColorScheme } from "react-native";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "../lib/queryClient";
 import {
   useFonts,
   Geist_400Regular,
@@ -20,10 +19,9 @@ import {
 import { GeistMono_400Regular, GeistMono_500Medium } from "@expo-google-fonts/geist-mono";
 import { EchoProvider } from "../contexts/EchoContext";
 import useAuthStore from "../store/useAuthStore";
+import useSettingsStore from "../store/useSettingsStore";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
-
-const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -35,31 +33,36 @@ export default function RootLayout() {
     GeistMono_500Medium,
   });
 
-  const hydrate = useAuthStore((s) => s.hydrate);
-  const hydrated = useAuthStore((s) => s.hydrated);
+  const hydrateAuth = useAuthStore((s) => s.hydrate);
+  const authHydrated = useAuthStore((s) => s.hydrated);
+  const hydrateSettings = useSettingsStore((s) => s.hydrate);
+  const settingsHydrated = useSettingsStore((s) => s.hydrated);
   const [hydrationStarted, setHydrationStarted] = useState(false);
 
-  // Follow system color scheme by default — same default as the web app.
-  const systemScheme = useSystemColorScheme();
-  const { setColorScheme } = useNativeWindColorScheme();
-  useEffect(() => {
-    setColorScheme(systemScheme === "dark" ? "dark" : "light");
-  }, [systemScheme, setColorScheme]);
-
+  // Previously re-implemented system-theme tracking by hand (React
+  // Native's useColorScheme + a manual setColorScheme("light"|"dark")
+  // effect) — this both fought with, and didn't reliably react the same
+  // way as, NativeWind's own tracking. NativeWind's colorScheme.set()
+  // accepts "system" directly and handles OS-level live updates itself;
+  // useSettingsStore.hydrate() calls it once with the persisted
+  // preference (default "system") and that's the whole story now.
   useEffect(() => {
     if (!hydrationStarted) {
       setHydrationStarted(true);
-      hydrate();
+      hydrateAuth();
+      hydrateSettings();
     }
-  }, [hydrationStarted, hydrate]);
+  }, [hydrationStarted, hydrateAuth, hydrateSettings]);
+
+  const appReady = fontsLoaded && authHydrated && settingsHydrated;
 
   useEffect(() => {
-    if (fontsLoaded && hydrated) {
+    if (appReady) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, hydrated]);
+  }, [appReady]);
 
-  if (!fontsLoaded || !hydrated) {
+  if (!appReady) {
     return null; // splash screen stays up
   }
 
@@ -69,8 +72,8 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <EchoProvider>
             <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(auth)" />
               <Stack.Screen name="new-perception" options={{ presentation: "modal" }} />
               <Stack.Screen name="perceptions/[id]/edit" options={{ presentation: "modal" }} />
             </Stack>

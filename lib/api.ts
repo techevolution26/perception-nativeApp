@@ -86,3 +86,21 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
 }
 
 export { API_BASE };
+
+/**
+ * The backend returns media/avatar URLs as root-relative paths
+ * (`/storage/perceptions/xyz.jpg`) — correct for the web app, which proxies
+ * `/storage/*` through Next.js's rewrites so the browser resolves it
+ * against its own origin. There is no such origin here: this app calls
+ * the backend directly, so a relative path has nothing to resolve
+ * against and silently fails to load (shows blank, not an error) in
+ * `expo-image`/`expo-video`. This prefixes the API base onto anything
+ * that isn't already an absolute URL.
+ */
+export function resolveMediaUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url) || url.startsWith("file://") || url.startsWith("data:")) {
+    return url;
+  }
+  return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
+}

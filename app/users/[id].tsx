@@ -1,28 +1,53 @@
 // app/users/[id].tsx
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, Pressable, ScrollView, ActivityIndicator, TextInput, Alert } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  TextInput,
+  Alert,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import Avatar from "../../components/ui/Avatar";
 import Pill from "../../components/ui/Pill";
 import Button from "../../components/ui/Button";
 import PerceptionCard from "../../components/PerceptionCard";
-import { apiFetch } from "../../lib/api";
+import SettingsPanel from "../../components/SettingsPanel";
+import { apiFetch, API_BASE } from "../../lib/api";
+import { getToken } from "../../lib/storage";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
+import useAuthStore from "../../store/useAuthStore";
 import type { UserProfile, Perception } from "../../types/models";
+
+type ProfileTab = "posts" | "settings";
 
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user: me } = useCurrentUser();
+  const refreshMe = useAuthStore((s) => s.refreshMe);
   const guard = useGuardAction();
+
   const [user, setUser] = useState<UserProfile | null>(null);
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
+  const [tab, setTab] = useState<ProfileTab>("posts");
+
+  // Edit mode
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editProfession, setEditProfession] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editAvatar, setEditAvatar] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const isOwnProfile = me?.id === Number(id);
 
@@ -67,6 +92,73 @@ export default function UserProfileScreen() {
     }
   };
 
+  const startEditing = () => {
+    if (!user) return;
+    setEditName(user.name);
+    setEditProfession(user.profession || "");
+    setEditBio(user.bio || "");
+    setEditAvatar(null);
+    setEditing(true);
+  };
+
+  const pickAvatar = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission needed", "Allow photo library access to change your avatar.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.85,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (!result.canceled && result.assets[0]) {
+      setEditAvatar(result.assets[0]);
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      // The backend splits profile updates across two endpoints:
+      // PUT /api/user for the name, POST /api/user/profile (multipart)
+      // for profession/bio/avatar. The web app never actually exposes
+      // name editing at all — this goes a step further since it was
+      // explicitly asked for.
+      if (editName.trim() && editName.trim() !== user.name) {
+        await apiFetch("/api/user", { method: "PUT", body: { name: editName.trim() } });
+      }
+
+      const form = new FormData();
+      form.append("profession", editProfession);
+      form.append("bio", editBio);
+      if (editAvatar) {
+        form.append("avatar", {
+          uri: editAvatar.uri,
+          name: editAvatar.fileName || `avatar.${editAvatar.uri.split(".").pop()}`,
+          type: editAvatar.mimeType || "image/jpeg",
+        } as unknown as Blob);
+      }
+      const token = await getToken();
+      const res = await fetch(`${API_BASE}/api/user/profile`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      await refreshMe();
+      await load();
+      setEditing(false);
+    } catch (err) {
+      Alert.alert("Save failed", err instanceof Error ? err.message : "Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading || !user) {
     return (
       <View className="flex-1 items-center justify-center bg-background" style={{ paddingTop: insets.top }}>
@@ -77,59 +169,151 @@ export default function UserProfileScreen() {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="rounded-control p-1">
+      <View className="flex-row items-center justify-between px-4 py-3">
+        <Pressable onPress={() => router.back()} className="rounded-control p-1" hitSlop={8}>
           <Feather name="chevron-left" size={22} color="#8b91a0" />
         </Pressable>
+        {isOwnProfile && !editing && tab === "posts" && (
+          <Pressable onPress={startEditing} className="rounded-control p-1" hitSlop={8} accessibilityLabel="Edit profile">
+            <Feather name="edit-2" size={19} color="#8b91a0" />
+          </Pressable>
+        )}
       </View>
 
-      <ScrollView contentContainerClassName="px-4 pb-10">
-        <View className="items-center py-4">
-          <Avatar uri={user.avatar_url} size="xl" />
-          <Text className="mt-3 font-sans-semibold text-xl text-foreground">{user.name}</Text>
-          {user.profession && <Text className="font-sans text-accent">{user.profession}</Text>}
-          {user.bio && <Text className="mt-2 text-center font-sans text-foreground-muted">{user.bio}</Text>}
-
-          {!isOwnProfile && (
-            <View className="mt-4 flex-row gap-2">
-              <Button
-                label={isFollowing ? "Following" : "Follow"}
-                variant={isFollowing ? "outline" : "primary"}
-                size="sm"
-                loading={followBusy}
-                onPress={toggleFollow}
-              />
-              <Button
-                label="Message"
-                variant="outline"
-                size="sm"
-                icon={<Feather name="message-circle" size={14} color="#666c7a" />}
-                onPress={() => guard(() => router.push(`/(tabs)/messages/${user.id}`))}
-              />
-            </View>
-          )}
-
-          <View className="mt-5 flex-row flex-wrap justify-center gap-2">
-            <Pill label={`${user.perceptions_count} perceptions`} />
-            <Pressable onPress={() => router.push(`/users/${id}/followers`)}>
-              <Pill label={`${user.followers_count} followers`} />
-            </Pressable>
-            <Pressable onPress={() => router.push(`/users/${id}/following`)}>
-              <Pill label={`${user.following_count} following`} />
-            </Pressable>
-            <Pill label={`${user.topics_count} topics`} tone="accent" />
+      <ScrollView contentContainerClassName="pb-10">
+        <View className="items-center px-4 py-4">
+          <View className="relative">
+            <Avatar uri={editAvatar?.uri ?? user.avatar_url} size="xl" />
+            {editing && (
+              <Pressable
+                onPress={pickAvatar}
+                className="absolute -bottom-1 -right-1 rounded-full bg-foreground p-2"
+                accessibilityLabel="Change avatar"
+              >
+                <Feather name="camera" size={14} color="#fcfcfb" />
+              </Pressable>
+            )}
           </View>
+
+          {editing ? (
+            <View className="mt-4 w-full gap-3">
+              <View>
+                <Text className="mb-1 font-sans-medium text-xs text-foreground-subtle">Name</Text>
+                <TextInput
+                  value={editName}
+                  onChangeText={setEditName}
+                  className="rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 text-center font-sans text-foreground"
+                />
+              </View>
+              <View>
+                <Text className="mb-1 font-sans-medium text-xs text-foreground-subtle">Profession</Text>
+                <TextInput
+                  value={editProfession}
+                  onChangeText={setEditProfession}
+                  placeholder="What do you do?"
+                  placeholderTextColor="#8b91a0"
+                  className="rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 text-center font-sans text-foreground"
+                />
+              </View>
+              <View>
+                <Text className="mb-1 font-sans-medium text-xs text-foreground-subtle">Bio</Text>
+                <TextInput
+                  value={editBio}
+                  onChangeText={setEditBio}
+                  placeholder="A little about you"
+                  placeholderTextColor="#8b91a0"
+                  multiline
+                  className="min-h-[80px] rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 text-center font-sans text-foreground"
+                />
+              </View>
+              <View className="mt-1 flex-row gap-2">
+                <View className="flex-1">
+                  <Button label="Cancel" variant="outline" onPress={() => setEditing(false)} disabled={saving} />
+                </View>
+                <View className="flex-1">
+                  <Button label={saving ? "Saving…" : "Save"} variant="accent" loading={saving} onPress={saveProfile} />
+                </View>
+              </View>
+            </View>
+          ) : (
+            <>
+              <Text className="mt-3 font-sans-semibold text-xl text-foreground">{user.name}</Text>
+              {user.profession && <Text className="font-sans text-accent">{user.profession}</Text>}
+              {user.bio && <Text className="mt-2 text-center font-sans text-foreground-muted">{user.bio}</Text>}
+
+              {!isOwnProfile && (
+                <View className="mt-4 flex-row gap-2">
+                  <Button
+                    label={isFollowing ? "Following" : "Follow"}
+                    variant={isFollowing ? "outline" : "primary"}
+                    size="sm"
+                    loading={followBusy}
+                    onPress={toggleFollow}
+                  />
+                  <Button
+                    label="Message"
+                    variant="outline"
+                    size="sm"
+                    icon={<Feather name="message-circle" size={14} color="#666c7a" />}
+                    onPress={() => guard(() => router.push(`/(tabs)/messages/${user.id}`))}
+                  />
+                </View>
+              )}
+
+              <View className="mt-5 flex-row flex-wrap justify-center gap-2">
+                <Pill label={`${user.perceptions_count} perceptions`} />
+                <Pressable onPress={() => router.push(`/users/${id}/followers`)}>
+                  <Pill label={`${user.followers_count} followers`} />
+                </Pressable>
+                <Pressable onPress={() => router.push(`/users/${id}/following`)}>
+                  <Pill label={`${user.following_count} following`} />
+                </Pressable>
+                <Pressable onPress={() => router.push("/topics")}>
+                  <Pill label={`${user.topics_count} topics`} tone="accent" />
+                </Pressable>
+              </View>
+            </>
+          )}
         </View>
 
-        <Text className="mb-3 mt-4 font-sans-semibold text-lg text-foreground">Recent perceptions</Text>
-        {perceptions.length === 0 ? (
-          <Text className="py-8 text-center font-sans italic text-foreground-subtle">No perceptions yet.</Text>
-        ) : (
-          <View className="gap-4">
-            {perceptions.map((p, i) => (
-              <PerceptionCard key={p.id} perception={p} index={i} isOwner={isOwnProfile} />
-            ))}
+        {isOwnProfile && !editing && (
+          <View className="mx-4 mb-2 mt-2 flex-row rounded-control border border-border-hairline bg-surface p-1">
+            <Pressable
+              onPress={() => setTab("posts")}
+              className={`flex-1 items-center rounded-control py-2 ${tab === "posts" ? "bg-surface-sunken" : ""}`}
+            >
+              <Text className={`font-sans-medium text-sm ${tab === "posts" ? "text-foreground" : "text-foreground-subtle"}`}>
+                Posts
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setTab("settings")}
+              className={`flex-1 items-center rounded-control py-2 ${tab === "settings" ? "bg-surface-sunken" : ""}`}
+            >
+              <Text className={`font-sans-medium text-sm ${tab === "settings" ? "text-foreground" : "text-foreground-subtle"}`}>
+                Settings
+              </Text>
+            </Pressable>
           </View>
+        )}
+
+        {isOwnProfile && tab === "settings" && !editing ? (
+          <SettingsPanel />
+        ) : (
+          !editing && (
+            <View className="px-4">
+              <Text className="mb-3 mt-4 font-sans-semibold text-lg text-foreground">Recent perceptions</Text>
+              {perceptions.length === 0 ? (
+                <Text className="py-8 text-center font-sans italic text-foreground-subtle">No perceptions yet.</Text>
+              ) : (
+                <View className="gap-4">
+                  {perceptions.map((p, i) => (
+                    <PerceptionCard key={p.id} perception={p} index={i} isOwner={isOwnProfile} />
+                  ))}
+                </View>
+              )}
+            </View>
+          )
         )}
       </ScrollView>
     </View>

@@ -20,6 +20,7 @@ import { apiFetch, API_BASE } from "../lib/api";
 import { getToken } from "../lib/storage";
 import usePerceptionsStore from "../store/usePerceptionsStore";
 import useAuthStore from "../store/useAuthStore";
+import { playPostSuccessSound } from "../lib/sound";
 import type { Perception } from "../types/models";
 
 export default function NewPerceptionModal() {
@@ -78,6 +79,7 @@ export default function NewPerceptionModal() {
       if (!res.ok) throw new Error(await res.text());
       const created: Perception = await res.json();
       addPerception(created);
+      playPostSuccessSound();
       router.back();
     } catch (err) {
       Alert.alert("Couldn't post", err instanceof Error ? err.message : "Please try again.");

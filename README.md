@@ -1,106 +1,115 @@
 # Perception — mobile (Expo / React Native)
 
-Rebuilt against `PerceptionV2-frontend-master` (the updated web app) and
-your already-fixed mobile project — this is not a from-scratch redo, it's
-your bug fixes plus the web app's evolved behavior and design, merged.
+## This pass: three root-caused bugs, plus a substantial feature/design pass
 
-## What this pass changed, and why
+### Bug fixes
 
-### Your fixes — carried forward untouched
-Everything from your updated project was kept exactly as you had it:
-`package.json` (netinfo added, react/react-native as `^` ranges),
-`app.json` (`newArchEnabled` removed), the Zustand infinite-loop fix and
-dynamic bottom-padding calc in the home screen, the `bg-transparent` tab
-bar fix, the defensive Pusher/Echo constructor extraction in
-`EchoContext.tsx`, and the email trim/lowercase fix in `login.tsx` (also
-now applied to `register.tsx` for consistency — same bug, same fix).
+**"Still asking for auth on the homepage."**
+Root cause: `app/index.tsx` and `app/(tabs)/index.tsx` both resolved to the
+URL `/` — a genuine routing collision. Removed the redundant redirect file;
+`(tabs)/index.tsx` now cleanly owns `/` and everyone (guest or logged in)
+lands there directly.
 
-### The web app's biggest change: guests can browse now
-Previously (both here and on web), the entire app was gated — no token,
-no access at all. The web app dropped that: the home feed, perception
-detail pages, topics, and search are all public now. Only *actions*
-(liking, commenting, posting, messaging, editing/deleting) require a
-session, each guarded individually via a `guardAction` pattern that
-redirects to login only when actually attempted.
+**Dark/light mode not following system.**
+The previous approach manually re-read React Native's `useColorScheme()`
+and forced NativeWind's `setColorScheme("light" | "dark")` in a `useEffect`
+— fighting with, rather than using, NativeWind's own system-tracking.
+`colorScheme.set("system")` (a real, verified export from `nativewind`)
+tells it to track the OS natively and reactively. New `useSettingsStore`
+persists the user's actual choice (light/dark/system, default system) and
+calls this once at hydration — the Settings tab (see below) is the UI for
+changing it.
 
-This is a real architecture change, not a cosmetic one:
-- `app/index.tsx` no longer force-redirects to `/login` — everyone lands
-  in the tab navigator.
-- `(tabs)/_layout.tsx` no longer redirects on mount either. Instead, only
-  the New/Notifications/Messages tab *presses* are guarded
-  (`hooks/useGuardAction.ts`), matching the web app's `guardAction` in
-  `MobileNav.tsx` exactly.
-- Screens that make authenticated-only requests (chat thread, conversation
-  list) still self-guard on mount as defense in depth, since they're
-  directly-addressable routes, not just tab presses.
-- The perception detail screen's comment composer becomes a "Log in to
-  join the discussion" prompt for guests, and the "vantage barrier" (share
-  your take to unlock others' perspectives) now shows for guests too, not
-  just logged-in users who haven't commented yet — matches web exactly.
+**Images and videos loading blank.**
+Root cause: the backend returns media/avatar URLs as root-relative paths
+(`/storage/perceptions/xyz.jpg`) — correct for the web app, which proxies
+`/storage/*` through Next.js's rewrites so the browser resolves it against
+its own origin. This app has no such proxy (it calls the backend
+directly), so a relative path has nothing to resolve against — it fails
+silently rather than erroring, which is why it looked like "blank" rather
+than a broken-image icon. Added `resolveMediaUrl()` in `lib/api.ts`,
+applied everywhere a media/avatar URL is rendered: `Avatar`,
+`TopicsCarousel`, `PerceptionCard`'s media preview, comment media, and the
+topics browse screen.
 
-### Centralized session handling
-The web app ended up patching "clear the stale token on 401" into two
-separate places as bugs surfaced one at a time (`useCurrentUser`,
-`NewPerceptionForm`). Rather than replicate that same scattered pattern,
-this consolidates it: `lib/api.ts` exposes a single unauthorized-request
-hook that `useAuthStore` registers itself into at startup, so *any*
-authenticated request that comes back 401, anywhere in the app, triggers
-the same one cleanup path.
+### New: Settings tab on the profile page
+`components/SettingsPanel.tsx`, shown as a segmented "Posts / Settings" tab
+on your own profile (`app/users/[id].tsx`). Contains the theme selector
+(Light/Dark/System), a logout action, and clearly-labeled "coming soon"
+rows for future settings (notification preferences, privacy, help,
+about) — shown as disabled with a "Soon" badge rather than as dead taps
+that look interactive but do nothing.
 
-### Real gaps from the first build, now filled in
-- **Notifications screen** (`app/(tabs)/notifications.tsx`) — didn't exist
-  before. Full parity with web's `NotificationsPanel.tsx`: real-time via
-  the same private channel/event, mark-all-read, delete, unread badge on
-  the tab bar icon.
-- **Topics carousel** (`components/TopicsCarousel.tsx`) — the horizontal
-  rail of topic avatars above the feed was missing entirely; it's a
-  defining piece of how the app actually looks, not just a nice-to-have.
-- **Long-post truncation** — feed cards (not the detail view) now clamp
-  body text at 10 lines with a gradient fade mask past 140 characters,
-  matching the web fix that stops one huge post from dominating the feed.
-- **Search moved out of the tab bar** into a pushed screen
-  (`app/search.tsx`) reached via a header icon — mirrors how the web app
-  actually organizes search (header search bar, not a bottom-nav item),
-  freeing the tab bar slot for Notifications instead.
-- **The lightbulb wordmark** — the web header replaces the 'o' in
-  "Percepti[bulb]n" with a lightbulb icon; ported to the home screen
-  header using Ionicons' bulb glyph (Feather, used everywhere else in this
-  app, doesn't have one — this is the one deliberate icon-set mix).
-- **Entrance animations** — feed cards now fade/slide in with a slight
-  stagger (react-native-reanimated's FadeInDown), the native-idiomatic
-  equivalent of the web app's Framer Motion stagger, not a literal port.
+### New: Topics browse screen
+`app/topics/index.tsx` was missing entirely — there was a topic *detail*
+page but nowhere to discover and follow/unfollow topics in general,
+ported from the web app's `/topics` page. Reachable from the profile
+page's topic-count pill and now also from a "Browse" entry at the end of
+the home feed's topic carousel (the web app doesn't have an obvious entry
+point for this either — a small deliberate addition here, not parity).
 
-### Deliberately not ported
-- **Scroll-hide-on-scroll for the tab bar.** The web app's `MobileNav`
-  hides on scroll-down to reclaim screen space — a reasonable move on a
-  page that can get tall. Native bottom tab bars conventionally stay
-  persistent (that's the platform convention iOS/Android users expect), so
-  this wasn't replicated. Worth revisiting if you'd rather match web
-  exactly here.
-- **`useKeepAwake`** — the web app pings a `/api/ping` endpoint
-  periodically, most likely to prevent a free-tier host from sleeping.
-  Native apps don't have the same "backgrounded tab" problem in the same
-  way, and it's not clear this project's deployment target needs it. Not
-  ported; flag if you want it added (would use `AppState` instead of
-  `document.visibilitychange`).
-- **App display name** — the web app's `<title>` tag changed to
-  "Perception.App" with a much longer marketing description. That's
-  SEO/browser-tab metadata, invisible UI text — the actual on-screen
-  copy in `LoginModal`/`RegisterModal` didn't change, and this mobile
-  app's screens already matched it. `app.json`'s app name was left as
-  "Perception" (a native home-screen icon label isn't the same context
-  as a browser tab title, and ".App" reads oddly as a native app name).
+### New: Profile editing
+Name, profession, bio, and avatar are now actually editable on your own
+profile (they were display-only before). Worth knowing: the backend
+splits this across two endpoints — `PUT /api/user` for the name,
+`POST /api/user/profile` (multipart) for profession/bio/avatar. The web
+app never actually exposes name editing at all; this goes one step
+further since it was explicitly asked for.
+
+### Redesigned: the comment composer and comment tree
+`components/PerceiveComposer.tsx` replaces the old plain bordered textarea
+— avatar + growing input + circular send button, the same visual language
+as the chat `MessageInput`, so composing feels consistent everywhere in
+the app rather than like a different UI each time. Used for both the
+top-level comment box and nested replies.
+
+The comment tree (`CommentItem` in `app/perceptions/[id].tsx`) got a
+quiet vertical thread-line connector for nested replies (instead of bare
+indentation), icon-based Reply/Show-replies controls, and now actually
+renders comment media (it never did before). **All the actual logic —
+recursive nesting, the reply-insertion algorithm, state — is untouched;**
+only the surrounding JSX changed.
+
+### PerceptionCard: tap-to-navigate + action menu
+Tapping anywhere on a card's avatar/text/media (not the like/comment
+buttons, and not a no-op on the detail page itself) now pushes to the
+perception's detail screen — it did nothing before. The inline
+edit/delete icons were replaced with a single "⋯" button opening
+`components/ui/ActionMenu.tsx`, a custom bottom-sheet-style menu built
+from scratch to match this app's design tokens rather than a generic OS
+`Alert` — Share (native share sheet), Copy Link, and Edit/Delete for the
+owner.
+
+### Redesigned: the tab bar, to actually match the web app's shape
+The first pass built one stretched bar with the avatar tacked onto the
+end. The web `MobileNav` is actually **two independent floating
+elements** — a centered pill with just the 4 nav icons, and a separate
+circular avatar/sign-in button at bottom-right. Rebuilt to match, and
+added a real native backdrop blur (`expo-blur`) behind the pill instead of
+a flat translucent fill, closer to the web version's `backdrop-blur`.
+
+### New: unread badges + post-success sound
+Both the Notifications and Messages tab icons now show an unread-count
+badge (previously only Notifications did, and Messages had none). Posting
+a perception or a comment/reply now plays a short two-note chime —
+synthesized locally as a WAV file (`assets/sounds/post-success.wav`, see
+the generation script if you ever want to tweak it) specifically so this
+ships fully working with no licensing ambiguity and no dependency on
+sourcing an external sound asset. It respects the device's silent/mute
+switch, as UI feedback should (this is a courtesy, not an alert).
 
 ## Verification
 
 `npx tsc --noEmit` — clean. `npx expo-doctor` — 19/21 (2 failures are
 network calls to Expo's remote validators, unreachable in the sandbox this
-was built in — not project issues, same as last time).
+was built in; the previously-real peer-dependency gap, `expo-audio`
+needing `expo-asset`, was caught by this same check and fixed).
 
-**Not verified**: an actual `expo start` / device run. Same caveat as
-before — this is thoroughly type-checked and structurally reviewed against
-the real web app's behavior, not confirmed running on a physical device or
-simulator. That's still the first thing to do with it.
+**Not verified**: an actual `expo start` / device run — same caveat as
+every prior pass. This is thoroughly type-checked and structurally
+reviewed, including root-causing the three reported bugs down to specific
+lines, but not confirmed on a physical device or simulator. That's still
+the first, most valuable thing to do with it.
 
 ## Quickstart
 

@@ -1,27 +1,40 @@
 // app/perceptions/[id].tsx
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import PerceptionCard from "../../components/PerceptionCard";
+import PerceiveComposer from "../../components/PerceiveComposer";
 import Avatar from "../../components/ui/Avatar";
 import Button from "../../components/ui/Button";
+import VantageMark from "../../components/ui/VantageMark";
 import { usePerceptionDetail } from "../../hooks/usePerceptionDetail";
 import useLikeToggle from "../../hooks/useLikeToggle";
 import useGuardAction from "../../hooks/useGuardAction";
-import VantageMark from "../../components/ui/VantageMark";
 import useAuthStore from "../../store/useAuthStore";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, resolveMediaUrl } from "../../lib/api";
+import { playPostSuccessSound } from "../../lib/sound";
 import type { Comment } from "../../types/models";
 
-function CommentItem({ comment, onReplyAdded, depth = 0 }: { comment: Comment; onReplyAdded: (parentId: number, reply: Comment) => void; depth?: number }) {
+interface CommentItemProps {
+  comment: Comment;
+  onReplyAdded: (parentId: number, reply: Comment) => void;
+  depth?: number;
+}
+
+function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
   const [replying, setReplying] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [showReplies, setShowReplies] = useState(false);
   const [sending, setSending] = useState(false);
   const replies = comment.replies || [];
+  const media = resolveMediaUrl(comment.media_url);
 
+  // Logic unchanged from the previous design — only the surrounding JSX
+  // (thread-line connector, icon-based actions, shared PerceiveComposer)
+  // was reworked.
   const submitReply = async () => {
     if (!replyBody.trim()) return;
     setSending(true);
@@ -30,6 +43,7 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: { comment: Comment; o
       form.append("body", replyBody.trim());
       const created = await apiFetch<Comment>(`/api/comments/${comment.id}/replies`, { method: "POST", body: form, json: false });
       onReplyAdded(comment.id, { ...created, replies: [] });
+      playPostSuccessSound();
       setReplyBody("");
       setReplying(false);
       setShowReplies(true);
@@ -41,51 +55,76 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: { comment: Comment; o
   };
 
   return (
-    <View style={{ marginLeft: depth > 0 ? 16 : 0 }} className="mb-3">
-      <View className="rounded-card border border-border-hairline bg-surface p-3.5">
-        <View className="mb-2.5 flex-row items-center gap-2.5">
-          <Avatar uri={comment.user.avatar_url} size="sm" />
-          <View>
-            <Text className="font-sans-semibold text-foreground">{comment.user.name}</Text>
-            <Text className="font-mono text-xs text-foreground-subtle">
-              {new Date(comment.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}
-            </Text>
-          </View>
-        </View>
-
-        <Text className="mb-2.5 font-sans text-[15px] text-foreground">{comment.body}</Text>
-
-        <View className="flex-row items-center gap-4 border-t border-border-hairline pt-2.5">
-          <Pressable onPress={() => setReplying((r) => !r)}>
-            <Text className="font-sans-medium text-sm text-foreground-muted">{replying ? "Cancel" : "Reply"}</Text>
-          </Pressable>
-          {replies.length > 0 && (
-            <Pressable onPress={() => setShowReplies((s) => !s)}>
-              <Text className="font-sans-medium text-sm text-foreground-muted">
-                {replies.length} {replies.length === 1 ? "reply" : "replies"}
-              </Text>
-            </Pressable>
-          )}
-        </View>
-      </View>
-
-      {replying && (
-        <View className="ml-3 mt-2 rounded-control border border-border-hairline bg-surface-sunken p-3">
-          <TextInput
-            value={replyBody}
-            onChangeText={setReplyBody}
-            placeholder="Write your reply…"
-            placeholderTextColor="#8b91a0"
-            multiline
-            className="min-h-[60px] rounded-control border border-border-hairline bg-surface p-2.5 font-sans text-sm text-foreground"
-          />
-          <View className="mt-2 flex-row justify-end">
-            <Button label={sending ? "Posting…" : "Post reply"} size="sm" variant="accent" loading={sending} onPress={submitReply} />
-          </View>
+    <View className="flex-row">
+      {/* Thread connector — a quiet vertical line tying a nested reply back
+          to its parent, instead of just indenting with a bare margin. */}
+      {depth > 0 && (
+        <View className="mr-2.5 w-4 items-center">
+          <View className="w-px flex-1 bg-border-hairline" />
         </View>
       )}
 
-      {showReplies && replies.map((r) => <CommentItem key={r.id} comment={r} onReplyAdded={onReplyAdded} depth={depth + 1} />)}
+      <View className="mb-3.5 flex-1">
+        <View className="flex-row items-start gap-2.5">
+          <Avatar uri={comment.user.avatar_url} size={depth > 0 ? "xs" : "sm"} />
+          <View className="min-w-0 flex-1">
+            <View className="rounded-card rounded-tl-sm border border-border-hairline bg-surface px-3.5 py-2.5">
+              <View className="mb-1 flex-row items-baseline gap-2">
+                <Text className="font-sans-semibold text-[15px] text-foreground">{comment.user.name}</Text>
+                <Text className="font-mono text-[11px] text-foreground-subtle">
+                  {new Date(comment.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}
+                </Text>
+              </View>
+              {comment.body && <Text className="font-sans text-[15px] leading-relaxed text-foreground">{comment.body}</Text>}
+            </View>
+
+            {media && (
+              <Image
+                source={{ uri: media }}
+                style={{ width: "100%", height: 160, borderRadius: 12, marginTop: 6 }}
+                contentFit="cover"
+              />
+            )}
+
+            <View className="mt-1.5 flex-row items-center gap-4 px-1">
+              <Pressable onPress={() => setReplying((r) => !r)} className="flex-row items-center gap-1">
+                <Feather name="corner-up-left" size={13} color="#8b91a0" />
+                <Text className="font-sans-medium text-xs text-foreground-muted">{replying ? "Cancel" : "Reply"}</Text>
+              </Pressable>
+              {replies.length > 0 && (
+                <Pressable onPress={() => setShowReplies((s) => !s)} className="flex-row items-center gap-1">
+                  <Feather name={showReplies ? "chevron-up" : "chevron-down"} size={13} color="#8b91a0" />
+                  <Text className="font-sans-medium text-xs text-foreground-muted">
+                    {replies.length} {replies.length === 1 ? "reply" : "replies"}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
+            {replying && (
+              <View className="mt-2.5">
+                <PerceiveComposer
+                  value={replyBody}
+                  onChangeText={setReplyBody}
+                  onSubmit={submitReply}
+                  loading={sending}
+                  compact
+                  autoFocus
+                  placeholder="Write your reply…"
+                />
+              </View>
+            )}
+
+            {showReplies && replies.length > 0 && (
+              <View className="mt-3">
+                {replies.map((r) => (
+                  <CommentItem key={r.id} comment={r} onReplyAdded={onReplyAdded} depth={depth + 1} />
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -110,6 +149,7 @@ export default function PerceptionDetailScreen() {
       form.append("body", commentBody.trim());
       const created = await apiFetch<Comment>(`/api/perceptions/${id}/comments`, { method: "POST", body: form, json: false });
       setComments((curr) => [{ ...created, replies: [] }, ...curr]);
+      playPostSuccessSound();
       setCommentBody("");
     } finally {
       setPosting(false);
@@ -147,7 +187,7 @@ export default function PerceptionDetailScreen() {
   return (
     <KeyboardAvoidingView className="flex-1 bg-background" style={{ paddingTop: insets.top }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View className="flex-row items-center gap-2 px-4 py-3">
-        <Pressable onPress={() => router.back()} className="rounded-control p-1">
+        <Pressable onPress={() => router.back()} className="rounded-control p-1" hitSlop={8}>
           <Feather name="chevron-left" size={22} color="#8b91a0" />
         </Pressable>
         <Text className="font-sans-semibold text-lg text-foreground">Perception</Text>
@@ -177,21 +217,14 @@ export default function PerceptionDetailScreen() {
           }
         />
 
-        <Text className="mb-3 mt-6 font-sans-semibold text-lg text-foreground">Perceive</Text>
+        <View className="mb-3 mt-6 flex-row items-center gap-1.5">
+          <VantageMark size={16} color="#f2a33c" />
+          <Text className="font-sans-semibold text-lg text-foreground">Perceive</Text>
+        </View>
 
         {token ? (
-          <View className="mb-5 rounded-card border border-border-hairline bg-surface p-3.5">
-            <TextInput
-              value={commentBody}
-              onChangeText={setCommentBody}
-              placeholder="What's your take on this?"
-              placeholderTextColor="#8b91a0"
-              multiline
-              className="min-h-[80px] rounded-control border border-border-hairline bg-surface-sunken p-2.5 font-sans text-sm text-foreground"
-            />
-            <View className="mt-2.5 flex-row justify-end">
-              <Button label={posting ? "Posting…" : "Share perception"} variant="accent" size="sm" loading={posting} onPress={submitComment} />
-            </View>
+          <View className="mb-5">
+            <PerceiveComposer value={commentBody} onChangeText={setCommentBody} onSubmit={submitComment} loading={posting} />
           </View>
         ) : (
           <Pressable

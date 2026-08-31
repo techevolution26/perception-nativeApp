@@ -1,6 +1,7 @@
 // components/ui/Avatar.tsx
 import { Image } from "expo-image";
 import { View } from "react-native";
+import { resolveMediaUrl } from "../../lib/api";
 
 const SIZES = { xs: 24, sm: 32, md: 40, lg: 56, xl: 88 } as const;
 type AvatarSize = keyof typeof SIZES | number;
@@ -15,13 +16,14 @@ interface AvatarProps {
 
 export default function Avatar({ uri, size = "md", className = "" }: AvatarProps) {
   const px = typeof size === "number" ? size : SIZES[size];
+  const resolved = resolveMediaUrl(uri);
   return (
     <View
       className={`overflow-hidden rounded-full bg-surface-sunken ${className}`}
       style={{ width: px, height: px }}
     >
       <Image
-        source={uri ? { uri } : DEFAULT_AVATAR}
+        source={resolved ? { uri: resolved } : DEFAULT_AVATAR}
         style={{ width: px, height: px }}
         contentFit="cover"
         transition={150}
