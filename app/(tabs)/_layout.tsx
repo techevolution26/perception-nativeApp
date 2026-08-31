@@ -10,10 +10,8 @@ import {
   Platform,
   Animated,
   Keyboard,
-  InteractionManager,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 
@@ -62,6 +60,15 @@ export const GlobalScrollTracker = {
   emit(y: number) {
     this.listeners.forEach((fn) => fn(y));
   },
+};
+
+const runWhenIdle = (callback: () => void) => {
+  if (typeof globalThis.requestIdleCallback === "function") {
+    globalThis.requestIdleCallback(callback);
+    return;
+  }
+
+  setTimeout(callback, 0);
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -472,6 +479,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             overflow: "hidden",
             borderWidth: 1,
             borderColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)",
+            backgroundColor: isDark
+              ? "rgba(20,21,26,0.82)"
+              : "rgba(255,255,255,0.82)",
             shadowColor: "#000",
             shadowOffset: {
               width: 0,
@@ -482,184 +492,170 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             elevation: 8,
           }}
         >
-          <BlurView
-            intensity={75}
-            tint={isDark ? "dark" : "light"}
-            experimentalBlurMethod={
-              Platform.OS === "android" ? "dimezisBlurView" : undefined
-            }
+          <View
+            className="flex-row items-center justify-center"
             style={{
-              borderRadius: 999,
-              overflow: "hidden",
+              paddingHorizontal: 6,
+              paddingVertical: 6,
+              gap: 2,
             }}
           >
-            <View
-              className="flex-row items-center justify-center"
-              style={{
-                paddingHorizontal: 6,
-                paddingVertical: 6,
-                gap: 2,
-                backgroundColor: isDark
-                  ? "rgba(20,21,26,0.72)"
-                  : "rgba(255,255,255,0.72)",
-              }}
-            >
-              {routes.map((route) => {
-                const isFocused =
-                  state.index ===
-                  state.routes.findIndex((item) => item.key === route.key);
+            {routes.map((route) => {
+              const isFocused =
+                state.index ===
+                state.routes.findIndex((item) => item.key === route.key);
 
-                const iconMap: Record<string, keyof typeof Feather.glyphMap> = {
-                  index: "home",
-                  "new-perception-tab": "plus",
-                  notifications: "bell",
-                  "messages/index": "message-circle",
-                };
+              const iconMap: Record<string, keyof typeof Feather.glyphMap> = {
+                index: "home",
+                "new-perception-tab": "plus",
+                notifications: "bell",
+                "messages/index": "message-circle",
+              };
 
-                const iconName = iconMap[route.name];
+              const iconName = iconMap[route.name];
 
-                if (!iconName) {
-                  return null;
-                }
+              if (!iconName) {
+                return null;
+              }
 
-                const accessibilityLabel =
-                  route.name === "index"
-                    ? "Home"
-                    : route.name === "new-perception-tab"
-                      ? "New perception"
-                      : route.name === "notifications"
-                        ? "Notifications"
-                        : "Messages";
-                        
-                const onPress = () => {
-                  if (GUARDED_ROUTES.has(route.name)) {
-                    guardAction(() => {
-                      if (route.name === "new-perception-tab") {
-                        flashVisible(3000);
+              const accessibilityLabel =
+                route.name === "index"
+                  ? "Home"
+                  : route.name === "new-perception-tab"
+                    ? "New perception"
+                    : route.name === "notifications"
+                      ? "Notifications"
+                      : "Messages";
 
-                        InteractionManager.runAfterInteractions(() => {
-                          router.push("/new-perception");
-                        });
+              const onPress = () => {
+                if (GUARDED_ROUTES.has(route.name)) {
+                  guardAction(() => {
+                    if (route.name === "new-perception-tab") {
+                      flashVisible(3000);
 
-                        return;
-                      }
-
-                      if (route.name === "notifications") {
-                        flashVisible(2600);
-                      }
-
-                      const event = navigation.emit({
-                        type: "tabPress",
-                        target: route.key,
-                        canPreventDefault: true,
+                      runWhenIdle(() => {
+                        router.push("/new-perception");
                       });
 
-                      if (!isFocused && !event.defaultPrevented) {
-                        navigation.navigate(route.name);
-                      }
+                      return;
+                    }
+
+                    if (route.name === "notifications") {
+                      flashVisible(2600);
+                    }
+
+                    const event = navigation.emit({
+                      type: "tabPress",
+                      target: route.key,
+                      canPreventDefault: true,
                     });
 
-                    return;
-                  }
-
-                  const event = navigation.emit({
-                    type: "tabPress",
-                    target: route.key,
-                    canPreventDefault: true,
+                    if (!isFocused && !event.defaultPrevented) {
+                      navigation.navigate(route.name);
+                    }
                   });
 
-                  if (!isFocused && !event.defaultPrevented) {
-                    navigation.navigate(route.name);
-                  }
-                };
+                  return;
+                }
 
-                return (
-                  <Pressable
-                    key={route.key}
-                    onPress={onPress}
-                    className="items-center justify-center rounded-full active:bg-surface-hover/30"
+                const event = navigation.emit({
+                  type: "tabPress",
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+
+                if (!isFocused && !event.defaultPrevented) {
+                  navigation.navigate(route.name);
+                }
+              };
+
+              return (
+                <Pressable
+                  key={route.key}
+                  onPress={onPress}
+                  className="items-center justify-center rounded-full active:bg-surface-hover/30"
+                  style={{
+                    width: 44,
+                    height: 44,
+                  }}
+                  accessibilityLabel={accessibilityLabel}
+                  accessibilityRole="button"
+                >
+                  <View
+                    className="items-center justify-center"
                     style={{
                       width: 44,
                       height: 44,
                     }}
-                    accessibilityLabel={accessibilityLabel}
-                    accessibilityRole="button"
                   >
-                    <View
-                      className="items-center justify-center"
-                      style={{
-                        width: 44,
-                        height: 44,
-                      }}
-                    >
-                      <Feather
-                        name={iconName}
-                        size={20}
-                        color={isFocused ? activeColor : iconColor}
-                      />
+                    <Feather
+                      name={iconName}
+                      size={20}
+                      color={isFocused ? activeColor : iconColor}
+                    />
 
-                      {route.name === "notifications" && unread > 0 && (
-                        <View
+                    {/* Notifications badge */}
+                    {route.name === "notifications" && unread > 0 && (
+                      <View
+                        style={{
+                          position: "absolute",
+                          right: 4,
+                          top: 4,
+                          minWidth: 16,
+                          height: 16,
+                          borderRadius: 999,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          paddingHorizontal: 4,
+                          backgroundColor: isDark ? "#f7f7f8" : "#14151a",
+                        }}
+                      >
+                        <Text
                           style={{
-                            position: "absolute",
-                            right: 4,
-                            top: 4,
-                            minWidth: 16,
-                            height: 16,
-                            borderRadius: 999,
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingHorizontal: 4,
-                            backgroundColor: isDark ? "#f7f7f8" : "#14151a",
+                            fontSize: 9,
+                            lineHeight: 11,
+                            fontWeight: "700",
+                            color: isDark ? "#14151a" : "#f7f7f8",
                           }}
                         >
-                          <Text
-                            style={{
-                              fontSize: 9,
-                              lineHeight: 11,
-                              fontWeight: "700",
-                              color: isDark ? "#14151a" : "#f7f7f8",
-                            }}
-                          >
-                            {unread > 9 ? "9+" : unread}
-                          </Text>
-                        </View>
-                      )}
+                          {unread > 9 ? "9+" : unread}
+                        </Text>
+                      </View>
+                    )}
 
-                      {route.name === "messages/index" &&
-                        unreadMessages > 0 && (
-                          <View
-                            style={{
-                              position: "absolute",
-                              right: 4,
-                              top: 4,
-                              minWidth: 16,
-                              height: 16,
-                              borderRadius: 999,
-                              alignItems: "center",
-                              justifyContent: "center",
-                              paddingHorizontal: 4,
-                              backgroundColor: isDark ? "#f7f7f8" : "#14151a",
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 9,
-                                lineHeight: 11,
-                                fontWeight: "700",
-                                color: isDark ? "#14151a" : "#f7f7f8",
-                              }}
-                            >
-                              {unreadMessages > 9 ? "9+" : unreadMessages}
-                            </Text>
-                          </View>
-                        )}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </BlurView>
+                    {/* Messages badge */}
+                    {route.name === "messages/index" && unreadMessages > 0 && (
+                      <View
+                        style={{
+                          position: "absolute",
+                          right: 4,
+                          top: 4,
+                          minWidth: 16,
+                          height: 16,
+                          borderRadius: 999,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          paddingHorizontal: 4,
+                          backgroundColor: isDark ? "#f7f7f8" : "#14151a",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 9,
+                            lineHeight: 11,
+                            fontWeight: "700",
+                            color: isDark ? "#14151a" : "#f7f7f8",
+                          }}
+                        >
+                          {unreadMessages > 9 ? "9+" : unreadMessages}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </Animated.View>
 
