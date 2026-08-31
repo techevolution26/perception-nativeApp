@@ -16,10 +16,14 @@ import {
   Geist_600SemiBold,
   Geist_700Bold,
 } from "@expo-google-fonts/geist";
-import { GeistMono_400Regular, GeistMono_500Medium } from "@expo-google-fonts/geist-mono";
+import {
+  GeistMono_400Regular,
+  GeistMono_500Medium,
+} from "@expo-google-fonts/geist-mono";
 import { EchoProvider } from "../contexts/EchoContext";
 import useAuthStore from "../store/useAuthStore";
 import useSettingsStore from "../store/useSettingsStore";
+import ThemeProvider from "../components/ui/ThemeProvider";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -71,12 +75,20 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <EchoProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="new-perception" options={{ presentation: "modal" }} />
-              <Stack.Screen name="perceptions/[id]/edit" options={{ presentation: "modal" }} />
-            </Stack>
+            <ThemeProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen
+                  name="new-perception"
+                  options={{ presentation: "modal" }}
+                />
+                <Stack.Screen
+                  name="perceptions/[id]/edit"
+                  options={{ presentation: "modal" }}
+                />
+              </Stack>
+            </ThemeProvider>
           </EchoProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
