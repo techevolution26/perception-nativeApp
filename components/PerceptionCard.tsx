@@ -1,4 +1,5 @@
 // components/PerceptionCard.tsx
+
 import { useState } from "react";
 import { View, Text, Pressable, Share, Alert } from "react-native";
 import { Image } from "expo-image";
@@ -10,9 +11,11 @@ import * as Clipboard from "expo-clipboard";
 import { format, isThisYear } from "date-fns";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useColorScheme } from "nativewind";
+
 import Avatar from "./ui/Avatar";
 import Card from "./ui/Card";
 import ActionMenu, { type ActionMenuItem } from "./ui/ActionMenu";
+
 import { resolveMediaUrl } from "../lib/api";
 import type { Perception } from "../types/models";
 
@@ -24,40 +27,97 @@ interface PerceptionCardProps {
   showOwnerActions?: boolean;
   isOwner?: boolean;
   detailView?: boolean;
-  index?: number; // for staggered entrance animation in a list
+  index?: number;
 }
 
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
+
   const sec = Math.floor((now.getTime() - date.getTime()) / 1000);
+
   if (sec < 60) return "Just now";
   if (sec < 3600) return `${Math.floor(sec / 60)}m`;
   if (sec < 86400) return `${Math.floor(sec / 3600)}h`;
   if (sec < 604800) return `${Math.floor(sec / 86400)}d`;
+
   return isThisYear(date) ? format(date, "d MMM") : format(date, "d MMM yy");
 }
 
-// If a public web deployment URL is configured, share links point there
-// (the same perception, viewable by anyone) — otherwise falls back to a
-// share of the text itself, still useful without a canonical URL to hand out.
+// Public web deployment used for canonical share links.
 const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL;
 
 function perceptionShareUrl(id: number): string | null {
-  return WEB_URL ? `${WEB_URL.replace(/\/$/, "")}/perceptions/${id}` : null;
+  if (!WEB_URL) {
+    return null;
+  }
+
+  return `${WEB_URL.replace(/\/$/, "")}/perceptions/${id}`;
 }
 
-function MediaPreview({ uri: rawUri }: { uri: string }) {
-  const uri = resolveMediaUrl(rawUri) ?? rawUri;
-  const isVideo = /\.(mp4|webm|ogg)$/i.test(uri);
-  const player = useVideoPlayer(isVideo ? uri : "", (p) => {
-    p.loop = false;
+function isVideoUrl(uri: string): boolean {
+  return /\.(mp4|mov|m4v|webm|ogg|avi|mkv)(?:[?#].*)?$/i.test(uri);
+}
+
+/**
+ * Native video renderer.
+ *
+ * Only mounted for actual video URLs. This prevents expo-video from being
+ * instantiated for image media.
+ */
+function VideoMediaPreview({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (instance) => {
+    instance.loop = false;
   });
 
-  if (isVideo) {
-    return <VideoView player={player} style={{ width: "100%", height: 220 }} nativeControls contentFit="cover" />;
+  return (
+    <View className="overflow-hidden bg-black">
+      <VideoView
+        player={player}
+        style={{
+          width: "100%",
+          height: 220,
+        }}
+        contentFit="cover"
+        nativeControls
+      />
+    </View>
+  );
+}
+
+/**
+ * Native image renderer.
+ */
+function ImageMediaPreview({ uri }: { uri: string }) {
+  return (
+    <Image
+      source={{ uri }}
+      style={{
+        width: "100%",
+        height: 220,
+      }}
+      contentFit="cover"
+      transition={150}
+    />
+  );
+}
+
+/**
+ * Resolve backend-relative media URLs before passing them to native
+ * image/video components.
+ */
+function MediaPreview({ uri: rawUri }: { uri: string }) {
+  const uri = resolveMediaUrl(rawUri);
+
+  if (!uri) {
+    return null;
   }
-  return <Image source={{ uri }} style={{ width: "100%", height: 220 }} contentFit="cover" transition={150} />;
+
+  if (isVideoUrl(uri)) {
+    return <VideoMediaPreview uri={uri} />;
+  }
+
+  return <ImageMediaPreview uri={uri} />;
 }
 
 export default function PerceptionCard({
@@ -70,129 +130,286 @@ export default function PerceptionCard({
   detailView = false,
   index = 0,
 }: PerceptionCardProps) {
-  const { id, user, body, media_url, likes_count, comments_count, liked_by_user, topic, created_at } = perception;
+  const {
+    id,
+    user,
+    body,
+    media_url,
+    likes_count,
+    comments_count,
+    liked_by_user,
+    topic,
+    created_at,
+  } = perception;
+
   const { colorScheme } = useColorScheme();
+
   const surfaceColor = colorScheme === "dark" ? "#14151a" : "#ffffff";
+
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Long posts get clamped in the feed (not on the detail page) so one huge
-  // perception can't dominate the whole scroll — matches the web app's
-  // line-clamp-10 + fade-mask treatment for anything over 140 characters.
+  /*
+   * Feed cards clamp long perceptions.
+   *
+   * Detail pages always display the complete perception.
+   */
   const shouldClamp = !detailView && body.length > 140;
 
   const goToDetail = () => {
-    if (!detailView) router.push(`/perceptions/${id}`);
+    if (detailView) {
+      return;
+    }
+
+    router.push(`/perceptions/${id}`);
   };
 
   const handleShare = async () => {
     const url = perceptionShareUrl(id);
+
+    const preview = body.length > 140 ? `${body.slice(0, 140)}…` : body;
+
     try {
       await Share.share(
         url
-          ? { message: `"${body.slice(0, 140)}${body.length > 140 ? "…" : ""}" — ${user.name} on Perception\n${url}`, url }
-          : { message: `"${body.slice(0, 140)}${body.length > 140 ? "…" : ""}" — ${user.name} on Perception` }
+          ? {
+              message: `"${preview}" — ${user.name} on Perception\n${url}`,
+              url,
+            }
+          : {
+              message: `"${preview}" — ${user.name} on Perception`,
+            },
       );
     } catch {
-      // user dismissed the share sheet — nothing to do
+      // User dismissed the native share sheet.
     }
   };
 
   const handleCopyLink = async () => {
-    const url = perceptionShareUrl(id) ?? body;
-    await Clipboard.setStringAsync(url);
-    Alert.alert(perceptionShareUrl(id) ? "Link copied" : "Text copied");
+    const url = perceptionShareUrl(id);
+
+    await Clipboard.setStringAsync(url ?? body);
+
+    Alert.alert(url ? "Link copied" : "Text copied");
+  };
+
+  const handleEdit = () => {
+    setMenuOpen(false);
+    onEdit?.(perception);
+  };
+
+  const handleDelete = () => {
+    setMenuOpen(false);
+    onDelete?.(perception);
   };
 
   const menuItems: ActionMenuItem[] = [
-    { label: "Share", icon: "share", onPress: handleShare },
-    { label: perceptionShareUrl(id) ? "Copy link" : "Copy text", icon: "link", onPress: handleCopyLink },
+    {
+      label: "Share",
+      icon: "share",
+      onPress: handleShare,
+    },
+    {
+      label: perceptionShareUrl(id) ? "Copy link" : "Copy text",
+      icon: "link",
+      onPress: handleCopyLink,
+    },
+
     ...(showOwnerActions && isOwner
       ? [
-          { label: "Edit", icon: "edit-2" as const, onPress: () => onEdit?.(perception) },
-          { label: "Delete", icon: "trash-2" as const, onPress: () => onDelete?.(perception), destructive: true },
+          {
+            label: "Edit",
+            icon: "edit-2" as const,
+            onPress: handleEdit,
+          },
+          {
+            label: "Delete",
+            icon: "trash-2" as const,
+            onPress: handleDelete,
+            destructive: true,
+          },
         ]
       : []),
   ];
 
+  const handleLikePress = (event: { stopPropagation?: () => void }) => {
+    event.stopPropagation?.();
+
+    onLike?.(id);
+  };
+
+  const handleCommentsPress = (event: { stopPropagation?: () => void }) => {
+    event.stopPropagation?.();
+
+    if (!detailView) {
+      router.push(`/perceptions/${id}`);
+    }
+  };
+
+  const handleMorePress = (event: { stopPropagation?: () => void }) => {
+    event.stopPropagation?.();
+
+    setMenuOpen(true);
+  };
+
   return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 60).duration(320)}>
+    <Animated.View
+      entering={FadeInDown.delay(Math.min(index, 8) * 60).duration(320)}
+    >
       <Card className="overflow-hidden">
-        <Pressable onPress={goToDetail} disabled={detailView}>
-          <View className="flex-row items-start gap-3 px-3.5 pt-3.5">
-            <Avatar uri={user.avatar_url} size="md" />
-            <View className="min-w-0 flex-1">
-              <View className="flex-row items-start justify-between gap-2">
-                <View className="min-w-0 flex-1">
-                  <Text numberOfLines={1} className="font-sans-medium text-[15px] text-foreground">
-                    {user.name}
-                  </Text>
-                  {topic?.name && (
-                    <Text numberOfLines={1} className="font-sans text-xs text-foreground-subtle">
-                      a view on <Text className="font-sans-medium text-foreground-muted">{topic.name}</Text>
-                    </Text>
-                  )}
-                </View>
-                <Text className="ml-2 font-mono text-[11px] text-foreground-subtle">{formatRelativeTime(created_at)}</Text>
-              </View>
+        {/* ------------------------------------------------------------- */}
+        {/* Main navigation area                                         */}
+        {/* ------------------------------------------------------------- */}
+
+        <Pressable
+          onPress={goToDetail}
+          disabled={detailView}
+          accessibilityRole={detailView ? undefined : "button"}
+        >
+          {/* ----------------------------------------------------------- */}
+          {/* Header                                                      */}
+          {/* ----------------------------------------------------------- */}
+
+          <View className="flex-row items-start px-3.5 pt-3.5">
+            {/* Avatar */}
+            <View className="mr-3">
+              <Avatar uri={user.avatar_url} size="md" />
             </View>
 
-            <Pressable
-              onPress={(e) => {
-                e.stopPropagation();
-                setMenuOpen(true);
-              }}
-              className="rounded-control p-1.5"
-              hitSlop={8}
-              accessibilityLabel="More actions"
-            >
-              <Feather name="more-horizontal" size={19} color="#8b91a0" />
-            </Pressable>
+            {/* Flexible identity column */}
+            <View className="min-w-0 flex-1">
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                className="font-sans-medium text-[15px] text-foreground"
+              >
+                {user.name}
+              </Text>
+
+              {topic?.name && (
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  className="mt-0.5 font-sans text-xs text-foreground-subtle"
+                >
+                  a view on{" "}
+                  <Text className="font-sans-medium text-foreground-muted">
+                    {topic.name}
+                  </Text>
+                </Text>
+              )}
+            </View>
+
+            {/* --------------------------------------------------------- */}
+            {/* Timestamp + More                                         */}
+            {/* --------------------------------------------------------- */}
+
+            <View className="ml-2 flex-row items-center">
+              <Text className="mr-1.5 font-mono text-[10px] text-foreground-subtle">
+                {formatRelativeTime(created_at)}
+              </Text>
+
+              <Pressable
+                onPress={handleMorePress}
+                className="rounded-control p-1.5"
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="More actions"
+              >
+                <Feather name="more-horizontal" size={19} color="#8b91a0" />
+              </Pressable>
+            </View>
           </View>
 
-          <View className="relative px-3.5 pb-2 pt-2">
+          {/* ----------------------------------------------------------- */}
+          {/* Body                                                        */}
+          {/* ----------------------------------------------------------- */}
+
+          <View className="relative px-3.5 pb-2 pt-2.5">
             <Text
               numberOfLines={shouldClamp ? 10 : undefined}
               className="font-sans text-[15px] leading-relaxed text-foreground"
             >
               {body}
             </Text>
+
             {shouldClamp && (
               <LinearGradient
                 colors={["transparent", surfaceColor]}
                 pointerEvents="none"
-                style={{ position: "absolute", bottom: 8, left: 0, right: 0, height: 24 }}
+                style={{
+                  position: "absolute",
+                  bottom: 8,
+                  left: 0,
+                  right: 0,
+                  height: 28,
+                }}
               />
             )}
           </View>
 
+          {/* ----------------------------------------------------------- */}
+          {/* Media                                                       */}
+          {/* ----------------------------------------------------------- */}
+
           {media_url && <MediaPreview uri={media_url} />}
         </Pressable>
 
+        {/* ------------------------------------------------------------- */}
+        {/* Action bar                                                    */}
+        {/* ------------------------------------------------------------- */}
+
         <View className="mt-auto flex-row items-center gap-1 border-t border-border-hairline px-2 py-1.5">
           <Pressable
-            onPress={() => onLike?.(id)}
+            onPress={handleLikePress}
             className="flex-row items-center gap-1.5 rounded-control px-2.5 py-2"
             hitSlop={6}
-            accessibilityLabel={liked_by_user ? "Unlike" : "Like"}
+            accessibilityRole="button"
+            accessibilityLabel={
+              liked_by_user ? "Unlike perception" : "Like perception"
+            }
+            accessibilityState={{
+              selected: liked_by_user,
+            }}
           >
-            <Feather name="heart" size={17} color={liked_by_user ? "#f2a33c" : "#666c7a"} />
-            <Text className="font-mono text-xs text-foreground-muted">{likes_count}</Text>
+            <Feather
+              name="heart"
+              size={17}
+              color={liked_by_user ? "#f2a33c" : "#666c7a"}
+            />
+
+            <Text className="font-mono text-xs text-foreground-muted">
+              {likes_count}
+            </Text>
           </Pressable>
 
           <Pressable
-            onPress={goToDetail}
+            onPress={handleCommentsPress}
             disabled={detailView}
-            className={`flex-row items-center gap-1.5 rounded-control px-2.5 py-2 ${detailView ? "opacity-40" : ""}`}
+            className={`flex-row items-center gap-1.5 rounded-control px-2.5 py-2 ${
+              detailView ? "opacity-40" : ""
+            }`}
             hitSlop={6}
+            accessibilityRole="button"
             accessibilityLabel="View comments"
           >
             <Feather name="message-circle" size={17} color="#666c7a" />
-            <Text className="font-mono text-xs text-foreground-muted">{comments_count}</Text>
+
+            <Text className="font-mono text-xs text-foreground-muted">
+              {comments_count}
+            </Text>
           </Pressable>
         </View>
       </Card>
 
-      <ActionMenu visible={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} />
+      {/* --------------------------------------------------------------- */}
+      {/* Action menu                                                     */}
+      {/* --------------------------------------------------------------- */}
+
+      <ActionMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={menuItems}
+      />
     </Animated.View>
   );
 }

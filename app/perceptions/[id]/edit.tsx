@@ -14,6 +14,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
+import { File } from "expo-file-system";
 
 import Button from "../../../components/ui/Button";
 import useTopics from "../../../hooks/useTopics";
@@ -23,22 +24,6 @@ import type { Perception } from "../../../types/models";
 
 type MediaAsset = ImagePicker.ImagePickerAsset;
 
-function appendMedia(form: FormData, field: string, media: MediaAsset) {
-  const extension =
-    media.fileName?.split(".").pop() ||
-    media.uri.split(".").pop() ||
-    (media.type === "video" ? "mp4" : "jpg");
-
-  const mimeType =
-    media.mimeType || (media.type === "video" ? "video/mp4" : "image/jpeg");
-
-  form.append(field, {
-    uri: media.uri,
-    name: media.fileName || `upload.${extension}`,
-    type: mimeType,
-  } as unknown as Blob);
-}
-
 async function pickMedia(): Promise<MediaAsset | null> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -47,6 +32,7 @@ async function pickMedia(): Promise<MediaAsset | null> {
       "Permission needed",
       "Allow photo library access to attach a photo or video.",
     );
+
     return null;
   }
 
@@ -79,13 +65,13 @@ export default function EditPerceptionScreen() {
   const [body, setBody] = useState("");
   const [topicId, setTopicId] = useState<number | null>(null);
 
-  // Existing media URL from the backend.
+  // Existing media returned by the backend.
   const [existingMedia, setExistingMedia] = useState<string | null>(null);
 
-  // Newly selected media.
+  // Newly selected local media.
   const [newMedia, setNewMedia] = useState<MediaAsset | null>(null);
 
-  // Whether the user explicitly wants the existing media removed.
+  // Explicitly remove the existing media on save.
   const [removeMedia, setRemoveMedia] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -105,8 +91,8 @@ export default function EditPerceptionScreen() {
         setBody(result.body);
         setTopicId(result.topic?.id ?? null);
 
-        // IMPORTANT:
-        // media_url is optional, therefore normalize undefined -> null.
+        // media_url is optional.
+        // Normalize undefined -> null for local state.
         setExistingMedia(result.media_url ?? null);
       } catch (err) {
         if (!mounted) return;
@@ -147,11 +133,26 @@ export default function EditPerceptionScreen() {
   };
 
   const handleRemoveMedia = () => {
-    setNewMedia(null);
+    /*
+     * If the user is looking at newly selected media, simply discard
+     * that selection. The original backend media remains untouched.
+     */
+    if (newMedia) {
+      setNewMedia(null);
+      return;
+    }
 
+    /*
+     * If there is existing backend media, mark it for deletion.
+     * Nothing is actually deleted until Save is pressed.
+     */
     if (existingMedia) {
       setRemoveMedia(true);
     }
+  };
+
+  const handleUndoRemove = () => {
+    setRemoveMedia(false);
   };
 
   const handleSave = async () => {
@@ -176,10 +177,40 @@ export default function EditPerceptionScreen() {
       form.append("body", body.trim());
       form.append("topic_id", String(topicId));
 
+      /*
+       * IMPORTANT:
+       *
+       * Do NOT append:
+       *
+       * {
+       *   uri,
+       *   name,
+       *   type,
+       * }
+       *
+       * as a fake Blob.
+       *
+       * That is what caused:
+       *
+       * "Unsupported FormDataPart implementation"
+       *
+       * in this Expo environment.
+       *
+       * The working new-perception screen uses Expo's File API,
+       * so edit uses exactly the same mechanism.
+       */
       if (newMedia) {
-        appendMedia(form, "media", newMedia);
+        const file = new File(newMedia.uri);
+
+        form.append("media", file);
       }
 
+      /*
+       * Only tell the backend to remove media when there is no
+       * replacement being uploaded.
+       *
+       * If newMedia exists, replacement takes precedence.
+       */
       if (removeMedia && !newMedia) {
         form.append("remove_media", "true");
       }
@@ -211,6 +242,16 @@ export default function EditPerceptionScreen() {
     );
   }
 
+  /*
+   * Display priority:
+   *
+   * 1. Newly selected media
+   * 2. Existing backend media
+   * 3. Nothing
+   *
+   * If removeMedia is true and there is no replacement,
+   * don't display the existing media.
+   */
   const currentMedia =
     newMedia?.uri || (!removeMedia ? resolveMediaUrl(existingMedia) : null);
 
@@ -232,6 +273,7 @@ export default function EditPerceptionScreen() {
           onPress={() => router.back()}
           className="rounded-control p-1.5"
           hitSlop={8}
+          disabled={saving}
         >
           <Feather name="x" size={20} color="#8b91a0" />
         </Pressable>
@@ -256,6 +298,7 @@ export default function EditPerceptionScreen() {
           placeholderTextColor="#8b91a0"
           className="min-h-[130px] rounded-control border border-border-hairline bg-surface-sunken p-3 font-sans text-[15px] leading-6 text-foreground"
           textAlignVertical="top"
+          editable={!saving}
         />
 
         {/* Media */}
@@ -335,6 +378,27 @@ export default function EditPerceptionScreen() {
           </Pressable>
         )}
 
+        {/* Media removal state */}
+        {removeMedia && !newMedia && (
+          <View className="mt-4 flex-row items-center justify-between rounded-control border border-danger/20 bg-danger/5 px-3 py-2.5">
+            <View className="flex-1 flex-row items-center gap-2">
+              <Feather name="trash-2" size={14} color="#b94a48" />
+
+              <Text className="font-sans text-xs text-danger">
+                Media will be removed when you save.
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={handleUndoRemove}
+              disabled={saving}
+              className="ml-3 rounded-control px-2 py-1"
+            >
+              <Text className="font-sans-medium text-xs text-accent">Undo</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Topic */}
         <Text className="mb-2 mt-6 font-sans-medium text-xs uppercase tracking-wide text-foreground-subtle">
           Topic
@@ -348,6 +412,7 @@ export default function EditPerceptionScreen() {
               <Pressable
                 key={topic.id}
                 onPress={() => setTopicId(topic.id)}
+                disabled={saving}
                 className={`rounded-control border px-3 py-2 ${
                   selected
                     ? "border-accent/60 bg-accent-soft"
@@ -365,26 +430,6 @@ export default function EditPerceptionScreen() {
             );
           })}
         </View>
-
-        {/* Media removal state */}
-        {removeMedia && !newMedia && (
-          <View className="mt-4 flex-row items-center justify-between rounded-control border border-danger/20 bg-danger/5 px-3 py-2.5">
-            <View className="flex-1 flex-row items-center gap-2">
-              <Feather name="trash-2" size={14} color="#b94a48" />
-
-              <Text className="font-sans text-xs text-danger">
-                Media will be removed when you save.
-              </Text>
-            </View>
-
-            <Pressable
-              onPress={() => setRemoveMedia(false)}
-              className="ml-3 rounded-control px-2 py-1"
-            >
-              <Text className="font-sans-medium text-xs text-accent">Undo</Text>
-            </Pressable>
-          </View>
-        )}
       </ScrollView>
 
       {/* Footer */}

@@ -17,6 +17,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { File } from "expo-file-system";
 
 import PerceptionCard from "../../components/PerceptionCard";
 import PerceiveComposer from "../../components/PerceiveComposer";
@@ -28,7 +29,8 @@ import { usePerceptionDetail } from "../../hooks/usePerceptionDetail";
 import useLikeToggle from "../../hooks/useLikeToggle";
 import useGuardAction from "../../hooks/useGuardAction";
 import useAuthStore from "../../store/useAuthStore";
-import { apiFetch, resolveMediaUrl } from "../../lib/api";
+import { API_BASE, apiFetch, resolveMediaUrl } from "../../lib/api";
+import { getToken } from "../../lib/storage";
 import { playPostSuccessSound } from "../../lib/sound";
 
 import type { Comment } from "../../types/models";
@@ -51,39 +53,15 @@ interface CommentComposerProps {
   placeholder?: string;
 }
 
-/**
- * We intentionally cap visual indentation.
- *
- * Deep discussion trees should preserve hierarchy without consuming the
- * entire horizontal width of a phone screen.
- *
- * Typography remains consistent at every depth. Deeper levels are made
- * visually quieter through indentation, thread rails and surface treatment
- * rather than progressively smaller text.
- */
 const MAX_VISUAL_DEPTH = 2;
 const INDENT_PER_LEVEL = 18;
 
 /**
- * React Native's FormData implementation expects the file part to use
- * { uri, name, type }. Do not use new File(uri) here.
+ * Pick a photo or video from the device library.
+ *
+ * This uses the same media picker configuration as the working
+ * NewPerception screen.
  */
-function appendMedia(form: FormData, field: string, media: MediaAsset) {
-  const extension =
-    media.fileName?.split(".").pop() ||
-    media.uri.split(".").pop() ||
-    (media.type === "video" ? "mp4" : "jpg");
-
-  const mimeType =
-    media.mimeType || (media.type === "video" ? "video/mp4" : "image/jpeg");
-
-  form.append(field, {
-    uri: media.uri,
-    name: media.fileName || `upload.${extension}`,
-    type: mimeType,
-  } as unknown as Blob);
-}
-
 async function pickCommentMedia(): Promise<MediaAsset | null> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -108,10 +86,77 @@ async function pickCommentMedia(): Promise<MediaAsset | null> {
 }
 
 /**
+ * Upload a comment/reply using the same native-safe multipart strategy
+ * already proven by NewPerceptionScreen.
+ *
+ * IMPORTANT:
+ * Do not construct the file as:
+ *
+ *   { uri, name, type } as Blob
+ *
+ * Expo SDK 57's File API gives us a real File object that can be appended
+ * directly to FormData.
+ */
+async function postCommentWithMedia(
+  path: string,
+  body: string,
+  media: MediaAsset | null,
+): Promise<Comment> {
+  const form = new FormData();
+
+  if (body.trim()) {
+    form.append("body", body.trim());
+  }
+
+  if (media) {
+    const file = new File(media.uri);
+    form.append("media", file);
+  }
+
+  const token = await getToken();
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: form,
+  });
+
+  const text = await res.text();
+
+  let data: unknown = null;
+
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  if (!res.ok) {
+    const detail =
+      typeof data === "object" &&
+      data !== null &&
+      "detail" in data &&
+      typeof data.detail === "string"
+        ? data.detail
+        : typeof data === "string"
+          ? data
+          : `Request failed with status ${res.status}`;
+
+    throw new Error(detail);
+  }
+
+  return data as Comment;
+}
+
+/**
  * Comment/reply composer.
  *
  * Uses the same PerceiveComposer text experience while adding a native-safe
- * media attachment path for React Native FormData.
+ * media attachment path for React Native.
  */
 function CommentComposer({
   value,
@@ -370,13 +415,6 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
 
   const isRoot = depth === 0;
   const visualDepth = Math.min(depth, MAX_VISUAL_DEPTH);
-
-  /**
-   * Each level gets some indentation, but once MAX_VISUAL_DEPTH is reached
-   * deeper descendants stay aligned rather than continuing to consume width.
-   */
-  const indent = visualDepth === 0 ? 0 : visualDepth * INDENT_PER_LEVEL;
-
   const isDeep = depth >= MAX_VISUAL_DEPTH;
 
   const submitReply = async (replyMedia: MediaAsset | null) => {
@@ -385,23 +423,10 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
     setSending(true);
 
     try {
-      const form = new FormData();
-
-      if (replyBody.trim()) {
-        form.append("body", replyBody.trim());
-      }
-
-      if (replyMedia) {
-        appendMedia(form, "media", replyMedia);
-      }
-
-      const created = await apiFetch<Comment>(
+      const created = await postCommentWithMedia(
         `/api/comments/${comment.id}/replies`,
-        {
-          method: "POST",
-          body: form,
-          json: false,
-        },
+        replyBody,
+        replyMedia,
       );
 
       onReplyAdded(comment.id, {
@@ -430,7 +455,7 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
       style={
         !isRoot
           ? {
-              marginLeft: INDENT_PER_LEVEL,
+              marginLeft: visualDepth * INDENT_PER_LEVEL,
             }
           : undefined
       }
@@ -615,23 +640,10 @@ export default function PerceptionDetailScreen() {
     setPosting(true);
 
     try {
-      const form = new FormData();
-
-      if (commentBody.trim()) {
-        form.append("body", commentBody.trim());
-      }
-
-      if (commentMedia) {
-        appendMedia(form, "media", commentMedia);
-      }
-
-      const created = await apiFetch<Comment>(
+      const created = await postCommentWithMedia(
         `/api/perceptions/${id}/comments`,
-        {
-          method: "POST",
-          body: form,
-          json: false,
-        },
+        commentBody,
+        commentMedia,
       );
 
       setComments((current) => [
