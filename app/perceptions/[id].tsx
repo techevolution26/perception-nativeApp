@@ -599,6 +599,19 @@ export default function PerceptionDetailScreen() {
   const [posting, setPosting] = useState(false);
   const [hydratingComments, setHydratingComments] = useState(false);
 
+  // Count one authenticated view per perception per day. The backend
+  // deduplicates the event, so revisiting a perception does not manufacture
+  // an inflated view count.
+  useEffect(() => {
+    if (!token || !perception) return;
+    apiFetch(`/api/analytics/events`, {
+      method: "POST",
+      body: { perception_id: perception.id, event_type: "VIEW" },
+    }).catch(() => {
+      // Analytics telemetry must never interrupt the perception experience.
+    });
+  }, [token, perception?.id]);
+
   /**
    * Hydrate the complete descendant tree after the root comments arrive.
    */

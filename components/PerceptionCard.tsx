@@ -383,6 +383,19 @@ export default function PerceptionCard({
           </Pressable>
 
           <Pressable
+            onPress={(event) => {
+              event.stopPropagation?.();
+              router.push("/analytics");
+            }}
+            className="flex-row items-center gap-1.5 rounded-control px-2.5 py-2"
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="View analytics"
+          >
+            <Feather name="bar-chart-2" size={17} color="#666c7a" />
+          </Pressable>
+
+          <Pressable
             onPress={handleCommentsPress}
             disabled={detailView}
             className={`flex-row items-center gap-1.5 rounded-control px-2.5 py-2 ${

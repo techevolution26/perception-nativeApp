@@ -13,8 +13,6 @@ export type Perception = components["schemas"]["PerceptionOut"];
 export type Topic = components["schemas"]["TopicOut"];
 export type TopicSlim = components["schemas"]["TopicSlim"];
 export type Comment = components["schemas"]["CommentOut"];
-export type UserProfile = components["schemas"]["UserProfile"];
-export type UserMe = components["schemas"]["UserMe"];
 export type UserSlim = components["schemas"]["UserSlim"];
 export type UserWithUnread = components["schemas"]["UserWithUnread"];
 export type Notification = components["schemas"]["NotificationsListOut"]["data"][number];
@@ -66,3 +64,199 @@ export interface DailyNotificationData {
   topic: string;
 }
 export type NotificationData = PerceptionNotificationData | DailyNotificationData;
+
+export interface AnalyticsProfileFields {
+  professional_focus: string | null;
+  country_code: string | null;
+  region: string | null;
+  city: string | null;
+  analytics_specialties: number[];
+  primary_analytics_topic_id: number | null;
+  verification_status: string;
+  verification_badge: string | null;
+}
+
+export type UserMe = components["schemas"]["UserMe"] & AnalyticsProfileFields;
+export type UserProfile = components["schemas"]["UserProfile"] & AnalyticsProfileFields;
+
+export interface Plan {
+  id: number;
+  code: string;
+  name: string;
+  description: string;
+  price_cents: number;
+  currency: string;
+  interval: string;
+  analytics_enabled: boolean;
+  max_topics: number;
+  verification_included: boolean;
+  trial_days: number;
+}
+
+export interface Subscription {
+  id: number | null;
+  status: string;
+  plan: Plan | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  trial_ends_at: string | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  analytics_enabled: boolean;
+  max_topics: number;
+  verification_included: boolean;
+}
+
+export interface BillingInvoice {
+  id: string;
+  number: string | null;
+  status: string | null;
+  currency: string | null;
+  amount_due: number;
+  amount_paid: number;
+  hosted_invoice_url: string | null;
+  invoice_pdf: string | null;
+  created_at: string | null;
+  period_start: string | null;
+  period_end: string | null;
+}
+
+export interface AnalyticsTopic {
+  topic_id: number;
+  topic_name: string;
+  perception_count: number;
+  likes: number;
+  comments: number;
+  views: number;
+  shares: number;
+  interactions: number;
+  engagement_rate: number;
+  signal_strength: number;
+  signal_score: number;
+  unique_participants: number;
+  previous_perception_count: number;
+  growth_rate: number;
+  momentum: string;
+  evidence_level: string;
+}
+
+export interface AnalyticsGeo {
+  country_code: string;
+  perception_count: number;
+  interactions: number;
+  engagement_rate: number;
+  share_of_perceptions: number;
+}
+
+export interface AnalyticsTrendPoint {
+  date: string;
+  perceptions: number;
+  interactions: number;
+}
+
+export interface AnalyticsOpportunity {
+  topic_id: number;
+  topic_name: string;
+  reason: string;
+  signal_strength: number;
+  signal_score: number;
+  growth_rate: number;
+  sample_size: number;
+  unique_participants: number;
+  evidence_level: string;
+}
+
+export interface AnalyticsInsight {
+  kind: string;
+  title: string;
+  detail: string;
+  confidence: string;
+}
+
+export interface AnalyticsRelationship {
+  topic_a_id: number;
+  topic_a_name: string;
+  topic_b_id: number;
+  topic_b_name: string;
+  shared_participants: number;
+  participant_overlap: number;
+  relationship_strength: number;
+  evidence_level: string;
+}
+
+export interface AnalyticsGeoTopic {
+  topic_id: number;
+  topic_name: string;
+  country_code: string;
+  perception_count: number;
+  share_of_topic: number;
+  signal_score: number;
+  evidence_level: string;
+}
+
+export interface AnalyticsIntelligence {
+  period_days: number;
+  relationships: AnalyticsRelationship[];
+  geographic_topic_signals: AnalyticsGeoTopic[];
+  methodology: string[];
+}
+
+export interface AnalyticsOverview {
+  period_days: number;
+  sample_size: number;
+  unique_participants: number;
+  total_perceptions: number;
+  total_likes: number;
+  total_comments: number;
+  total_views: number;
+  total_shares: number;
+  total_interactions: number;
+  engagement_rate: number;
+  geographic_coverage: number;
+  primary_topic_id: number | null;
+  primary_topic_name: string | null;
+  strongest_topic: AnalyticsTopic | null;
+  emerging_topic: AnalyticsTopic | null;
+  activity_baseline_daily: number;
+  activity_current_daily: number;
+  activity_anomaly: string;
+  insights: AnalyticsInsight[];
+  topics: AnalyticsTopic[];
+  trend: AnalyticsTrendPoint[];
+  opportunities: AnalyticsOpportunity[];
+  geography: AnalyticsGeo[];
+  methodology: string[];
+}
+
+export interface VerificationApplication {
+  id: number;
+  profession: string;
+  focus: string;
+  primary_topic_id: number | null;
+  requested_topic_ids: number[];
+  evidence: string | null;
+  status: string;
+  badge: string | null;
+  reviewer_note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+
+export interface AnalyticsDecision {
+  period_days: number;
+  lens: string;
+  primary_topic_id: number | null;
+  primary_topic_name: string | null;
+  strongest_signal: AnalyticsTopic | null;
+  emerging_signal: AnalyticsTopic | null;
+  recommendations: Array<{
+    topic_id: number;
+    topic_name: string;
+    action: string;
+    signal_score: number;
+    evidence_level: string;
+  }>;
+  guardrail: string;
+}

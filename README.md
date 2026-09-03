@@ -122,3 +122,17 @@ cp .env.example .env
 npm install
 npx expo start
 ```
+
+## Analytics & monetization
+
+The mobile app now exposes the analytics business model end-to-end:
+
+- An **Analytics** action lives on each `PerceptionCard`.
+- `/analytics` displays observed topic signals, engagement, sample size, and geographic coverage.
+- Users without an analytics entitlement are sent to `/subscription`.
+- `/subscription` shows the available plans and can start the backend-provided trial; paid checkout remains provider-backed rather than pretending a payment succeeded.
+- `/analytics-profile` manages professional focus, country/region/city, primary analytics topic, and additional topic specialties.
+- `/verification` submits and displays the professional verification workflow.
+- A user's primary professional field remains the strongest analytics lens while additional topics can be selected within the subscribed plan's limit.
+
+Analytics UI deliberately labels results as observed signals and exposes methodology/limitations rather than presenting community engagement as scientific proof.

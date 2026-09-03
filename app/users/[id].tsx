@@ -23,10 +23,10 @@ import { getToken } from "../../lib/storage";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
 import useAuthStore from "../../store/useAuthStore";
-import type { UserProfile, Perception } from "../../types/models";
+import type { UserProfile, Perception, Subscription } from "../../types/models";
 import { File } from "expo-file-system";
 
-type ProfileTab = "posts" | "settings";
+type ProfileTab = "posts" | "analytics" | "settings";
 
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -41,6 +41,7 @@ export default function UserProfileScreen() {
   const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
   const [tab, setTab] = useState<ProfileTab>("posts");
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   // Edit mode
   const [editing, setEditing] = useState(false);
@@ -62,6 +63,11 @@ export default function UserProfileScreen() {
       ]);
       setUser(u);
       setPerceptions(p);
+
+      if (me && isOwnProfile) {
+        const sub = await apiFetch<Subscription>("/api/subscription");
+        setSubscription(sub);
+      }
 
       if (me && !isOwnProfile) {
         const followers = await apiFetch<{ id: number }[]>(
@@ -204,7 +210,7 @@ export default function UserProfileScreen() {
         >
           <Feather name="chevron-left" size={22} color="#8b91a0" />
         </Pressable>
-        {isOwnProfile && !editing && tab === "posts" && (
+        {isOwnProfile && !editing && (tab === "posts" || tab === "analytics") && (
           <Pressable
             onPress={startEditing}
             className="rounded-control p-1"
@@ -350,30 +356,72 @@ export default function UserProfileScreen() {
 
         {isOwnProfile && !editing && (
           <View className="mx-4 mb-2 mt-2 flex-row rounded-control border border-border-hairline bg-surface p-1">
-            <Pressable
-              onPress={() => setTab("posts")}
-              className={`flex-1 items-center rounded-control py-2 ${tab === "posts" ? "bg-surface-sunken" : ""}`}
-            >
-              <Text
-                className={`font-sans-medium text-sm ${tab === "posts" ? "text-foreground" : "text-foreground-subtle"}`}
+            {(["posts", "analytics", "settings"] as const).map((item) => (
+              <Pressable
+                key={item}
+                onPress={() => setTab(item)}
+                className={`flex-1 items-center rounded-control py-2 ${tab === item ? "bg-surface-sunken" : ""}`}
               >
-                Posts
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setTab("settings")}
-              className={`flex-1 items-center rounded-control py-2 ${tab === "settings" ? "bg-surface-sunken" : ""}`}
-            >
-              <Text
-                className={`font-sans-medium text-sm ${tab === "settings" ? "text-foreground" : "text-foreground-subtle"}`}
-              >
-                Settings
-              </Text>
-            </Pressable>
+                <Text
+                  className={`font-sans-medium text-sm ${tab === item ? "text-foreground" : "text-foreground-subtle"}`}
+                >
+                  {item === "posts" ? "Posts" : item === "analytics" ? "Analytics" : "Settings"}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         )}
 
-        {isOwnProfile && tab === "settings" && !editing ? (
+        {isOwnProfile && tab === "analytics" && !editing ? (
+          <View className="mx-4 gap-3">
+            <View className="rounded-card border border-border-hairline bg-surface p-4">
+              <View className="flex-row items-start">
+                <View className="flex-1">
+                  <Text className="font-sans-semibold text-lg text-foreground">Perception Analytics</Text>
+                  <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+                    {subscription?.analytics_enabled
+                      ? `Active · ${subscription.plan?.name ?? "subscription"} · ${subscription.max_topics} topic slots`
+                      : "Locked until you start a trial or subscribe."}
+                  </Text>
+                </View>
+                <Text className="text-2xl">{user.verification_badge ?? "◌"}</Text>
+              </View>
+              <View className="mt-4 flex-row gap-2">
+                <View className="flex-1">
+                  <Button
+                    label={subscription?.analytics_enabled ? "Open analytics" : "Unlock analytics"}
+                    variant="accent"
+                    size="sm"
+                    onPress={() => router.push(subscription?.analytics_enabled ? "/analytics" : "/subscription")}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Button
+                    label="Manage profile"
+                    variant="outline"
+                    size="sm"
+                    onPress={() => router.push("/analytics-profile")}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View className="rounded-card border border-border-hairline bg-surface p-4">
+              <Text className="font-sans-semibold text-base text-foreground">Professional verification</Text>
+              <Text className="mt-1 font-sans text-sm text-foreground-muted">
+                {user.verification_status.replace("_", " ").toLowerCase()}
+                {user.verification_badge ? ` · ${user.verification_badge}` : ""}
+              </Text>
+              <Button
+                label={user.verification_status === "VERIFIED" ? "Verified" : "Apply / view application"}
+                variant="outline"
+                size="sm"
+                disabled={user.verification_status === "VERIFIED"}
+                onPress={() => router.push("/verification")}
+              />
+            </View>
+          </View>
+        ) : isOwnProfile && tab === "settings" && !editing ? (
           <SettingsPanel />
         ) : (
           !editing && (
