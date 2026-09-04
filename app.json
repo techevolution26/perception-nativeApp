@@ -44,6 +44,13 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 120
         }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "androidClientId": "1007733623814-budt6fk7ufj90lh4ihmras7olgobdkd4.apps.googleusercontent.com",
+          "iosClientId": "1007733623814-f642ptk0pb4qehio02evlkrqtc3icj5m.apps.googleusercontent.com"
+        }
       ]
     ],
     "experiments": {

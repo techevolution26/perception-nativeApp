@@ -8,11 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Link, router } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import { ResponseType } from "expo-auth-session";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { Feather } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import VantageMark from "../../components/ui/VantageMark";
@@ -29,22 +28,43 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  WebBrowser.maybeCompleteAuthSession();
-  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    responseType: ResponseType.IdToken,
-  });
-
+  // Initialize Google Sign-In
   useEffect(() => {
-    if (googleResponse?.type !== "success") return;
-    const idToken = googleResponse.params?.id_token;
-    if (!idToken) return;
-    setError(null);
-    loginWithGoogle(idToken).then(() => router.replace("/(tabs)")).catch(() => setError("Google sign-in could not be completed."));
-  }, [googleResponse, loginWithGoogle]);
+    GoogleSignin.configure();
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      const idToken = response.data?.idToken;
+
+      if (!idToken) {
+        setError("Failed to get ID token from Google");
+        setGoogleLoading(false);
+        return;
+      }
+
+      await loginWithGoogle(idToken);
+      router.replace("/(tabs)");
+    } catch (err: any) {
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled the login flow
+      } else if (err.code === statusCodes.IN_PROGRESS) {
+        setError("Sign-in is already in progress");
+      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setError("Google Play Services is not available");
+      } else {
+        setError(err.message || "Google sign-in failed");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError(null);
@@ -148,8 +168,9 @@ export default function LoginScreen() {
             variant="outline"
             size="lg"
             icon={<Text className="font-sans-semibold text-base text-foreground">G</Text>}
-            disabled={!googleRequest || loading}
-            onPress={() => promptGoogle()}
+            disabled={loading || googleLoading}
+            loading={googleLoading}
+            onPress={handleGoogleSignIn}
           />
 
           <View className="flex-row items-center gap-3 py-1"><View className="h-px flex-1 bg-border-hairline" /><Text className="font-sans text-xs text-foreground-subtle">or email</Text><View className="h-px flex-1 bg-border-hairline" /></View>

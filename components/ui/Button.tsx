@@ -7,6 +7,7 @@
 // perception" as mixed children). Explicit props sidestep that entirely.
 import { Pressable, Text, View, type PressableProps } from "react-native";
 import type { ReactNode } from "react";
+import Spinner from "./Spinner";
 
 const VARIANT_CLASSES = {
   primary: "bg-foreground border-transparent",
