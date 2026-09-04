@@ -1,6 +1,7 @@
+import Spinner from "../components/ui/Spinner";
 // app/search.tsx
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -55,7 +56,7 @@ export default function SearchScreen() {
 
       {loading && (
         <View className="flex-row items-center gap-2 px-4 py-2">
-          <ActivityIndicator size="small" />
+          <Spinner size={18} />
           <Text className="font-sans text-sm text-foreground-subtle">Searching…</Text>
         </View>
       )}

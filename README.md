@@ -136,3 +136,15 @@ The mobile app now exposes the analytics business model end-to-end:
 - A user's primary professional field remains the strongest analytics lens while additional topics can be selected within the subscribed plan's limit.
 
 Analytics UI deliberately labels results as observed signals and exposes methodology/limitations rather than presenting community engagement as scientific proof.
+
+### Google sign-in
+Set `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` to OAuth client IDs registered for this app. Configure the same accepted client IDs in the API `GOOGLE_CLIENT_IDS` setting.
+
+## Product interaction layer
+
+- The VantageMark is the canonical loading indicator across data-loading states.
+- Short native sound cues are used for successful likes, message sends, posts, and incoming notifications.
+- Messaging uses a restrained composer, curated emoji tray, long-press actions, bounded edit/recall, conversation archive/delete, and mutual-follow discovery.
+- Profile avatars open public read-only profiles; private account fields are never part of the public profile response.
+- Perception owners with analytics access can open analytics for an individual perception as well as aggregate analytics.
+- Google sign-in requires Expo OAuth client IDs in `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.

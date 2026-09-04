@@ -1,3 +1,4 @@
+import Spinner from "../../components/ui/Spinner";
 // app/users/[id].tsx
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -5,7 +6,6 @@ import {
   Text,
   Pressable,
   ScrollView,
-  ActivityIndicator,
   TextInput,
   Alert,
 } from "react-native";
@@ -58,7 +58,7 @@ export default function UserProfileScreen() {
     setLoading(true);
     try {
       const [u, p] = await Promise.all([
-        apiFetch<UserProfile>(`/api/users/${id}`, { auth: false }),
+        isOwnProfile ? apiFetch<UserProfile>("/api/user") : apiFetch<UserProfile>(`/api/users/${id}`, { auth: false }),
         apiFetch<Perception[]>(`/api/users/${id}/perceptions`, { auth: false }),
       ]);
       setUser(u);
@@ -74,7 +74,7 @@ export default function UserProfileScreen() {
           `/api/users/${id}/followers`,
           { auth: false },
         );
-        setIsFollowing(followers.some((f) => f.id === me.id));
+        setIsFollowing(u.is_following);
       }
     } catch (err) {
       console.error("Failed to load profile:", err);
@@ -195,7 +195,7 @@ export default function UserProfileScreen() {
         className="flex-1 items-center justify-center bg-background"
         style={{ paddingTop: insets.top }}
       >
-        <ActivityIndicator />
+        <Spinner />
       </View>
     );
   }
@@ -317,7 +317,7 @@ export default function UserProfileScreen() {
                     onPress={toggleFollow}
                   />
                   <Button
-                    label="Message"
+                    label={user.can_message ? "Message" : "Mutual follow required"}
                     variant="outline"
                     size="sm"
                     icon={
@@ -327,9 +327,8 @@ export default function UserProfileScreen() {
                         color="#666c7a"
                       />
                     }
-                    onPress={() =>
-                      guard(() => router.push(`/(tabs)/messages/${user.id}`))
-                    }
+                    disabled={!user.can_message}
+                    onPress={() => guard(() => router.push(`/(tabs)/messages/${user.id}`))}
                   />
                 </View>
               )}
@@ -405,6 +404,8 @@ export default function UserProfileScreen() {
                 </View>
               </View>
             </View>
+
+            {me?.role === "SUPER_ADMIN" && <Button label="Open control room" variant="outline" size="sm" onPress={() => router.push("/admin")} />}
 
             <View className="rounded-card border border-border-hairline bg-surface p-4">
               <Text className="font-sans-semibold text-base text-foreground">Professional verification</Text>

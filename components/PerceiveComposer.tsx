@@ -1,3 +1,4 @@
+import Spinner from "./ui/Spinner";
 // components/PerceiveComposer.tsx
 //
 // The comment/reply input, redesigned around the same "avatar + growing
@@ -5,7 +6,7 @@
 // feels consistent everywhere in the app rather than like a plain bordered
 // textarea. Purely presentational — callers own all the submission logic.
 import { useState } from "react";
-import { View, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { View, TextInput, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Avatar from "./ui/Avatar";
 import useAuthStore from "../store/useAuthStore";
@@ -64,7 +65,7 @@ export default function PerceiveComposer({
         }`}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={canSend ? "#201203" : "#8b91a0"} />
+          <Spinner size={18} />
         ) : (
           <Feather name="arrow-up" size={compact ? 14 : 16} color={canSend ? "#201203" : "#8b91a0"} />
         )}

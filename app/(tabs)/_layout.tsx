@@ -19,7 +19,7 @@ import Avatar from "../../components/ui/Avatar";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useAuthStore from "../../store/useAuthStore";
 import { apiFetch } from "../../lib/api";
-import type { NotificationsResponse, UserWithUnread } from "../../types/models";
+import type { UserWithUnread } from "../../types/models";
 
 /**
  * Routes whose actions require authentication.
@@ -138,14 +138,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       return;
     }
 
-    apiFetch<NotificationsResponse>("/api/notifications")
-      .then((payload) => {
-        const notifications = payload.data || [];
-
-        setUnread(
-          notifications.filter((notification) => !notification.read_at).length,
-        );
-      })
+    apiFetch<{ count: number }>("/api/notifications/unread-count")
+      .then((payload) => setUnread(payload.count))
       .catch(() => {
         // Badge failure should never break navigation.
       });

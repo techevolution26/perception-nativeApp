@@ -17,6 +17,7 @@ interface AuthState {
   loading: boolean;
   hydrate: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   register: (name: string, email: string, password: string, passwordConfirmation: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
@@ -58,6 +59,15 @@ const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: false });
       throw err;
     }
+  },
+
+  loginWithGoogle: async (idToken) => {
+    set({ loading: true });
+    try {
+      const res = await apiFetch<AuthResponse>("/api/google", { method: "POST", auth: false, body: { id_token: idToken } });
+      await setToken(res.token);
+      set({ token: res.token, user: res.user, loading: false });
+    } catch (err) { set({ loading: false }); throw err; }
   },
 
   register: async (name, email, password, passwordConfirmation) => {

@@ -1,5 +1,5 @@
 // app/(auth)/login.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   ScrollView,
 } from "react-native";
 import { Link, router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import { ResponseType } from "expo-auth-session";
 import { Feather } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import VantageMark from "../../components/ui/VantageMark";
@@ -20,11 +23,28 @@ export default function LoginScreen() {
   const { colorScheme } = useColorScheme();
   const iconColor = colorScheme === "dark" ? "#4a4f5c" : "#8b91a0";
   const login = useAuthStore((s) => s.login);
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
   const loading = useAuthStore((s) => s.loading);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  WebBrowser.maybeCompleteAuthSession();
+  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    responseType: ResponseType.IdToken,
+  });
+
+  useEffect(() => {
+    if (googleResponse?.type !== "success") return;
+    const idToken = googleResponse.params?.id_token;
+    if (!idToken) return;
+    setError(null);
+    loginWithGoogle(idToken).then(() => router.replace("/(tabs)")).catch(() => setError("Google sign-in could not be completed."));
+  }, [googleResponse, loginWithGoogle]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -122,6 +142,17 @@ export default function LoginScreen() {
               </Text>
             </View>
           )}
+
+          <Button
+            label="Continue with Google"
+            variant="outline"
+            size="lg"
+            icon={<Text className="font-sans-semibold text-base text-foreground">G</Text>}
+            disabled={!googleRequest || loading}
+            onPress={() => promptGoogle()}
+          />
+
+          <View className="flex-row items-center gap-3 py-1"><View className="h-px flex-1 bg-border-hairline" /><Text className="font-sans text-xs text-foreground-subtle">or email</Text><View className="h-px flex-1 bg-border-hairline" /></View>
 
           <Button
             label={loading ? "Signing in…" : "Sign in"}

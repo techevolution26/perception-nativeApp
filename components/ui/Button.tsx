@@ -5,9 +5,8 @@
 // if a bare text string ends up as a sibling of another element outside a
 // <Text> — a pattern the web version relied on constantly (icon + "Post
 // perception" as mixed children). Explicit props sidestep that entirely.
-import { Pressable, Text, View, ActivityIndicator, type PressableProps } from "react-native";
+import { Pressable, Text, View, type PressableProps } from "react-native";
 import type { ReactNode } from "react";
-import { useColorScheme } from "nativewind";
 
 const VARIANT_CLASSES = {
   primary: "bg-foreground border-transparent",
@@ -56,9 +55,6 @@ export default function Button({
   icon,
   ...props
 }: ButtonProps) {
-  const { colorScheme } = useColorScheme();
-  const spinnerColor = variant === "accent" ? "#201203" : colorScheme === "dark" ? "#f7f7f8" : "#14151a";
-
   return (
     <Pressable
       disabled={disabled || loading}
@@ -66,7 +62,7 @@ export default function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={spinnerColor} />
+        <Spinner size={18} />
       ) : (
         icon && <View>{icon}</View>
       )}

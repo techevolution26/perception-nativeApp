@@ -24,6 +24,7 @@ interface PerceptionCardProps {
   onLike?: (id: number) => void;
   onEdit?: (perception: Perception) => void;
   onDelete?: (perception: Perception) => void;
+  onAnalytics?: (perception: Perception) => void;
   showOwnerActions?: boolean;
   isOwner?: boolean;
   detailView?: boolean;
@@ -125,6 +126,7 @@ export default function PerceptionCard({
   onLike,
   onEdit,
   onDelete,
+  onAnalytics,
   showOwnerActions = false,
   isOwner = false,
   detailView = false,
@@ -221,6 +223,7 @@ export default function PerceptionCard({
             icon: "edit-2" as const,
             onPress: handleEdit,
           },
+          ...(onAnalytics ? [{ label: "Perception analytics", icon: "bar-chart-2" as const, onPress: () => onAnalytics(perception) }] : []),
           {
             label: "Delete",
             icon: "trash-2" as const,
@@ -271,9 +274,9 @@ export default function PerceptionCard({
 
           <View className="flex-row items-start px-3.5 pt-3.5">
             {/* Avatar */}
-            <View className="mr-3">
+            <Pressable className="mr-3" onPress={(event) => { event.stopPropagation?.(); router.push(`/users/${user.id}`); }} accessibilityRole="button" accessibilityLabel={`Open ${user.name}'s profile`}>
               <Avatar uri={user.avatar_url} size="md" />
-            </View>
+            </Pressable>
 
             {/* Flexible identity column */}
             <View className="min-w-0 flex-1">

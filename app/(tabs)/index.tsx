@@ -1,6 +1,7 @@
+import Spinner from "../../components/ui/Spinner";
 // app/(tabs)/index.tsx
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { View, Text, FlatList, RefreshControl, ActivityIndicator, Alert, Pressable } from "react-native";
+import { View, Text, FlatList, RefreshControl, Alert, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -13,6 +14,7 @@ import useGuardAction from "../../hooks/useGuardAction";
 import usePerceptionsStore from "../../store/usePerceptionsStore";
 import useTopics from "../../hooks/useTopics";
 import type { Perception, LikeToggle, Topic } from "../../types/models";
+import { playLikeSound } from "../../lib/sound";
 
 interface TopicGroup extends Topic {
   items: Perception[];
@@ -74,6 +76,7 @@ export default function HomeScreen() {
       try {
         const result = await apiFetch<LikeToggle>(`/api/perceptions/${p.id}/like`, { method });
         updatePerception(p.id, { liked_by_user: result.liked, likes_count: result.likes_count });
+        if (result.liked) void playLikeSound();
       } catch (err) {
         console.error("Like toggle failed:", err);
       }
@@ -114,7 +117,7 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-background" style={{ paddingTop: insets.top }}>
-        <ActivityIndicator />
+        <Spinner />
       </View>
     );
   }
@@ -176,6 +179,7 @@ export default function HomeScreen() {
                 showOwnerActions
                 onEdit={(p) => guard(() => router.push(`/perceptions/${p.id}/edit`))}
                 onDelete={handleDelete}
+                onAnalytics={(p) => guard(() => router.push(`/perceptions/${p.id}/analytics`))}
               />
             </View>
           )

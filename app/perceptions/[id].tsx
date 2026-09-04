@@ -1,3 +1,4 @@
+import Spinner from "../../components/ui/Spinner";
 // app/perceptions/[id].tsx
 
 import { useCallback, useEffect, useState } from "react";
@@ -6,7 +7,6 @@ import {
   Text,
   Pressable,
   ScrollView,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -707,7 +707,7 @@ export default function PerceptionDetailScreen() {
         className="flex-1 items-center justify-center bg-background"
         style={{ paddingTop: insets.top }}
       >
-        <ActivityIndicator />
+        <Spinner />
       </View>
     );
   }
@@ -845,7 +845,7 @@ export default function PerceptionDetailScreen() {
 
               {hydratingComments && (
                 <View className="flex-row items-center gap-1.5">
-                  <ActivityIndicator size="small" />
+                  <Spinner size={18} />
 
                   <Text className="font-sans text-[11px] text-foreground-subtle">
                     Loading replies…

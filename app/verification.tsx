@@ -1,5 +1,6 @@
+import Spinner from "../components/ui/Spinner";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
@@ -79,7 +80,7 @@ export default function VerificationScreen() {
   };
 
   if (loading) {
-    return <View className="flex-1 items-center justify-center bg-background"><ActivityIndicator /></View>;
+    return <View className="flex-1 items-center justify-center bg-background"><Spinner /></View>;
   }
 
   if (!user) return null;

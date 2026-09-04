@@ -1,6 +1,7 @@
+import Spinner from "../../components/ui/Spinner";
 // app/topics/index.tsx
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -74,7 +75,7 @@ export default function TopicsIndexScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator className="mt-8" />
+        <Spinner className="mt-8" />
       ) : (
         <FlatList
           data={topics}

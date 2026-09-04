@@ -1,5 +1,6 @@
+import Spinner from "../components/ui/Spinner";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
@@ -45,7 +46,7 @@ export default function BillingScreen() {
       </View>
 
       {loading ? (
-        <View className="flex-1 items-center justify-center"><ActivityIndicator /></View>
+        <View className="flex-1 items-center justify-center"><Spinner /></View>
       ) : (
         <ScrollView contentContainerClassName="gap-3 px-4 pb-12">
           {invoices.length === 0 ? (

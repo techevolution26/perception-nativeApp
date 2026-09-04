@@ -1,3 +1,4 @@
+import Spinner from "../../../components/ui/Spinner";
 // app/perceptions/[id]/edit.tsx
 
 import { useEffect, useState } from "react";
@@ -7,7 +8,6 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  ActivityIndicator,
   Alert,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -237,7 +237,7 @@ export default function EditPerceptionScreen() {
   if (loading || !perception) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator />
+        <Spinner />
       </View>
     );
   }

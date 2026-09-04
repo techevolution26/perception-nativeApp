@@ -38,6 +38,8 @@ export type NotificationsResponse = components["schemas"]["NotificationsListOut"
 export interface DisplayMessage extends Message {
   sending?: boolean;
   delivered?: boolean;
+  edited_at?: string | null;
+  deleted_at?: string | null;
 }
 
 // Shape of one page of useMessages' useInfiniteQuery result — shared by
@@ -52,6 +54,8 @@ export interface MessagesPage {
 // UI branches on — narrower than the generic `data: Record<string, unknown>`
 // the generated Notification.data field has (Pydantic's `dict` maps to
 // `Record<string, never>` in the schema, which isn't useful to consume).
+export interface FollowNotificationData { type: "follow"; actor_id: number; actor_name: string; message: string; }
+export interface ActionNotificationData { type: "perception_like" | "perception_comment" | "comment_reply" | "message"; perception_id?: number; comment_id?: number; message_id?: number; actor_id?: number; actor_name?: string; body?: string; }
 export interface PerceptionNotificationData {
   type: "perception";
   perception_id: number;
@@ -63,7 +67,7 @@ export interface DailyNotificationData {
   body: string;
   topic: string;
 }
-export type NotificationData = PerceptionNotificationData | DailyNotificationData;
+export type NotificationData = PerceptionNotificationData | DailyNotificationData | FollowNotificationData | ActionNotificationData;
 
 export interface AnalyticsProfileFields {
   professional_focus: string | null;
@@ -77,7 +81,7 @@ export interface AnalyticsProfileFields {
 }
 
 export type UserMe = components["schemas"]["UserMe"] & AnalyticsProfileFields;
-export type UserProfile = components["schemas"]["UserProfile"] & AnalyticsProfileFields;
+export type UserProfile = components["schemas"]["UserProfile"] & AnalyticsProfileFields & { is_following: boolean; can_message: boolean };
 
 export interface Plan {
   id: number;
@@ -259,4 +263,9 @@ export interface AnalyticsDecision {
     evidence_level: string;
   }>;
   guardrail: string;
+}
+
+
+export interface PerceptionAnalytics {
+  perception_id:number; period_days:number; created_at:string; topic_id:number|null; likes:number; comments:number; views:number; shares:number; unique_participants:number; engagement_rate:number; daily_activity:Array<{date:string;interactions:number}>; top_countries:Array<{country_code:string;interactions:number}>; methodology:string[];
 }

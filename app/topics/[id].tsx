@@ -1,6 +1,7 @@
+import Spinner from "../../components/ui/Spinner";
 // app/topics/[id].tsx
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -44,7 +45,7 @@ export default function TopicScreen() {
   if (loading || !topic) {
     return (
       <View className="flex-1 items-center justify-center bg-background" style={{ paddingTop: insets.top }}>
-        <ActivityIndicator />
+        <Spinner />
       </View>
     );
   }

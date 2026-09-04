@@ -1,3 +1,4 @@
+import Spinner from "../../components/ui/Spinner";
 // app/(tabs)/notifications.tsx
 //
 // Was missing entirely from the first mobile build — the web app has a
@@ -5,7 +6,7 @@
 // channel/event as everywhere else) that never got ported. This closes
 // that gap.
 import { useContext, useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -14,6 +15,7 @@ import { EchoContext } from "../../contexts/EchoContext";
 import { apiFetch } from "../../lib/api";
 import useAuthStore from "../../store/useAuthStore";
 import type { Notification, NotificationsResponse, NotificationData } from "../../types/models";
+import { playNotificationSound } from "../../lib/sound";
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
@@ -39,6 +41,7 @@ export default function NotificationsScreen() {
     const channel = echo.private(`App.Models.User.${me.id}`);
     channel.listen(".notification", (notification: Notification) => {
       setNotes((prev) => [notification, ...prev]);
+      void playNotificationSound();
     });
     return () => {
       echo.leaveChannel(`private-App.Models.User.${me.id}`);
@@ -89,7 +92,7 @@ export default function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator className="mt-8" />
+        <Spinner className="mt-8" />
       ) : (
         <FlatList
           data={notes}
@@ -104,31 +107,23 @@ export default function NotificationsScreen() {
           renderItem={({ item }) => {
             const data = item.data as unknown as NotificationData;
             const isUnread = !item.read_at;
-            const topic = data?.topic ?? "General";
-            const body = data?.body ?? "";
-            const perceptionId = data?.type === "perception" ? data.perception_id : undefined;
+            const topic = "topic" in data ? data.topic : "General";
+            const body = "body" in data ? data.body : "";
+            const perceptionId = "perception_id" in data ? data.perception_id : undefined;
+            const actorId = "actor_id" in data ? data.actor_id : undefined;
             const type = data?.type ?? "perception";
+            const actorName = "actor_name" in data ? data.actor_name : undefined;
 
             return (
               <Pressable
-                onPress={() => perceptionId && router.push(`/perceptions/${perceptionId}`)}
+                onPress={() => perceptionId ? router.push(`/perceptions/${perceptionId}`) : actorId ? router.push(`/users/${actorId}`) : undefined}
                 className={`flex-row items-start gap-2.5 rounded-control p-3 ${isUnread ? "bg-accent-soft" : ""}`}
               >
                 <View className="mt-0.5">
                   <Feather name={type === "daily" ? "sun" : "zap"} size={16} color="#666c7a" />
                 </View>
                 <Text className={`flex-1 font-sans text-sm ${isUnread ? "text-foreground" : "text-foreground-muted"}`}>
-                  {type === "perception" ? (
-                    <>
-                      <Text className="font-sans-semibold">New in {topic}: </Text>
-                      {body}
-                    </>
-                  ) : (
-                    <>
-                      <Text className="font-sans-semibold">Daily motivation in {topic}: </Text>
-                      {body}
-                    </>
-                  )}
+                  {type === "perception" ? <><Text className="font-sans-semibold">New in {topic}: </Text>{body}</> : type === "daily" ? <><Text className="font-sans-semibold">Daily motivation in {topic}: </Text>{body}</> : type === "follow" ? <><Text className="font-sans-semibold">{actorName ?? "Someone"}</Text> followed you.</> : type === "message" ? <><Text className="font-sans-semibold">{actorName ?? "New message"}</Text> sent you a message.</> : type === "perception_like" ? <><Text className="font-sans-semibold">{actorName ?? "Someone"}</Text> liked your perception.</> : <><Text className="font-sans-semibold">{actorName ?? "Someone"}</Text> interacted with your content.</>}
                 </Text>
                 <Pressable onPress={() => deleteOne(item.id)} className="p-1">
                   <Feather name="trash-2" size={15} color="#e5484d" />

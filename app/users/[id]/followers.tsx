@@ -1,6 +1,7 @@
+import Spinner from "../../../components/ui/Spinner";
 // app/users/[id]/followers.tsx
 import { useEffect, useState } from "react";
-import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -31,7 +32,7 @@ export default function FollowersScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator className="mt-8" />
+        <Spinner className="mt-8" />
       ) : (
         <FlatList
           data={followers}
