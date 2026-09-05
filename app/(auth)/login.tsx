@@ -11,7 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { Link, router } from "expo-router";
-import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
+import * as Google from "expo-auth-session/providers/google";
 import { Feather } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import VantageMark from "../../components/ui/VantageMark";
@@ -30,39 +30,37 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Initialize Google Sign-In
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  });
+
   useEffect(() => {
-    GoogleSignin.configure();
-  }, []);
+    if (response?.type !== "success") return;
+
+    const idToken = response.params?.id_token ?? response.authentication?.idToken;
+    if (!idToken) {
+      setError("Failed to get ID token from Google");
+      return;
+    }
+
+    setGoogleLoading(true);
+    loginWithGoogle(idToken)
+      .then(() => router.replace("/(tabs)"))
+      .catch((err: any) => setError(err.message || "Google sign-in failed"))
+      .finally(() => setGoogleLoading(false));
+  }, [loginWithGoogle, response]);
 
   const handleGoogleSignIn = async () => {
     try {
       setGoogleLoading(true);
       setError(null);
-      await GoogleSignin.hasPlayServices();
-      const response = await GoogleSignin.signIn();
-      const idToken = response.data?.idToken;
-
-      if (!idToken) {
-        setError("Failed to get ID token from Google");
-        setGoogleLoading(false);
-        return;
-      }
-
-      await loginWithGoogle(idToken);
-      router.replace("/(tabs)");
+      await promptAsync();
     } catch (err: any) {
-      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
-        // User cancelled the login flow
-      } else if (err.code === statusCodes.IN_PROGRESS) {
-        setError("Sign-in is already in progress");
-      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        setError("Google Play Services is not available");
-      } else {
-        setError(err.message || "Google sign-in failed");
-      }
+      setError(err.message || "Google sign-in failed");
     } finally {
-      setGoogleLoading(false);
+      if (response?.type !== "success") setGoogleLoading(false);
     }
   };
 
@@ -168,7 +166,7 @@ export default function LoginScreen() {
             variant="outline"
             size="lg"
             icon={<Text className="font-sans-semibold text-base text-foreground">G</Text>}
-            disabled={loading || googleLoading}
+            disabled={!request || loading || googleLoading}
             loading={googleLoading}
             onPress={handleGoogleSignIn}
           />

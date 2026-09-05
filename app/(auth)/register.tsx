@@ -2,9 +2,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { Link, router } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
-import { ResponseType } from "expo-auth-session";
 import { Feather } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import VantageMark from "../../components/ui/VantageMark";
@@ -24,23 +22,41 @@ export default function RegisterScreen() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  WebBrowser.maybeCompleteAuthSession();
-  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
+  const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    responseType: ResponseType.IdToken,
-    useProxy: true,
   });
 
   useEffect(() => {
-    if (googleResponse?.type !== "success") return;
-    const idToken = googleResponse.params?.id_token;
-    if (!idToken) return;
-    setError(null);
-    loginWithGoogle(idToken).then(() => router.replace("/(tabs)")).catch(() => setError("Google sign-up could not be completed."));
-  }, [googleResponse, loginWithGoogle]);
+    if (response?.type !== "success") return;
+
+    const idToken = response.params?.id_token ?? response.authentication?.idToken;
+    if (!idToken) {
+      setError("Failed to get ID token from Google");
+      return;
+    }
+
+    setGoogleLoading(true);
+    loginWithGoogle(idToken)
+      .then(() => router.replace("/(tabs)"))
+      .catch((err: any) => setError(err.message || "Google sign-up failed"))
+      .finally(() => setGoogleLoading(false));
+  }, [loginWithGoogle, response]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+      await promptAsync();
+    } catch (err: any) {
+      setError(err.message || "Google sign-up failed");
+    } finally {
+      if (response?.type !== "success") setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError(null);
@@ -88,8 +104,9 @@ export default function RegisterScreen() {
             variant="outline"
             size="lg"
             icon={<Text className="font-sans-semibold text-base text-foreground">G</Text>}
-            disabled={!googleRequest || loading}
-            onPress={() => promptGoogle()}
+            disabled={!request || loading || googleLoading}
+            loading={googleLoading}
+            onPress={handleGoogleSignIn}
           />
 
           <View className="flex-row items-center gap-3 py-1"><View className="h-px flex-1 bg-border-hairline" /><Text className="font-sans text-xs text-foreground-subtle">or email</Text><View className="h-px flex-1 bg-border-hairline" /></View>
