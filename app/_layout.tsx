@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../lib/queryClient";
@@ -72,26 +73,28 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <EchoProvider>
-            <ThemeProvider>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="(auth)" />
-                <Stack.Screen
-                  name="new-perception"
-                  options={{ presentation: "modal" }}
-                />
-                <Stack.Screen
-                  name="perceptions/[id]/edit"
-                  options={{ presentation: "modal" }}
-                />
-              </Stack>
-            </ThemeProvider>
-          </EchoProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
+            <EchoProvider>
+              <ThemeProvider>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen
+                    name="new-perception"
+                    options={{ presentation: "modal" }}
+                  />
+                  <Stack.Screen
+                    name="perceptions/[id]/edit"
+                    options={{ presentation: "modal" }}
+                  />
+                </Stack>
+              </ThemeProvider>
+            </EchoProvider>
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

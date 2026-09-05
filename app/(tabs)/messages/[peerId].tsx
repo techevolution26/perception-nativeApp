@@ -1,5 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { FlatList, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -29,7 +30,7 @@ export default function ChatScreen() {
   useEffect(()=>{if(flat.length)setTimeout(()=>listRef.current?.scrollToEnd({animated:true}),50)},[flat.length]);
   const send=()=>{const body=input.trim();if(!body)return;setInput("");sendMutation.mutate(body)};
   const menuItems:ActionMenuItem[]=menuMessage?[{label:"Copy",icon:"copy" as const,onPress:()=>void Clipboard.setStringAsync(menuMessage.body)},...(menuMessage.from_user_id===me?.id&&!menuMessage.sending&&!menuMessage.deleted_at?[{label:"Edit",icon:"edit-2" as const,onPress:()=>{setEditText(menuMessage.body);setEditing(menuMessage);setMenuMessage(null)}},{label:"Recall for everyone",icon:"rotate-ccw" as const,destructive:true,onPress:()=>deleteMutation.mutate(menuMessage.id)}]:[])]:[];
-  return <KeyboardAvoidingView className="flex-1 bg-background" style={{paddingTop:insets.top}} behavior={Platform.OS==="ios"?"padding":"height"} keyboardVerticalOffset={Platform.OS==="ios"?insets.top+56:0}>
+  const content = <View className="flex-1 bg-background" style={{paddingTop:insets.top}}>
     <View className="flex-row items-center border-b border-border-hairline px-4 py-3"><Pressable onPress={()=>router.back()} className="mr-3 p-1"><Feather name="chevron-left" size={22} color="#8b91a0"/></Pressable>{peer?<View className="flex-row items-center gap-3"><Avatar uri={peer.avatar_url} size="sm"/><Text className="font-sans-semibold text-foreground">{peer.name}</Text></View>:<Spinner size={18}/>}</View>
     {query.isLoading?<Spinner className="flex-1"/>:<FlatList ref={listRef} style={{flex:1}} data={flat} keyExtractor={i=>String(i.id)} contentContainerClassName="gap-2 px-4 py-4" keyboardShouldPersistTaps="handled" renderItem={({item})=>{const isMe=item.from_user_id===me?.id;return <View className={`flex-row items-end gap-1 ${isMe?"justify-end":"justify-start"}`}><Pressable onLongPress={()=>setMenuMessage(item)} delayLongPress={350} className="max-w-[82%]"><View className={`rounded-2xl px-4 py-2 ${isMe?"rounded-br-md bg-foreground":"rounded-bl-md border border-border-hairline bg-surface"} ${item.sending?"opacity-70":""}`}><Text className={`font-sans text-[15px] ${isMe?"text-background":"text-foreground"}`}>{item.body}</Text><Text className={`mt-1 font-mono text-[11px] ${isMe?"text-background/60":"text-foreground-subtle"}`}>{new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}{item.sending?" · Sending…":item.edited_at?" · edited":""}</Text></View></Pressable><Pressable onPress={()=>setMenuMessage(item)} hitSlop={10} className="h-10 w-10 items-center justify-center rounded-full" accessibilityRole="button" accessibilityLabel="Message actions"><Feather name="more-horizontal" size={18} color="#8b91a0"/></Pressable></View>}}/>}
     {emojiOpen&&<View className="flex-row flex-wrap gap-1 border-t border-border-hairline bg-surface px-3 py-2">{["👍","✓","🙏","💡","👏","🙂","❤️","🔎","🎯","⚠️"].map(e=><Pressable key={e} onPress={()=>setInput(v=>v+e)} className="h-9 w-9 items-center justify-center rounded-control bg-surface-sunken"><Text className="text-lg">{e}</Text></Pressable>)}</View>}
@@ -48,5 +49,16 @@ export default function ChatScreen() {
         </View>
       </View>
     </Modal>
-  </KeyboardAvoidingView>;
+  </View>;
+
+  return (
+    <KeyboardAvoidingView
+      className="flex-1"
+      behavior="padding"
+      automaticOffset
+      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 56 : 0}
+    >
+      {content}
+    </KeyboardAvoidingView>
+  );
 }
