@@ -424,6 +424,14 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
    * The profile/sign-in control is hidden while the user is
    * inside Messages so it does not compete with the messaging UI.
    */
+  const isMessageConversation = Boolean(pathname?.match(/^\/messages\/[^/]+$/));
+
+  // A conversation owns the full screen, including the bottom edge where
+  // the composer and Android keyboard insets are negotiated.
+  if (isMessageConversation) {
+    return null;
+  }
+
   const hideProfileOnMessages = pathname?.startsWith("/messages");
 
   return (
