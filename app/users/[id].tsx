@@ -58,7 +58,7 @@ export default function UserProfileScreen() {
     setLoading(true);
     try {
       const [u, p] = await Promise.all([
-        isOwnProfile ? apiFetch<UserProfile>("/api/user") : apiFetch<UserProfile>(`/api/users/${id}`, { auth: false }),
+        apiFetch<UserProfile>(`/api/users/${id}`, { auth: false }),
         apiFetch<Perception[]>(`/api/users/${id}/perceptions`, { auth: false }),
       ]);
       setUser(u);
@@ -187,6 +187,24 @@ export default function UserProfileScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDeletePerception = (perception: Perception) => {
+    Alert.alert("Delete perception?", "This action is permanent and cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await apiFetch(`/api/perceptions/${perception.id}`, { method: "DELETE" });
+            setPerceptions((current) => current.filter((item) => item.id !== perception.id));
+          } catch (err) {
+            Alert.alert("Delete failed", err instanceof Error ? err.message : "Please try again.");
+          }
+        },
+      },
+    ]);
   };
 
   if (loading || !user) {
@@ -405,7 +423,7 @@ export default function UserProfileScreen() {
               </View>
             </View>
 
-            {me?.role === "SUPER_ADMIN" && <Button label="Open control room" variant="outline" size="sm" onPress={() => router.push("/admin")} />}
+            {me && "role" in me && me.role === "SUPER_ADMIN" && <Button label="Open control room" variant="outline" size="sm" onPress={() => router.push("/admin")} />}
 
             <View className="rounded-card border border-border-hairline bg-surface p-4">
               <Text className="font-sans-semibold text-base text-foreground">Professional verification</Text>
@@ -442,6 +460,10 @@ export default function UserProfileScreen() {
                       perception={p}
                       index={i}
                       isOwner={isOwnProfile}
+                      showOwnerActions={isOwnProfile}
+                      onEdit={(item) => guard(() => router.push(`/perceptions/${item.id}/edit`))}
+                      onDelete={handleDeletePerception}
+                      onAnalytics={(item) => guard(() => router.push(`/perceptions/${item.id}/analytics`))}
                     />
                   ))}
                 </View>
