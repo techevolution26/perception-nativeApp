@@ -6,6 +6,7 @@ import useAuthStore from "../store/useAuthStore";
 import { API_BASE } from "../lib/api";
 import { getToken } from "../lib/storage";
 import { configureNotifications, notificationEvents, presentLocalNotification } from "../lib/notifications";
+import { notificationBadgeEvents } from "../lib/notificationBadge";
 import type { Notification } from "../types/models";
 
 export const EchoContext = createContext<Echo<"pusher"> | null>(null);
@@ -74,6 +75,7 @@ export function EchoProvider({ children }: { children: ReactNode }) {
       const notificationChannel = echoInstance.private(`App.Models.User.${user.id}`);
       notificationChannel.listen(".notification", (notification: Notification) => {
         notificationEvents.emit(notification);
+        notificationBadgeEvents.emit(1);
         void presentLocalNotification(notification);
       });
 

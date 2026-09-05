@@ -58,7 +58,7 @@ export default function UserProfileScreen() {
     setLoading(true);
     try {
       const [u, p] = await Promise.all([
-        apiFetch<UserProfile>(`/api/users/${id}`, { auth: false }),
+        apiFetch<UserProfile>(`/api/users/${id}`, { auth: Boolean(me) }),
         apiFetch<Perception[]>(`/api/users/${id}/perceptions`, { auth: false }),
       ]);
       setUser(u);
@@ -70,10 +70,6 @@ export default function UserProfileScreen() {
       }
 
       if (me && !isOwnProfile) {
-        await apiFetch<{ id: number }[]>(
-          `/api/users/${id}/followers`,
-          { auth: false },
-        );
         setIsFollowing(u.is_following);
       }
     } catch (err) {
@@ -97,7 +93,7 @@ export default function UserProfileScreen() {
       await apiFetch(`/api/users/${id}/follow`, {
         method: isFollowing ? "DELETE" : "POST",
       });
-      setIsFollowing((f) => !f);
+      await load();
     } catch {
       Alert.alert("Something went wrong", "Please try again.");
     } finally {
