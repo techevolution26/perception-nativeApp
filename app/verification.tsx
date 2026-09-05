@@ -40,7 +40,7 @@ export default function VerificationScreen() {
   }, []);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   const toggleTopic = (id: number) => {

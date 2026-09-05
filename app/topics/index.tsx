@@ -49,7 +49,7 @@ export default function TopicsIndexScreen() {
   }, [user]);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   const toggleFollow = (topic: FollowableTopic) =>

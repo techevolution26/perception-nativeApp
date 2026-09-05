@@ -1,7 +1,7 @@
 import Spinner from "../../components/ui/Spinner";
 // app/perceptions/[id].tsx
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -598,6 +598,7 @@ export default function PerceptionDetailScreen() {
   const [commentBody, setCommentBody] = useState("");
   const [posting, setPosting] = useState(false);
   const [hydratingComments, setHydratingComments] = useState(false);
+  const hydratedCommentsRef = useRef<Comment[] | null>(null);
 
   // Count one authenticated view per perception per day. The backend
   // deduplicates the event, so revisiting a perception does not manufacture
@@ -610,13 +611,17 @@ export default function PerceptionDetailScreen() {
     }).catch(() => {
       // Analytics telemetry must never interrupt the perception experience.
     });
-  }, [token, perception?.id]);
+  }, [token, perception]);
 
   /**
    * Hydrate the complete descendant tree after the root comments arrive.
    */
   useEffect(() => {
-    if (!comments.length || hydratingComments) {
+    if (
+      !comments.length ||
+      hydratingComments ||
+      comments === hydratedCommentsRef.current
+    ) {
       return;
     }
 
@@ -629,6 +634,7 @@ export default function PerceptionDetailScreen() {
         const hydrated = await hydrateCommentList(comments);
 
         if (!cancelled) {
+          hydratedCommentsRef.current = hydrated;
           setComments(hydrated);
         }
       } finally {
@@ -643,7 +649,7 @@ export default function PerceptionDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [comments.length]);
+  }, [comments, hydratingComments, setComments]);
 
   const submitComment = async (commentMedia: MediaAsset | null) => {
     if (!commentBody.trim() && !commentMedia) {

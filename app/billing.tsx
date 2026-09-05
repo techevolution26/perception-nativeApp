@@ -31,7 +31,7 @@ export default function BillingScreen() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(() => load()); }, [load]);
 
   return (
     <View className="flex-1 bg-background">

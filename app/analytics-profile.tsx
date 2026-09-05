@@ -36,17 +36,19 @@ export default function AnalyticsProfileScreen() {
   }, []);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   useEffect(() => {
     if (user) {
-      setFocus(user.professional_focus ?? "");
-      setCountry(user.country_code ?? "");
-      setRegion(user.region ?? "");
-      setCity(user.city ?? "");
-      setPrimary(user.primary_analytics_topic_id ?? null);
-      setSelected(user.analytics_specialties ?? []);
+      void Promise.resolve().then(() => {
+        setFocus(user.professional_focus ?? "");
+        setCountry(user.country_code ?? "");
+        setRegion(user.region ?? "");
+        setCity(user.city ?? "");
+        setPrimary(user.primary_analytics_topic_id ?? null);
+        setSelected(user.analytics_specialties ?? []);
+      });
     }
   }, [user]);
 

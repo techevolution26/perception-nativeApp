@@ -2,7 +2,7 @@
 import "./global.css";
 import "react-native-reanimated";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -42,7 +42,6 @@ export default function RootLayout() {
   const authHydrated = useAuthStore((s) => s.hydrated);
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
   const settingsHydrated = useSettingsStore((s) => s.hydrated);
-  const [hydrationStarted, setHydrationStarted] = useState(false);
 
   // Previously re-implemented system-theme tracking by hand (React
   // Native's useColorScheme + a manual setColorScheme("light"|"dark")
@@ -52,12 +51,11 @@ export default function RootLayout() {
   // useSettingsStore.hydrate() calls it once with the persisted
   // preference (default "system") and that's the whole story now.
   useEffect(() => {
-    if (!hydrationStarted) {
-      setHydrationStarted(true);
+    void Promise.resolve().then(() => {
       hydrateAuth();
       hydrateSettings();
-    }
-  }, [hydrationStarted, hydrateAuth, hydrateSettings]);
+    });
+  }, [hydrateAuth, hydrateSettings]);
 
   const appReady = fontsLoaded && authHydrated && settingsHydrated;
 

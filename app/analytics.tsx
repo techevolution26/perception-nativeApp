@@ -52,7 +52,7 @@ export default function AnalyticsScreen() {
   }, []);
 
   useEffect(() => {
-    void load(period);
+    void Promise.resolve().then(() => load(period));
   }, [load, period]);
 
   const trendMax = useMemo(() => Math.max(...(data?.trend.map((item) => item.perceptions) ?? [1]), 1), [data]);

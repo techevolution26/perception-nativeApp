@@ -16,7 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import Button from "../components/ui/Button";
 import useTopics from "../hooks/useTopics";
-import { apiFetch, API_BASE } from "../lib/api";
+import { API_BASE } from "../lib/api";
 import { getToken } from "../lib/storage";
 import usePerceptionsStore from "../store/usePerceptionsStore";
 import useAuthStore from "../store/useAuthStore";

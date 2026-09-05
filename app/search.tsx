@@ -18,7 +18,7 @@ export default function SearchScreen() {
 
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
+      void Promise.resolve().then(() => setResults([]));
       return;
     }
     const timeout = setTimeout(async () => {

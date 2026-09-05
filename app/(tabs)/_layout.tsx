@@ -99,9 +99,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
    * Native driver is used because these values only affect
    * transform / opacity.
    */
-  const barTranslateY = useRef(new Animated.Value(0)).current;
-  const barOpacity = useRef(new Animated.Value(1)).current;
-  const handleScale = useRef(new Animated.Value(0)).current;
+  const [barTranslateY] = useState(() => new Animated.Value(0));
+  const [barOpacity] = useState(() => new Animated.Value(1));
+  const [handleScale] = useState(() => new Animated.Value(0));
 
   /**
    * Scroll trend tracking.
@@ -134,7 +134,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
    */
   useEffect(() => {
     if (!token) {
-      setUnread(0);
+      void Promise.resolve().then(() => setUnread(0));
       return;
     }
 
@@ -153,7 +153,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
    */
   useEffect(() => {
     if (!token) {
-      setUnreadMessages(0);
+      void Promise.resolve().then(() => setUnreadMessages(0));
       return;
     }
 

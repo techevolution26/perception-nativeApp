@@ -11,7 +11,7 @@ import { apiFetch } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useLikeToggle from "../../hooks/useLikeToggle";
 import useGuardAction from "../../hooks/useGuardAction";
-import type { Topic, Perception, LikeToggle } from "../../types/models";
+import type { Topic, Perception } from "../../types/models";
 
 export default function TopicScreen() {
   const insets = useSafeAreaInsets();
@@ -39,7 +39,7 @@ export default function TopicScreen() {
   }, [id]);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   if (loading || !topic) {

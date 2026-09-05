@@ -70,7 +70,7 @@ export default function UserProfileScreen() {
       }
 
       if (me && !isOwnProfile) {
-        const followers = await apiFetch<{ id: number }[]>(
+        await apiFetch<{ id: number }[]>(
           `/api/users/${id}/followers`,
           { auth: false },
         );
@@ -84,7 +84,7 @@ export default function UserProfileScreen() {
   }, [id, me, isOwnProfile]);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   const toggleFollow = async () => {

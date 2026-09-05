@@ -35,7 +35,7 @@ export default function SubscriptionScreen() {
   }, []);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   const startTrial = async (plan: Plan) => {

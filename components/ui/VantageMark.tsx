@@ -7,7 +7,7 @@
 // equivalents and camelCasing a couple of attributes.
 import Svg, { Circle, Line } from "react-native-svg";
 import { Animated, Easing } from "react-native";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
 interface VantageMarkProps {
   size?: number;
@@ -17,7 +17,7 @@ interface VantageMarkProps {
 }
 
 export default function VantageMark({ size = 24, color = "#f2a33c", spinning = false, strokeWidth = 1.6 }: VantageMarkProps) {
-  const spin = useRef(new Animated.Value(0)).current;
+  const [spin] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!spinning) return;

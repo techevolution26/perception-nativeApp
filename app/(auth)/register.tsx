@@ -35,15 +35,17 @@ export default function RegisterScreen() {
 
     const idToken = response.params?.id_token ?? response.authentication?.idToken;
     if (!idToken) {
-      setError("Failed to get ID token from Google");
+      void Promise.resolve().then(() => setError("Failed to get ID token from Google"));
       return;
     }
 
-    setGoogleLoading(true);
-    loginWithGoogle(idToken)
-      .then(() => router.replace("/(tabs)"))
-      .catch((err: any) => setError(err.message || "Google sign-up failed"))
-      .finally(() => setGoogleLoading(false));
+    void Promise.resolve().then(() => {
+      setGoogleLoading(true);
+      return loginWithGoogle(idToken)
+        .then(() => router.replace("/(tabs)"))
+        .catch((err: any) => setError(err.message || "Google sign-up failed"))
+        .finally(() => setGoogleLoading(false));
+    });
   }, [loginWithGoogle, response]);
 
   const handleGoogleSignIn = async () => {

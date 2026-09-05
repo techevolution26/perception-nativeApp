@@ -25,15 +25,17 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!me) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    apiFetch<NotificationsResponse>("/api/notifications")
-      .then((payload) => setNotes(payload.data || []))
-      .catch((err) => console.error("Failed to load notifications:", err))
-      .finally(() => setLoading(false));
+    void Promise.resolve().then(() => {
+      if (!me) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      return apiFetch<NotificationsResponse>("/api/notifications")
+        .then((payload) => setNotes(payload.data || []))
+        .catch((err) => console.error("Failed to load notifications:", err))
+        .finally(() => setLoading(false));
+    });
   }, [me]);
 
   useEffect(() => {
