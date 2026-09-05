@@ -5,18 +5,23 @@ import Pusher from "pusher-js/react-native";
 import useAuthStore from "../store/useAuthStore";
 import { API_BASE } from "../lib/api";
 import { getToken } from "../lib/storage";
+import { configureNotifications, notificationEvents, presentLocalNotification } from "../lib/notifications";
+import type { Notification } from "../types/models";
 
 export const EchoContext = createContext<Echo<"pusher"> | null>(null);
 
 export function EchoProvider({ children }: { children: ReactNode }) {
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const [echo, setEcho] = useState<Echo<"pusher"> | null>(null);
 
   useEffect(() => {
-    if (!token || !process.env.EXPO_PUBLIC_PUSHER_KEY) {
+    if (!token || !user || !process.env.EXPO_PUBLIC_PUSHER_KEY) {
       setEcho(null);
       return;
     }
+
+    void configureNotifications();
 
     let cancelled = false;
     let instance: Echo<"pusher"> | null = null;
@@ -60,9 +65,16 @@ export function EchoProvider({ children }: { children: ReactNode }) {
       const rawEcho: any = Echo;
       const EchoConstructor = rawEcho.default || rawEcho;
 
-      instance = new EchoConstructor({
+      const echoInstance = new EchoConstructor({
         broadcaster: "pusher",
         client: pusherClient,
+      });
+      instance = echoInstance;
+
+      const notificationChannel = echoInstance.private(`App.Models.User.${user.id}`);
+      notificationChannel.listen(".notification", (notification: Notification) => {
+        notificationEvents.emit(notification);
+        void presentLocalNotification(notification);
       });
 
       if (!cancelled) setEcho(instance);
@@ -73,7 +85,7 @@ export function EchoProvider({ children }: { children: ReactNode }) {
       instance?.disconnect();
       setEcho(null);
     };
-  }, [token]);
+  }, [token, user?.id]);
 
   return <EchoContext.Provider value={echo}>{children}</EchoContext.Provider>;
 }

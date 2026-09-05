@@ -19,7 +19,8 @@ import Avatar from "../../components/ui/Avatar";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useAuthStore from "../../store/useAuthStore";
 import { apiFetch } from "../../lib/api";
-import type { NotificationsResponse, UserWithUnread } from "../../types/models";
+import { notificationBadgeEvents } from "../../lib/notificationBadge";
+import type { UserWithUnread } from "../../types/models";
 
 /**
  * Routes whose actions require authentication.
@@ -123,26 +124,25 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
    */
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /**
-   * Re-check notification unread count when:
-   *
-   * - authentication changes
-   * - active tab changes
-   *
-   * This means opening Notifications can immediately clear the badge
-   * after the screen marks them as read.
-   */
+  /** Re-check the server count when authentication or the active tab changes. */
   useEffect(() => {
     if (!token) {
       void Promise.resolve().then(() => setUnread(0));
       return;
     }
 
-    apiFetch<NotificationsResponse>("/api/notifications")
-      .then((payload) => setUnread(payload.data?.length ?? 0))
-      .catch(() => {
-        // Badge failure should never break navigation.
-      });
+    const refreshUnread = () => {
+      apiFetch<{ count: number }>("/api/notifications/unread-count")
+        .then((payload) => setUnread(payload.count))
+        .catch(() => {
+          // Badge failure should never break navigation.
+        });
+    };
+
+    refreshUnread();
+    return notificationBadgeEvents.subscribe((delta) => {
+      setUnread((current) => Math.max(0, current + delta));
+    });
   }, [token, state.index]);
 
   /**
