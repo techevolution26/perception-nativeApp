@@ -619,7 +619,6 @@ export default function PerceptionDetailScreen() {
   useEffect(() => {
     if (
       !comments.length ||
-      hydratingComments ||
       comments === hydratedCommentsRef.current
     ) {
       return;
@@ -649,7 +648,7 @@ export default function PerceptionDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [comments, hydratingComments, setComments]);
+  }, [comments, setComments]);
 
   const submitComment = async (commentMedia: MediaAsset | null) => {
     if (!commentBody.trim() && !commentMedia) {
