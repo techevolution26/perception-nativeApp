@@ -3,7 +3,6 @@ import "./global.css";
 import "react-native-reanimated";
 
 import { useEffect } from "react";
-import { View } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -26,7 +25,6 @@ import { EchoProvider } from "../contexts/EchoContext";
 import useAuthStore from "../store/useAuthStore";
 import useSettingsStore from "../store/useSettingsStore";
 import ThemeProvider from "../components/ui/ThemeProvider";
-import NetworkStatus from "../components/ui/NetworkStatus";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -78,25 +76,18 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <EchoProvider>
               <ThemeProvider>
-                <View style={{ flex: 1 }}>
-                  <NetworkStatus />
-                  <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="(auth)" />
-                    <Stack.Screen
-                      name="onboarding/topics"
-                      options={{ animation: "fade" }}
-                    />
-                    <Stack.Screen
-                      name="new-perception"
-                      options={{ presentation: "modal" }}
-                    />
-                    <Stack.Screen
-                      name="perceptions/[id]/edit"
-                      options={{ presentation: "modal" }}
-                    />
-                  </Stack>
-                </View>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen
+                    name="new-perception"
+                    options={{ presentation: "modal" }}
+                  />
+                  <Stack.Screen
+                    name="perceptions/[id]/edit"
+                    options={{ presentation: "modal" }}
+                  />
+                </Stack>
               </ThemeProvider>
             </EchoProvider>
           </QueryClientProvider>

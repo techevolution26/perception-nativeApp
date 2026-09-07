@@ -8,6 +8,7 @@ import { useColorScheme } from "nativewind";
 import VantageMark from "../../components/ui/VantageMark";
 import Button from "../../components/ui/Button";
 import useAuthStore, { ApiError } from "../../store/useAuthStore";
+import { getValidationErrors, getAuthErrorMessage } from "../../lib/api";
 
 export default function RegisterScreen() {
   const { colorScheme } = useColorScheme();
@@ -21,6 +22,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -42,8 +44,11 @@ export default function RegisterScreen() {
     void Promise.resolve().then(() => {
       setGoogleLoading(true);
       return loginWithGoogle(idToken)
-        .then(() => router.replace("/(tabs)"))
-        .catch((err: unknown) => setError(err instanceof Error ? err.message : "Google sign-up failed"))
+        .then(() => {
+          const needsTopics = useAuthStore.getState().needsTopicOnboarding;
+          router.replace(needsTopics ? "/topics?onboarding=1" : "/(tabs)");
+        })
+        .catch((err: unknown) => setError(getAuthErrorMessage(err, "Google sign-up failed.")))
         .finally(() => setGoogleLoading(false));
     });
   }, [loginWithGoogle, response]);
@@ -54,7 +59,7 @@ export default function RegisterScreen() {
       setError(null);
       await promptAsync();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Google sign-up failed");
+      setError(getAuthErrorMessage(err, "Google sign-up failed."));
     } finally {
       if (response?.type !== "success") setGoogleLoading(false);
     }
@@ -62,7 +67,22 @@ export default function RegisterScreen() {
 
   const handleSubmit = async () => {
     setError(null);
+    setPasswordError(null);
     setConfirmError(null);
+
+    const passwordRequirements = [
+      [password.length >= 8, "Password must be at least 8 characters."],
+      [password.length <= 128, "Password must be 128 characters or fewer."],
+      [/[A-Z]/.test(password), "Password must contain an uppercase letter."],
+    ] as const;
+    const invalidRequirement = passwordRequirements.find(([valid]) => !valid);
+    if (invalidRequirement) {
+      setPasswordError(invalidRequirement[1]);
+      return;
+    }
+    if (!/[a-z]/.test(password)) { setPasswordError("Password must contain a lowercase letter."); return; }
+    if (!/[0-9]/.test(password)) { setPasswordError("Password must contain a number."); return; }
+    if (!/[^A-Za-z0-9]/.test(password)) { setPasswordError("Password must contain a special character."); return; }
 
     if (password !== confirm) {
       setConfirmError("Passwords do not match");
@@ -75,14 +95,22 @@ export default function RegisterScreen() {
       const sanitizedEmail = email.trim().toLowerCase();
       const sanitizedName = name.trim();
       await register(sanitizedName, sanitizedEmail, password, confirm);
-      router.replace("/onboarding/topics");
-    } catch (err) {
+      router.replace("/topics?onboarding=1");
+    } catch (err: unknown) {
       if (err instanceof ApiError) {
-        const body = err.body as { errors?: Record<string, string[]> } | null;
-        const firstError = body?.errors ? Object.values(body.errors)[0]?.[0] : undefined;
-        setError(firstError || err.message);
+        const validation = getValidationErrors(err);
+        const passwordError = validation.password?.[0];
+        const confirmationError = validation.password_confirmation?.[0];
+        const emailError = validation.email?.[0];
+        const nameError = validation.name?.[0];
+
+        if (passwordError) setPasswordError(passwordError);
+        else if (confirmationError) setConfirmError(confirmationError);
+        else if (emailError) setError(emailError);
+        else if (nameError) setError(nameError);
+        else setError(err.message || "Registration failed. Please check your details.");
       } else {
-        setError("Registration failed");
+        setError("Registration failed. Please try again.");
       }
     }
   };
@@ -123,7 +151,15 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             iconColor={iconColor}
           />
-          <Field icon="lock" value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry iconColor={iconColor} />
+          <View>
+            <Field icon="lock" value={password} onChangeText={(value) => { setPassword(value); setPasswordError(null); }} placeholder="Password" secureTextEntry iconColor={iconColor} error={Boolean(passwordError)} />
+            {passwordError && (
+              <Text className="mt-1.5 px-1 font-sans text-xs text-danger">{passwordError}</Text>
+            )}
+            <Text className="mt-1.5 px-1 font-sans text-xs text-foreground-subtle">
+              Use 8–128 characters with uppercase, lowercase, a number, and a special character.
+            </Text>
+          </View>
           <View>
             <Field
               icon="lock"

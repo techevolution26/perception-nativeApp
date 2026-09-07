@@ -18,6 +18,38 @@ export class ApiError extends Error {
   }
 }
 
+export function getValidationErrors(error: unknown): Record<string, string[]> {
+  if (!(error instanceof ApiError)) return {};
+
+  const body = error.body as {
+    errors?: unknown;
+    detail?: unknown;
+  } | null;
+
+  if (body?.errors && typeof body.errors === "object" && !Array.isArray(body.errors)) {
+    const entries = Object.entries(body.errors as Record<string, unknown>).map(([field, value]) => [
+      field,
+      Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [],
+    ] as const);
+    return Object.fromEntries(entries);
+  }
+
+  if (Array.isArray(body?.detail)) {
+    const result: Record<string, string[]> = {};
+    for (const item of body.detail) {
+      if (!item || typeof item !== "object") continue;
+      const record = item as { loc?: unknown; msg?: unknown };
+      const loc = Array.isArray(record.loc) ? record.loc : [];
+      const field = typeof loc[loc.length - 1] === "string" ? String(loc[loc.length - 1]) : "form";
+      const message = typeof record.msg === "string" ? record.msg : "Invalid value.";
+      (result[field] ??= []).push(message);
+    }
+    return result;
+  }
+
+  return {};
+}
+
 export function getAuthErrorMessage(error: unknown, fallback = "Authentication failed. Please try again."): string {
   if (!(error instanceof ApiError)) return fallback;
 
@@ -36,10 +68,8 @@ export function getAuthErrorMessage(error: unknown, fallback = "Authentication f
 
   if (error.status === 422) {
     const detail = (error.body as { detail?: unknown } | null)?.detail;
-    const errors = (error.body as { errors?: Record<string, string[]> } | null)?.errors;
-    const firstValidationError = errors
-      ? Object.values(errors).flat().find((message): message is string => typeof message === "string")
-      : undefined;
+    const errors = getValidationErrors(error);
+    const firstValidationError = Object.values(errors).flat().find((message): message is string => typeof message === "string");
 
     if (firstValidationError && /credentials are incorrect/i.test(firstValidationError)) {
       return "Invalid email or password. Please check your credentials.";

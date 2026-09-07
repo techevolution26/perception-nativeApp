@@ -6,12 +6,11 @@ import Spinner from "../../components/ui/Spinner";
 // channel/event as everywhere else) that never got ported. This closes
 // that gap.
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, Pressable, RefreshControl } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import VantageMark from "../../components/ui/VantageMark";
-import StateView from "../../components/ui/StateView";
 import { apiFetch } from "../../lib/api";
 import useAuthStore from "../../store/useAuthStore";
 import type {
@@ -28,36 +27,20 @@ export default function NotificationsScreen() {
   const me = useAuthStore((s) => s.user);
   const [notes, setNotes] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loadError, setLoadError] = useState(false);
 
-  const load = useCallback(
-    async (refresh = false) => {
+  useEffect(() => {
+    void Promise.resolve().then(() => {
       if (!me) {
         setLoading(false);
         return;
       }
-      if (refresh) setRefreshing(true);
-      else setLoading(true);
-      setLoadError(false);
-      try {
-        const payload =
-          await apiFetch<NotificationsResponse>("/api/notifications");
-        setNotes(payload.data || []);
-      } catch (err) {
-        console.error("Failed to load notifications:", err);
-        setLoadError(true);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [me],
-  );
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+      setLoading(true);
+      return apiFetch<NotificationsResponse>("/api/notifications")
+        .then((payload) => setNotes(payload.data || []))
+        .catch((err) => console.error("Failed to load notifications:", err))
+        .finally(() => setLoading(false));
+    });
+  }, [me]);
 
   useEffect(() => {
     if (!me) return;
@@ -146,26 +129,12 @@ export default function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <StateView kind="loading" />
-      ) : loadError && notes.length === 0 ? (
-        <StateView
-          kind="error"
-          title="Notifications unavailable"
-          message="We couldn’t load your notifications."
-          actionLabel="Try again"
-          onAction={() => void load()}
-        />
+        <Spinner className="mt-8" />
       ) : (
         <FlatList
           data={notes}
           keyExtractor={(item) => item.id}
           contentContainerClassName="gap-1 px-3 pb-10"
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => void load(true)}
-            />
-          }
           ListEmptyComponent={
             <View className="mt-16 items-center gap-3">
               <VantageMark size={30} color="#8b91a0" />

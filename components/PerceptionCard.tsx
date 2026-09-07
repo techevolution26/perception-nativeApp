@@ -224,15 +224,7 @@ export default function PerceptionCard({
             icon: "edit-2" as const,
             onPress: handleEdit,
           },
-          ...(onAnalytics
-            ? [
-                {
-                  label: "Perception analytics",
-                  icon: "bar-chart-2" as const,
-                  onPress: () => onAnalytics(perception),
-                },
-              ]
-            : []),
+          ...(onAnalytics ? [{ label: "Perception analytics", icon: "bar-chart-2" as const, onPress: () => onAnalytics(perception) }] : []),
           {
             label: "Delete",
             icon: "trash-2" as const,
@@ -283,30 +275,24 @@ export default function PerceptionCard({
 
           <View className="flex-row items-start px-3.5 pt-3.5">
             {/* Avatar */}
-            <Pressable
-              className="mr-3"
-              onPress={(event) => {
-                event.stopPropagation?.();
-                router.push(`/users/${user.id}`);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`Open ${user.name}'s profile`}
-            >
+            <Pressable className="mr-3" onPress={(event) => { event.stopPropagation?.(); router.push(`/users/${user.id}`); }} accessibilityRole="button" accessibilityLabel={`Open ${user.name}'s profile`}>
               <Avatar uri={user.avatar_url} size="md" />
             </Pressable>
 
             {/* Flexible identity column */}
             <View className="min-w-0 flex-1">
-              <View className="flex-row items-center gap-1.5">
+              <View className="flex-row items-center min-w-0">
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"
-                  className="flex-shrink font-sans-medium text-[15px] text-foreground"
+                  className="max-w-[80%] font-sans-medium text-[15px] text-foreground"
                 >
                   {user.name}
                 </Text>
                 {user.verification_status === "VERIFIED" && (
-                  <VerifiedBadge badge={user.verification_badge} compact />
+                  <View className="ml-1.5">
+                    <VerifiedBadge profession={user.profession} compact />
+                  </View>
                 )}
               </View>
 

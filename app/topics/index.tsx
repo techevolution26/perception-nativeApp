@@ -1,6 +1,7 @@
 import Spinner from "../../components/ui/Spinner";
 // app/topics/index.tsx
 import { useEffect, useState, useCallback } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -20,6 +21,8 @@ interface FollowableTopic extends Topic {
 export default function TopicsIndexScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useCurrentUser();
+  const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
+  const isOnboarding = onboarding === "1";
   const guard = useGuardAction();
   const [topics, setTopics] = useState<FollowableTopic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,10 +71,10 @@ export default function TopicsIndexScreen() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center gap-2 px-4 py-3">
-        <Pressable onPress={() => router.back()} className="rounded-control p-1">
+        {!isOnboarding && <Pressable onPress={() => router.back()} className="rounded-control p-1">
           <Feather name="chevron-left" size={22} color="#8b91a0" />
-        </Pressable>
-        <Text className="font-sans-semibold text-xl text-foreground">Topics</Text>
+        </Pressable>}
+        <Text className="font-sans-semibold text-xl text-foreground">{isOnboarding ? "Choose your topics" : "Topics"}</Text>
       </View>
 
       {loading ? (
@@ -82,10 +85,28 @@ export default function TopicsIndexScreen() {
           keyExtractor={(item) => String(item.id)}
           contentContainerClassName="gap-3 px-4 pb-10"
           ListHeaderComponent={
-            <Text className="mb-1 font-sans text-sm text-foreground-subtle">
-              Follow the topics you care about — they&rsquo;ll shape your home feed.
-            </Text>
+            <View className="mb-1">
+              <Text className="font-sans text-sm text-foreground-subtle">
+                {isOnboarding
+                  ? "Follow at least one topic to shape your home feed. You can change these anytime."
+                  : "Follow the topics you care about — they&rsquo;ll shape your home feed."}
+              </Text>
+              {isOnboarding && (
+                <Text className="mt-1 font-sans-medium text-xs text-accent">{topics.filter((topic) => topic.followed).length} selected</Text>
+              )}
+            </View>
           }
+          ListFooterComponent={isOnboarding ? (
+            <View className="mt-3">
+              <Button
+                label="Continue to Perception"
+                variant="accent"
+                size="lg"
+                disabled={topics.filter((topic) => topic.followed).length === 0}
+                onPress={() => router.replace("/(tabs)")}
+              />
+            </View>
+          ) : null}
           renderItem={({ item }) => (
             <Card className="flex-row items-center justify-between p-4">
               <Pressable onPress={() => router.push(`/topics/${item.id}`)} className="min-w-0 flex-1 flex-row items-center gap-3.5">

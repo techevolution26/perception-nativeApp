@@ -15,6 +15,7 @@ interface AuthState {
   token: string | null;
   hydrated: boolean;
   loading: boolean;
+  needsTopicOnboarding: boolean;
   hydrate: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
@@ -28,6 +29,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   hydrated: false,
   loading: false,
+  needsTopicOnboarding: false,
 
   hydrate: async () => {
     const token = await getToken();
@@ -54,7 +56,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
         body: { email, password },
       });
       await setToken(res.token);
-      set({ token: res.token, user: res.user, loading: false });
+      set({ token: res.token, user: res.user, loading: false, needsTopicOnboarding: false });
     } catch (err) {
       set({ loading: false });
       throw err;
@@ -66,7 +68,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await apiFetch<AuthResponse>("/api/google", { method: "POST", auth: false, body: { id_token: idToken } });
       await setToken(res.token);
-      set({ token: res.token, user: res.user, loading: false });
+      set({ token: res.token, user: res.user, loading: false, needsTopicOnboarding: Boolean(res.is_new_user) });
     } catch (err) { set({ loading: false }); throw err; }
   },
 
@@ -79,7 +81,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
         body: { name, email, password, password_confirmation: passwordConfirmation },
       });
       await setToken(res.token);
-      set({ token: res.token, user: res.user, loading: false });
+      set({ token: res.token, user: res.user, loading: false, needsTopicOnboarding: true });
     } catch (err) {
       set({ loading: false });
       throw err;
@@ -100,7 +102,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
       // Local credential removal is still mandatory if the server is unavailable.
     } finally {
       await clearToken();
-      set({ token: null, user: null });
+      set({ token: null, user: null, needsTopicOnboarding: false });
     }
   },
 
