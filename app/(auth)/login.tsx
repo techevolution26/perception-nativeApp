@@ -175,6 +175,14 @@ export default function LoginScreen() {
             disabled={!email || !password}
             onPress={handleSubmit}
           />
+
+          <Link href="/(auth)/forgot-password" asChild>
+            <Pressable className="items-center py-1.5">
+              <Text className="font-sans-medium text-sm text-accent">
+                Forgot password?
+              </Text>
+            </Pressable>
+          </Link>
         </View>
 
         <View className="mt-6 flex-row justify-center">
