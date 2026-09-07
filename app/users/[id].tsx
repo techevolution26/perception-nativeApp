@@ -47,7 +47,6 @@ export default function UserProfileScreen() {
   // Edit mode
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
-  const [editProfession, setEditProfession] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editAvatar, setEditAvatar] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -105,7 +104,6 @@ export default function UserProfileScreen() {
   const startEditing = () => {
     if (!user) return;
     setEditName(user.name);
-    setEditProfession(user.profession || "");
     setEditBio(user.bio || "");
     setEditAvatar(null);
     setEditing(true);
@@ -147,10 +145,9 @@ export default function UserProfileScreen() {
         });
       }
 
-      // Profession, bio, and avatar use multipart/form-data.
+      // Bio and avatar use multipart/form-data; professional identity has its own structured editor.
       const form = new FormData();
 
-      form.append("profession", editProfession);
       form.append("bio", editBio);
 
       if (editAvatar) {
@@ -264,18 +261,12 @@ export default function UserProfileScreen() {
                   className="rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 text-center font-sans text-foreground"
                 />
               </View>
-              <View>
-                <Text className="mb-1 font-sans-medium text-xs text-foreground-subtle">
-                  Profession
-                </Text>
-                <TextInput
-                  value={editProfession}
-                  onChangeText={setEditProfession}
-                  placeholder="What do you do?"
-                  placeholderTextColor="#8b91a0"
-                  className="rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 text-center font-sans text-foreground"
-                />
-              </View>
+              <Button
+                label="Edit professional identity"
+                variant="outline"
+                onPress={() => router.push("/professional-identity")}
+                disabled={saving}
+              />
               <View>
                 <Text className="mb-1 font-sans-medium text-xs text-foreground-subtle">
                   Bio
@@ -316,12 +307,20 @@ export default function UserProfileScreen() {
                 </Text>
                 {user.verification_status === "VERIFIED" && (
                   <View className="ml-2">
-                    <VerifiedBadge profession={user.profession} />
+                    <VerifiedBadge roleCode={user.primary_professional_role} label={user.primary_professional_role_label ?? user.profession} verified={user.verification_status === "VERIFIED"} />
                   </View>
                 )}
               </View>
-              {user.profession && (
+              {user.primary_professional_role_label ? (
+                <Text className="font-sans text-accent">{user.primary_professional_role_label}</Text>
+              ) : user.profession ? (
                 <Text className="font-sans text-accent">{user.profession}</Text>
+              ) : null}
+              {isOwnProfile && (user.professional_role_labels?.length ?? 0) > 0 && (
+                <View className="mt-2 flex-row flex-wrap justify-center gap-1.5">
+                  {user.professional_role_labels.slice(0, 4).map((label) => <Pill key={label} label={label} />)}
+                  {user.professional_role_labels.length > 4 && <Pill label={`+${user.professional_role_labels.length - 4}`} />}
+                </View>
               )}
               {user.bio && (
                 <Text className="mt-2 text-center font-sans text-foreground-muted">

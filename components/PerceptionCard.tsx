@@ -289,9 +289,9 @@ export default function PerceptionCard({
                 >
                   {user.name}
                 </Text>
-                {user.verification_status === "VERIFIED" && (
+                {user.primary_professional_role && (
                   <View className="ml-1.5">
-                    <VerifiedBadge profession={user.profession} compact />
+                    <VerifiedBadge roleCode={user.primary_professional_role} compact verified={user.verification_status === "VERIFIED"} />
                   </View>
                 )}
               </View>

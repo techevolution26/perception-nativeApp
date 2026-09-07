@@ -6,6 +6,8 @@ import { Feather } from "@expo/vector-icons";
 
 import Button from "../components/ui/Button";
 import Pill from "../components/ui/Pill";
+import ProfessionalIdentityPicker from "../components/ui/ProfessionalIdentityPicker";
+import type { ProfessionalTaxonomy } from "../types/models";
 import { ApiError, apiFetch } from "../lib/api";
 import useAuthStore from "../store/useAuthStore";
 import type { Topic, VerificationApplication } from "../types/models";
@@ -13,8 +15,11 @@ import type { Topic, VerificationApplication } from "../types/models";
 export default function VerificationScreen() {
   const user = useAuthStore((s) => s.user);
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [taxonomy, setTaxonomy] = useState<ProfessionalTaxonomy | null>(null);
+  const [industries, setIndustries] = useState<string[]>(user?.professional_industries ?? []);
+  const [roles, setRoles] = useState<string[]>(user?.professional_roles ?? []);
+  const [primaryRole, setPrimaryRole] = useState<string | null>(user?.primary_professional_role ?? null);
   const [application, setApplication] = useState<VerificationApplication | null>(null);
-  const [profession, setProfession] = useState(user?.profession ?? "");
   const [focus, setFocus] = useState(user?.professional_focus ?? "");
   const [primary, setPrimary] = useState<number | null>(user?.primary_analytics_topic_id ?? null);
   const [selected, setSelected] = useState<number[]>(user?.analytics_specialties ?? []);
@@ -24,12 +29,14 @@ export default function VerificationScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [topicData, app] = await Promise.all([
+      const [topicData, app, taxonomyData] = await Promise.all([
         apiFetch<{ topics: Topic[] }>("/api/topics", { auth: false }),
         apiFetch<VerificationApplication | null>("/api/verification/me"),
+        apiFetch<ProfessionalTaxonomy>("/api/professional-taxonomy", { auth: false }),
       ]);
       setTopics(topicData.topics);
       setApplication(app);
+      setTaxonomy(taxonomyData);
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {
         Alert.alert("Verification requires the right plan", "Choose a plan that includes professional verification.");
@@ -50,8 +57,9 @@ export default function VerificationScreen() {
   };
 
   const submit = async () => {
-    if (!profession.trim() || !focus.trim()) {
-      Alert.alert("Complete your profile", "Profession and focus are required.");
+    const role = taxonomy?.roles.find((item) => item.code === primaryRole);
+    if (!role || !roles.length) {
+      Alert.alert("Choose your professional identity", "Select at least one professional role and choose a primary role.");
       return;
     }
     setSaving(true);
@@ -59,8 +67,11 @@ export default function VerificationScreen() {
       const result = await apiFetch<VerificationApplication>("/api/verification/applications", {
         method: "POST",
         body: {
-          profession: profession.trim(),
-          focus: focus.trim(),
+          profession: role.label,
+          focus: focus.trim() || role.label,
+          industry_codes: industries,
+          professional_role_codes: roles,
+          primary_professional_role: primaryRole,
           primary_topic_id: primary,
           requested_topic_ids: Array.from(new Set(primary ? [primary, ...selected] : selected)),
           evidence: evidence.trim() || null,
@@ -94,7 +105,7 @@ export default function VerificationScreen() {
         <View className="ml-2 flex-1">
           <Text className="font-sans-semibold text-xl text-foreground">Professional verification</Text>
           <Text className="font-sans text-sm text-foreground-muted">
-            Connect your professional focus to the analytics you use.
+            Professional identity and verification are separate signals. A plan can make you eligible to apply; only a super administrator can approve verification.
           </Text>
         </View>
       </View>
@@ -120,28 +131,30 @@ export default function VerificationScreen() {
         ) : (
           <>
             <View className="rounded-card border border-border-hairline bg-surface p-4">
-              <Text className="font-sans-semibold text-base text-foreground">Your professional area</Text>
-              <TextInput
-                value={profession}
-                onChangeText={setProfession}
-                placeholder="Profession"
-                placeholderTextColor="#8b91a0"
-                className="mt-3 rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 font-sans text-foreground"
+              <Text className="font-sans-semibold text-base text-foreground">Professional identity</Text>
+              <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">Select your industries and roles instead of typing an unstructured profession. Your primary role determines the leading professional badge.</Text>
+              <ProfessionalIdentityPicker
+                industries={industries}
+                roles={roles}
+                primaryRole={primaryRole}
+                onChange={(value) => { setIndustries(value.industries); setRoles(value.roles); setPrimaryRole(value.primaryRole); }}
               />
+              <Text className="mt-4 mb-1 font-sans-medium text-xs text-foreground-subtle">Professional focus (optional)</Text>
               <TextInput
                 value={focus}
                 onChangeText={setFocus}
-                placeholder="Area of need / focus"
+                placeholder="e.g. consumer research"
                 placeholderTextColor="#8b91a0"
-                className="mt-3 rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 font-sans text-foreground"
+                className="rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 font-sans text-foreground"
               />
+              <Text className="mt-4 mb-1 font-sans-medium text-xs text-foreground-subtle">Evidence or context (optional)</Text>
               <TextInput
                 value={evidence}
                 onChangeText={setEvidence}
-                placeholder="Optional evidence or context"
+                placeholder="Tell the reviewer what supports your professional identity"
                 placeholderTextColor="#8b91a0"
                 multiline
-                className="mt-3 min-h-[90px] rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 font-sans text-foreground"
+                className="min-h-[90px] rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 font-sans text-foreground"
               />
             </View>
 

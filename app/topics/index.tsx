@@ -13,6 +13,7 @@ import { apiFetch, resolveMediaUrl } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
 import type { Topic, TopicsResponse } from "../../types/models";
+import { setTopicReminderPending } from "../../lib/topicReminder";
 
 interface FollowableTopic extends Topic {
   followed: boolean;
@@ -62,6 +63,7 @@ export default function TopicsIndexScreen() {
       setTopics((prev) => prev.map((t) => (t.id === topic.id ? { ...t, followed: !t.followed } : t)));
       try {
         await apiFetch(`/api/topics/${topic.id}/follow`, { method });
+        if (!topic.followed) await setTopicReminderPending(false);
       } catch {
         // roll back on failure
         setTopics((prev) => prev.map((t) => (t.id === topic.id ? { ...t, followed: topic.followed } : t)));
@@ -88,8 +90,8 @@ export default function TopicsIndexScreen() {
             <View className="mb-1">
               <Text className="font-sans text-sm text-foreground-subtle">
                 {isOnboarding
-                  ? "Follow at least one topic to shape your home feed. You can change these anytime."
-                  : "Follow the topics you care about — they&rsquo;ll shape your home feed."}
+                  ? "Follow topics to shape your home feed. This step is optional — you can continue now and come back later."
+                  : "Follow the topics you care about — they'll shape your home feed."}
               </Text>
               {isOnboarding && (
                 <Text className="mt-1 font-sans-medium text-xs text-accent">{topics.filter((topic) => topic.followed).length} selected</Text>
@@ -102,8 +104,11 @@ export default function TopicsIndexScreen() {
                 label="Continue to Perception"
                 variant="accent"
                 size="lg"
-                disabled={topics.filter((topic) => topic.followed).length === 0}
-                onPress={() => router.replace("/(tabs)")}
+                onPress={() => {
+                  const hasTopics = topics.some((topic) => topic.followed);
+                  void setTopicReminderPending(!hasTopics);
+                  router.replace("/(tabs)");
+                }}
               />
             </View>
           ) : null}

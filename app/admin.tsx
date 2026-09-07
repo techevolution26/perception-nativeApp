@@ -6,6 +6,7 @@ import useAuthStore from "../store/useAuthStore";
 import { ApiError, apiFetch } from "../lib/api";
 import Button from "../components/ui/Button";
 import Spinner from "../components/ui/Spinner";
+import type { VerificationApplication } from "../types/models";
 
 interface AdminOverview {
   users: number;
@@ -44,6 +45,8 @@ export default function AdminScreen() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [applications, setApplications] = useState<VerificationApplication[]>([]);
+  const [reviewingId, setReviewingId] = useState<number | null>(null);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
@@ -53,14 +56,16 @@ export default function AdminScreen() {
 
   const loadControlRoom = useCallback(async (token: string) => {
     const options = { auth: false, headers: { Authorization: `Bearer ${token}` } };
-    const [overview, adminUsers, auditRows] = await Promise.all([
+    const [overview, adminUsers, auditRows, verificationRows] = await Promise.all([
       apiFetch<AdminOverview>("/api/admin/overview", options),
       apiFetch<AdminUser[]>(`/api/admin/users?query=${encodeURIComponent(query)}`, options),
       apiFetch<AdminAudit[]>("/api/admin/audit?limit=50", options),
+      apiFetch<VerificationApplication[]>("/api/verification/admin/applications", options),
     ]);
     setStats(overview);
     setUsers(adminUsers);
     setAudit(auditRows);
+    setApplications(verificationRows);
   }, [query]);
 
   const unlock = async () => {
@@ -97,6 +102,7 @@ export default function AdminScreen() {
         setStats(null);
         setUsers([]);
         setAudit([]);
+        setApplications([]);
         Alert.alert("Admin session ended", "Unlock the control room again to continue.");
       } else {
         Alert.alert("Refresh failed", "The control room could not be refreshed.");
@@ -117,6 +123,24 @@ export default function AdminScreen() {
       return;
     }
     await applyUserState(target, action);
+  };
+
+  const reviewVerification = async (application: VerificationApplication, approved: boolean) => {
+    if (!adminToken) return;
+    setReviewingId(application.id);
+    try {
+      const note = approved ? "Professional identity approved by a super administrator." : "Professional identity requires additional evidence or review.";
+      await apiFetch(`/api/verification/admin/applications/${application.id}/review?approved=${approved}&reviewer_note=${encodeURIComponent(note)}`, {
+        method: "POST",
+        auth: false,
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      await loadControlRoom(adminToken);
+    } catch (error) {
+      Alert.alert("Review failed", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      setReviewingId(null);
+    }
   };
 
   const applyUserState = async (target: AdminUser, action: "suspend" | "restore") => {
@@ -180,7 +204,7 @@ export default function AdminScreen() {
           <Text className="mt-1 font-sans text-sm text-foreground-muted">Platform administration</Text>
         </View>
         <Pressable
-          onPress={() => { setAdminToken(null); setStats(null); setUsers([]); setAudit([]); }}
+          onPress={() => { setAdminToken(null); setStats(null); setUsers([]); setAudit([]); setApplications([]); }}
           className="rounded-control border border-border-hairline px-3 py-2 active:opacity-70"
         >
           <Text className="font-sans-medium text-xs text-foreground">Lock</Text>
@@ -226,6 +250,26 @@ export default function AdminScreen() {
                     <Text className="font-sans-medium text-xs text-foreground">{target.is_active ? "Suspend" : "Restore"}</Text>
                   </Pressable>
                 )}
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View className="mt-8">
+        <Text className="font-sans-semibold text-lg text-foreground">Professional verification</Text>
+        <Text className="mt-1 font-sans text-sm text-foreground-muted">Super-admin review only. A paid plan makes a user eligible to apply; it does not grant verification.</Text>
+        <View className="mt-3 gap-2">
+          {applications.filter((item) => item.status === "PENDING").length === 0 ? (
+            <Text className="font-sans text-sm text-foreground-muted">No pending verification applications.</Text>
+          ) : applications.filter((item) => item.status === "PENDING").map((application) => (
+            <View key={application.id} className="rounded-card border border-border-hairline bg-surface p-4">
+              <Text className="font-sans-medium text-foreground">{application.profession} · {application.focus}</Text>
+              <Text className="mt-1 font-sans text-xs text-foreground-subtle">{application.professional_role_codes.join(", ")}</Text>
+              {application.evidence && <Text className="mt-2 font-sans text-xs leading-5 text-foreground-muted">{application.evidence}</Text>}
+              <View className="mt-3 flex-row gap-2">
+                <Button label="Reject" variant="outline" size="sm" loading={reviewingId === application.id} onPress={() => void reviewVerification(application, false)} />
+                <Button label="Approve" variant="accent" size="sm" loading={reviewingId === application.id} onPress={() => void reviewVerification(application, true)} />
               </View>
             </View>
           ))}

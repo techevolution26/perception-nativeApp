@@ -3,7 +3,7 @@ import Spinner from "../../components/ui/Spinner";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { View, Text, FlatList, RefreshControl, Alert, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import PerceptionCard from "../../components/PerceptionCard";
 import TopicsCarousel from "../../components/TopicsCarousel";
@@ -15,6 +15,7 @@ import usePerceptionsStore from "../../store/usePerceptionsStore";
 import useTopics from "../../hooks/useTopics";
 import type { Perception, LikeToggle, Topic } from "../../types/models";
 import { playLikeSound } from "../../lib/sound";
+import { setTopicReminderPending } from "../../lib/topicReminder";
 
 interface TopicGroup extends Topic {
   items: Perception[];
@@ -27,6 +28,7 @@ export default function HomeScreen() {
   const { data: topics = [] } = useTopics();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [topicReminder, setTopicReminder] = useState(false);
 
   /*
     FIXED: Split the selector block into raw primitive arrays/objects
@@ -69,6 +71,20 @@ export default function HomeScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useFocusEffect(useCallback(() => {
+    if (!user) { setTopicReminder(false); return undefined; }
+    let active = true;
+    void apiFetch<Topic[]>(`/api/users/${user.id}/topics`, { auth: true })
+      .then((followed) => {
+        if (!active) return;
+        const hasTopics = followed.length > 0;
+        setTopicReminder(!hasTopics);
+        void setTopicReminderPending(!hasTopics);
+      })
+      .catch(() => { if (active) setTopicReminder(false); });
+    return () => { active = false; };
+  }, [user]));
 
   const handleLike = (p: Perception) =>
     guard(async () => {
@@ -137,6 +153,19 @@ export default function HomeScreen() {
           <Feather name="search" size={20} color="#8b91a0" />
         </Pressable>
       </View>
+
+      {topicReminder && (
+        <Pressable onPress={() => router.push("/topics")} className="mx-4 mb-2 rounded-card border border-accent/25 bg-accent-soft px-4 py-3">
+          <View className="flex-row items-center">
+            <VantageMark size={18} color="#f2a33c" />
+            <View className="ml-3 flex-1">
+              <Text className="font-sans-medium text-sm text-foreground">Shape your Perception feed</Text>
+              <Text className="mt-0.5 font-sans text-xs text-foreground-muted">Follow at least one topic when you are ready. This reminder disappears once you do.</Text>
+            </View>
+            <Feather name="chevron-right" size={17} color="#f2a33c" />
+          </View>
+        </Pressable>
+      )}
 
       <FlatList
         data={flatData}

@@ -13,10 +13,9 @@ export type Perception = components["schemas"]["PerceptionOut"];
 export type Topic = components["schemas"]["TopicOut"];
 export type TopicSlim = components["schemas"]["TopicSlim"];
 export type Comment = components["schemas"]["CommentOut"];
-export type UserSlim = components["schemas"]["UserSlim"];
+export type UserSlim = components["schemas"]["UserSlim"] & { professional_industries: string[]; professional_roles: string[]; primary_professional_role: string | null; primary_professional_role_label: string | null; professional_role_labels: string[]; verified_professional_roles: string[]; };
 export type UserWithUnread = components["schemas"]["UserWithUnread"];
-export type Notification =
-  components["schemas"]["NotificationsListOut"]["data"][number];
+export type Notification = components["schemas"]["NotificationsListOut"]["data"][number];
 export type Message = components["schemas"]["MessageOut"];
 export type LikeToggle = components["schemas"]["LikeToggleOut"];
 export type FollowToggle = components["schemas"]["FollowToggleOut"];
@@ -32,8 +31,7 @@ export type UserPublic = UserProfile;
 // proper response_models for both list endpoints now, rather than this
 // file having to hand-maintain the envelope shape.
 export type TopicsResponse = components["schemas"]["TopicsListOut"];
-export type NotificationsResponse =
-  components["schemas"]["NotificationsListOut"];
+export type NotificationsResponse = components["schemas"]["NotificationsListOut"];
 
 // Client-only optimistic-UI fields layered on top of a real Message while a
 // send is in flight — never present in what the API actually returns.
@@ -56,21 +54,8 @@ export interface MessagesPage {
 // UI branches on — narrower than the generic `data: Record<string, unknown>`
 // the generated Notification.data field has (Pydantic's `dict` maps to
 // `Record<string, never>` in the schema, which isn't useful to consume).
-export interface FollowNotificationData {
-  type: "follow";
-  actor_id: number;
-  actor_name: string;
-  message: string;
-}
-export interface ActionNotificationData {
-  type: "perception_like" | "perception_comment" | "comment_reply" | "message";
-  perception_id?: number;
-  comment_id?: number;
-  message_id?: number;
-  actor_id?: number;
-  actor_name?: string;
-  body?: string;
-}
+export interface FollowNotificationData { type: "follow"; actor_id: number; actor_name: string; message: string; }
+export interface ActionNotificationData { type: "perception_like" | "perception_comment" | "comment_reply" | "message"; perception_id?: number; comment_id?: number; message_id?: number; actor_id?: number; actor_name?: string; body?: string; }
 export interface PerceptionNotificationData {
   type: "perception";
   perception_id: number;
@@ -82,11 +67,11 @@ export interface DailyNotificationData {
   body: string;
   topic: string;
 }
-export type NotificationData =
-  | PerceptionNotificationData
-  | DailyNotificationData
-  | FollowNotificationData
-  | ActionNotificationData;
+export type NotificationData = PerceptionNotificationData | DailyNotificationData | FollowNotificationData | ActionNotificationData;
+
+export interface ProfessionalIndustry { code: string; label: string; }
+export interface ProfessionalRole { code: string; label: string; industry_code: string; icon: string; }
+export interface ProfessionalTaxonomy { industries: ProfessionalIndustry[]; roles: ProfessionalRole[]; }
 
 export interface AnalyticsProfileFields {
   professional_focus: string | null;
@@ -97,11 +82,16 @@ export interface AnalyticsProfileFields {
   primary_analytics_topic_id: number | null;
   verification_status: string;
   verification_badge: string | null;
+  professional_industries: string[];
+  professional_roles: string[];
+  primary_professional_role: string | null;
+  primary_professional_role_label: string | null;
+  professional_role_labels: string[];
+  verified_professional_roles: string[];
 }
 
 export type UserMe = components["schemas"]["UserMe"] & AnalyticsProfileFields;
-export type UserProfile = components["schemas"]["UserProfile"] &
-  AnalyticsProfileFields & { is_following: boolean; can_message: boolean };
+export type UserProfile = components["schemas"]["UserProfile"] & AnalyticsProfileFields & { is_following: boolean; can_message: boolean };
 
 export interface Plan {
   id: number;
@@ -262,10 +252,14 @@ export interface VerificationApplication {
   evidence: string | null;
   status: string;
   badge: string | null;
+  industry_codes: string[];
+  professional_role_codes: string[];
+  primary_professional_role: string | null;
   reviewer_note: string | null;
   created_at: string;
   updated_at: string;
 }
+
 
 export interface AnalyticsDecision {
   period_days: number;
@@ -284,18 +278,7 @@ export interface AnalyticsDecision {
   guardrail: string;
 }
 
+
 export interface PerceptionAnalytics {
-  perception_id: number;
-  period_days: number;
-  created_at: string;
-  topic_id: number | null;
-  likes: number;
-  comments: number;
-  views: number;
-  shares: number;
-  unique_participants: number;
-  engagement_rate: number;
-  daily_activity: Array<{ date: string; interactions: number }>;
-  top_countries: Array<{ country_code: string; interactions: number }>;
-  methodology: string[];
+  perception_id:number; period_days:number; created_at:string; topic_id:number|null; likes:number; comments:number; views:number; shares:number; unique_participants:number; engagement_rate:number; daily_activity:Array<{date:string;interactions:number}>; top_countries:Array<{country_code:string;interactions:number}>; methodology:string[];
 }
