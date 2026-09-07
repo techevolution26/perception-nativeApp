@@ -132,8 +132,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     }
 
     const refreshUnread = () => {
-      apiFetch<{ count: number }>("/api/notifications/unread-count")
-        .then((payload) => setUnread(payload.count))
+      apiFetch<{ unread_count: number }>("/api/notifications/unread-count")
+        .then((payload) => setUnread(payload.unread_count))
         .catch(() => {
           // Badge failure should never break navigation.
         });
@@ -657,6 +657,17 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 </Pressable>
               );
             })}
+            {user?.role === "SUPER_ADMIN" && (
+              <Pressable
+                onPress={() => router.push("/admin")}
+                className="items-center justify-center rounded-full active:bg-surface-hover/30"
+                style={{ width: 44, height: 44 }}
+                accessibilityLabel="Admin control room"
+                accessibilityRole="button"
+              >
+                <Feather name="shield" size={20} color={pathname === "/admin" ? activeColor : iconColor} />
+              </Pressable>
+            )}
           </View>
         </View>
       </Animated.View>
