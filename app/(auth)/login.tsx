@@ -15,7 +15,8 @@ import { Feather } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import VantageMark from "../../components/ui/VantageMark";
 import Button from "../../components/ui/Button";
-import useAuthStore, { ApiError } from "../../store/useAuthStore";
+import useAuthStore from "../../store/useAuthStore";
+import { getAuthErrorMessage } from "../../lib/api";
 
 export default function LoginScreen() {
   const { colorScheme } = useColorScheme();
@@ -48,7 +49,7 @@ export default function LoginScreen() {
       setGoogleLoading(true);
       return loginWithGoogle(idToken)
         .then(() => router.replace("/(tabs)"))
-        .catch((err: any) => setError(err.message || "Google sign-in failed"))
+        .catch((err: unknown) => setError(getAuthErrorMessage(err, "Google sign-in failed.")))
         .finally(() => setGoogleLoading(false));
     });
   }, [loginWithGoogle, response]);
@@ -58,8 +59,8 @@ export default function LoginScreen() {
       setGoogleLoading(true);
       setError(null);
       await promptAsync();
-    } catch (err: any) {
-      setError(err.message || "Google sign-in failed");
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, "Google sign-in failed."));
     } finally {
       if (response?.type !== "success") setGoogleLoading(false);
     }
@@ -76,16 +77,8 @@ export default function LoginScreen() {
       // Send sanitized inputs to your auth store
       await login(sanitizedEmail, sanitizedPassword);
       router.replace("/(tabs)");
-    } catch (err) {
-      if (err instanceof ApiError) {
-        const body = err.body as { errors?: Record<string, string[]> } | null;
-        const firstError = body?.errors
-          ? Object.values(body.errors)[0]?.[0]
-          : undefined;
-        setError(firstError || err.message);
-      } else {
-        setError("Login failed");
-      }
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, "Unable to sign in. Please try again."));
     }
   };
 

@@ -18,10 +18,46 @@ export class ApiError extends Error {
   }
 }
 
+export function getAuthErrorMessage(error: unknown, fallback = "Authentication failed. Please try again."): string {
+  if (!(error instanceof ApiError)) return fallback;
+
+  if (error.status === 403) {
+    const detail = (error.body as { detail?: unknown } | null)?.detail;
+    return typeof detail === "string" ? detail : "This account is not allowed to sign in.";
+  }
+
+  if (error.status === 429) {
+    return "Too many login attempts. Please try again shortly.";
+  }
+
+  if (error.status === 503) {
+    return "Authentication is temporarily unavailable. Please try again later.";
+  }
+
+  if (error.status === 422) {
+    const detail = (error.body as { detail?: unknown } | null)?.detail;
+    const errors = (error.body as { errors?: Record<string, string[]> } | null)?.errors;
+    const firstValidationError = errors
+      ? Object.values(errors).flat().find((message): message is string => typeof message === "string")
+      : undefined;
+
+    if (firstValidationError && /credentials are incorrect/i.test(firstValidationError)) {
+      return "Invalid email or password. Please check your credentials.";
+    }
+
+    if (typeof detail === "string") return detail;
+    if (firstValidationError) return firstValidationError;
+    return "Invalid email or password. Please check your credentials.";
+  }
+
+  return error.message === `Request failed with status ${error.status}` ? fallback : error.message;
+}
+
 interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   body?: BodyInit | Record<string, unknown> | null;
   auth?: boolean; // attach Authorization header (default true)
   json?: boolean; // JSON.stringify a plain-object body (default true unless body is FormData)
+  clearOnUnauthorized?: boolean; // disable global session cleanup for explicit logout
 }
 
 // The web app ended up patching "clear the stale token on 401" into several
@@ -36,7 +72,7 @@ export function setUnauthorizedHandler(fn: () => void): void {
 }
 
 export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const { auth = true, json, body, headers, ...rest } = options;
+  const { auth = true, json, body, headers, clearOnUnauthorized = true, ...rest } = options;
 
   const finalHeaders: Record<string, string> = {
     Accept: "application/json",
@@ -70,16 +106,23 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
   });
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { detail: text.slice(0, 500) };
+    }
+  }
 
   if (!res.ok) {
     // Only a *stale/expired session* should trigger a global logout — a 401
     // on a request that never carried a token (e.g. an anonymous guest
     // browsing) is not a session expiry, it's just "this needs login."
-    if (res.status === 401 && sentAuthHeader) {
+    if (res.status === 401 && sentAuthHeader && clearOnUnauthorized) {
       onUnauthorized?.();
     }
-    throw new ApiError(res.status, data, typeof data?.detail === "string" ? data.detail : undefined);
+    throw new ApiError(res.status, data, typeof (data as { detail?: unknown } | null)?.detail === "string" ? (data as { detail: string }).detail : undefined);
   }
 
   return data as T;

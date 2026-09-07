@@ -54,7 +54,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
         body: { email, password },
       });
       await setToken(res.token);
-      set({ token: res.token, user: { ...res.user, professional_focus: null, country_code: null, region: null, city: null, analytics_specialties: [], primary_analytics_topic_id: null, verification_status: "unverified", verification_badge: null }, loading: false });
+      set({ token: res.token, user: res.user, loading: false });
     } catch (err) {
       set({ loading: false });
       throw err;
@@ -66,7 +66,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await apiFetch<AuthResponse>("/api/google", { method: "POST", auth: false, body: { id_token: idToken } });
       await setToken(res.token);
-      set({ token: res.token, user: { ...res.user, professional_focus: null, country_code: null, region: null, city: null, analytics_specialties: [], primary_analytics_topic_id: null, verification_status: "unverified", verification_badge: null }, loading: false });
+      set({ token: res.token, user: res.user, loading: false });
     } catch (err) { set({ loading: false }); throw err; }
   },
 
@@ -79,7 +79,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
         body: { name, email, password, password_confirmation: passwordConfirmation },
       });
       await setToken(res.token);
-      set({ token: res.token, user: { ...res.user, professional_focus: null, country_code: null, region: null, city: null, analytics_specialties: [], primary_analytics_topic_id: null, verification_status: "unverified", verification_badge: null }, loading: false });
+      set({ token: res.token, user: res.user, loading: false });
     } catch (err) {
       set({ loading: false });
       throw err;
@@ -87,8 +87,21 @@ const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    await clearToken();
-    set({ token: null, user: null });
+    const token = get().token;
+    try {
+      if (token) {
+        await apiFetch("/api/logout", {
+          method: "POST",
+          auth: true,
+          clearOnUnauthorized: false,
+        });
+      }
+    } catch {
+      // Local credential removal is still mandatory if the server is unavailable.
+    } finally {
+      await clearToken();
+      set({ token: null, user: null });
+    }
   },
 
   refreshMe: async () => {
