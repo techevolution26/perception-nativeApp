@@ -8,7 +8,7 @@ import Button from "../components/ui/Button";
 import Pill from "../components/ui/Pill";
 import ProfessionalIdentityPicker from "../components/ui/ProfessionalIdentityPicker";
 import type { ProfessionalTaxonomy } from "../types/models";
-import { ApiError, apiFetch } from "../lib/api";
+import { ApiError, apiFetch, getApiErrorMessage } from "../lib/api";
 import useAuthStore from "../store/useAuthStore";
 import type { Topic, VerificationApplication } from "../types/models";
 
@@ -80,11 +80,7 @@ export default function VerificationScreen() {
       setApplication(result);
       Alert.alert("Application submitted", "Your verification application is now under review.");
     } catch (error) {
-      const message =
-        error instanceof ApiError && typeof error.body === "object" && error.body !== null
-          ? String((error.body as { detail?: unknown }).detail ?? "Please try again.")
-          : "Please try again.";
-      Alert.alert("Could not submit", message);
+      Alert.alert("Could not submit", getApiErrorMessage(error, "Please try again."));
     } finally {
       setSaving(false);
     }

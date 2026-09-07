@@ -50,6 +50,35 @@ export function getValidationErrors(error: unknown): Record<string, string[]> {
   return {};
 }
 
+export function getApiErrorMessage(error: unknown, fallback = "Something went wrong. Please try again."): string {
+  if (!(error instanceof ApiError)) return fallback;
+
+  const detail = (error.body as { detail?: unknown } | null)?.detail;
+  if (typeof detail === "string" && detail.trim()) return detail;
+
+  if (detail && typeof detail === "object") {
+    const record = detail as { message?: unknown; code?: unknown };
+    if (typeof record.message === "string" && record.message.trim()) return record.message;
+    if (record.code === "ANALYTICS_SUBSCRIPTION_REQUIRED") {
+      return "Professional verification requires an active plan that includes analytics and verification.";
+    }
+  }
+
+  if (error.status === 402) {
+    return "Professional verification requires an active plan that includes analytics and verification.";
+  }
+  if (error.status === 403) {
+    return "Your current plan does not include professional verification.";
+  }
+  if (error.status === 409) return "You already have an active verification application.";
+  if (error.status === 422) {
+    const validation = Object.values(getValidationErrors(error)).flat().find((message): message is string => Boolean(message));
+    return validation ?? "Please check the verification details and try again.";
+  }
+
+  return error.message === `Request failed with status ${error.status}` ? fallback : error.message;
+}
+
 export function getAuthErrorMessage(error: unknown, fallback = "Authentication failed. Please try again."): string {
   if (!(error instanceof ApiError)) return fallback;
 
