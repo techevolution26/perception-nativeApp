@@ -46,6 +46,7 @@ export default function PerceiveComposer({
 
       <TextInput
         value={value}
+        maxLength={5000}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor="#8b91a0"
@@ -67,7 +68,11 @@ export default function PerceiveComposer({
         {loading ? (
           <Spinner size={18} />
         ) : (
-          <Feather name="arrow-up" size={compact ? 14 : 16} color={canSend ? "#201203" : "#8b91a0"} />
+          <Feather
+            name="arrow-up"
+            size={compact ? 14 : 16}
+            color={canSend ? "#201203" : "#8b91a0"}
+          />
         )}
       </Pressable>
     </View>

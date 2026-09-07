@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   TextInput,
+  RefreshControl,
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,6 +19,8 @@ import Pill from "../../components/ui/Pill";
 import Button from "../../components/ui/Button";
 import PerceptionCard from "../../components/PerceptionCard";
 import SettingsPanel from "../../components/SettingsPanel";
+import VerifiedBadge from "../../components/ui/VerifiedBadge";
+import StateView from "../../components/ui/StateView";
 import { apiFetch, API_BASE } from "../../lib/api";
 import { getToken } from "../../lib/storage";
 import useCurrentUser from "../../hooks/useCurrentUser";
@@ -38,6 +41,7 @@ export default function UserProfileScreen() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
   const [tab, setTab] = useState<ProfileTab>("posts");
@@ -55,7 +59,8 @@ export default function UserProfileScreen() {
   const isOwnProfile = me?.id === Number(id);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(!user);
+    setLoadError(null);
     try {
       const [u, p] = await Promise.all([
         apiFetch<UserProfile>(`/api/users/${id}`, { auth: Boolean(me) }),
@@ -74,6 +79,9 @@ export default function UserProfileScreen() {
       }
     } catch (err) {
       console.error("Failed to load profile:", err);
+      setLoadError(
+        err instanceof Error ? err.message : "Unable to load this profile.",
+      );
     } finally {
       setLoading(false);
     }
@@ -186,30 +194,48 @@ export default function UserProfileScreen() {
   };
 
   const handleDeletePerception = (perception: Perception) => {
-    Alert.alert("Delete perception?", "This action is permanent and cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await apiFetch(`/api/perceptions/${perception.id}`, { method: "DELETE" });
-            setPerceptions((current) => current.filter((item) => item.id !== perception.id));
-          } catch (err) {
-            Alert.alert("Delete failed", err instanceof Error ? err.message : "Please try again.");
-          }
+    Alert.alert(
+      "Delete perception?",
+      "This action is permanent and cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiFetch(`/api/perceptions/${perception.id}`, {
+                method: "DELETE",
+              });
+              setPerceptions((current) =>
+                current.filter((item) => item.id !== perception.id),
+              );
+            } catch (err) {
+              Alert.alert(
+                "Delete failed",
+                err instanceof Error ? err.message : "Please try again.",
+              );
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   if (loading || !user) {
     return (
-      <View
-        className="flex-1 items-center justify-center bg-background"
-        style={{ paddingTop: insets.top }}
-      >
-        <Spinner />
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+        {loadError ? (
+          <StateView
+            kind="error"
+            title="Profile unavailable"
+            message="We could not load this profile right now."
+            actionLabel="Try again"
+            onAction={() => void load()}
+          />
+        ) : (
+          <Spinner className="flex-1" />
+        )}
       </View>
     );
   }
@@ -224,16 +250,18 @@ export default function UserProfileScreen() {
         >
           <Feather name="chevron-left" size={22} color="#8b91a0" />
         </Pressable>
-        {isOwnProfile && !editing && (tab === "posts" || tab === "analytics") && (
-          <Pressable
-            onPress={startEditing}
-            className="rounded-control p-1"
-            hitSlop={8}
-            accessibilityLabel="Edit profile"
-          >
-            <Feather name="edit-2" size={19} color="#8b91a0" />
-          </Pressable>
-        )}
+        {isOwnProfile &&
+          !editing &&
+          (tab === "posts" || tab === "analytics") && (
+            <Pressable
+              onPress={startEditing}
+              className="rounded-control p-1"
+              hitSlop={8}
+              accessibilityLabel="Edit profile"
+            >
+              <Feather name="edit-2" size={19} color="#8b91a0" />
+            </Pressable>
+          )}
       </View>
 
       <ScrollView contentContainerClassName="pb-10">
@@ -331,7 +359,9 @@ export default function UserProfileScreen() {
                     onPress={toggleFollow}
                   />
                   <Button
-                    label={user.can_message ? "Message" : "Mutual follow required"}
+                    label={
+                      user.can_message ? "Message" : "Mutual follow required"
+                    }
                     variant="outline"
                     size="sm"
                     icon={
@@ -342,7 +372,9 @@ export default function UserProfileScreen() {
                       />
                     }
                     disabled={!user.can_message}
-                    onPress={() => guard(() => router.push(`/(tabs)/messages/${user.id}`))}
+                    onPress={() =>
+                      guard(() => router.push(`/(tabs)/messages/${user.id}`))
+                    }
                   />
                 </View>
               )}
@@ -378,7 +410,11 @@ export default function UserProfileScreen() {
                 <Text
                   className={`font-sans-medium text-sm ${tab === item ? "text-foreground" : "text-foreground-subtle"}`}
                 >
-                  {item === "posts" ? "Posts" : item === "analytics" ? "Analytics" : "Settings"}
+                  {item === "posts"
+                    ? "Posts"
+                    : item === "analytics"
+                      ? "Analytics"
+                      : "Settings"}
                 </Text>
               </Pressable>
             ))}
@@ -390,22 +426,36 @@ export default function UserProfileScreen() {
             <View className="rounded-card border border-border-hairline bg-surface p-4">
               <View className="flex-row items-start">
                 <View className="flex-1">
-                  <Text className="font-sans-semibold text-lg text-foreground">Perception Analytics</Text>
+                  <Text className="font-sans-semibold text-lg text-foreground">
+                    Perception Analytics
+                  </Text>
                   <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
                     {subscription?.analytics_enabled
                       ? `Active · ${subscription.plan?.name ?? "subscription"} · ${subscription.max_topics} topic slots`
                       : "Locked until you start a trial or subscribe."}
                   </Text>
                 </View>
-                <Text className="text-2xl">{user.verification_badge ?? "◌"}</Text>
+                {user.verification_status === "VERIFIED" && (
+                  <VerifiedBadge badge={user.verification_badge} />
+                )}
               </View>
               <View className="mt-4 flex-row gap-2">
                 <View className="flex-1">
                   <Button
-                    label={subscription?.analytics_enabled ? "Open analytics" : "Unlock analytics"}
+                    label={
+                      subscription?.analytics_enabled
+                        ? "Open analytics"
+                        : "Unlock analytics"
+                    }
                     variant="accent"
                     size="sm"
-                    onPress={() => router.push(subscription?.analytics_enabled ? "/analytics" : "/subscription")}
+                    onPress={() =>
+                      router.push(
+                        subscription?.analytics_enabled
+                          ? "/analytics"
+                          : "/subscription",
+                      )
+                    }
                   />
                 </View>
                 <View className="flex-1">
@@ -419,16 +469,29 @@ export default function UserProfileScreen() {
               </View>
             </View>
 
-            {me && "role" in me && me.role === "SUPER_ADMIN" && <Button label="Open control room" variant="outline" size="sm" onPress={() => router.push("/admin")} />}
+            {me && "role" in me && me.role === "SUPER_ADMIN" && (
+              <Button
+                label="Open control room"
+                variant="outline"
+                size="sm"
+                onPress={() => router.push("/admin")}
+              />
+            )}
 
             <View className="rounded-card border border-border-hairline bg-surface p-4">
-              <Text className="font-sans-semibold text-base text-foreground">Professional verification</Text>
+              <Text className="font-sans-semibold text-base text-foreground">
+                Professional verification
+              </Text>
               <Text className="mt-1 font-sans text-sm text-foreground-muted">
                 {user.verification_status.replace("_", " ").toLowerCase()}
                 {user.verification_badge ? ` · ${user.verification_badge}` : ""}
               </Text>
               <Button
-                label={user.verification_status === "VERIFIED" ? "Verified" : "Apply / view application"}
+                label={
+                  user.verification_status === "VERIFIED"
+                    ? "Verified"
+                    : "Apply / view application"
+                }
                 variant="outline"
                 size="sm"
                 disabled={user.verification_status === "VERIFIED"}
@@ -457,9 +520,15 @@ export default function UserProfileScreen() {
                       index={i}
                       isOwner={isOwnProfile}
                       showOwnerActions={isOwnProfile}
-                      onEdit={(item) => guard(() => router.push(`/perceptions/${item.id}/edit`))}
+                      onEdit={(item) =>
+                        guard(() => router.push(`/perceptions/${item.id}/edit`))
+                      }
                       onDelete={handleDeletePerception}
-                      onAnalytics={(item) => guard(() => router.push(`/perceptions/${item.id}/analytics`))}
+                      onAnalytics={(item) =>
+                        guard(() =>
+                          router.push(`/perceptions/${item.id}/analytics`),
+                        )
+                      }
                     />
                   ))}
                 </View>

@@ -1,13 +1,21 @@
 import Spinner from "../../components/ui/Spinner";
 // app/(tabs)/index.tsx
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { View, Text, FlatList, RefreshControl, Alert, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  RefreshControl,
+  Alert,
+  Pressable,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import PerceptionCard from "../../components/PerceptionCard";
 import TopicsCarousel from "../../components/TopicsCarousel";
 import VantageMark from "../../components/ui/VantageMark";
+import StateView from "../../components/ui/StateView";
 import { apiFetch } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
@@ -27,6 +35,7 @@ export default function HomeScreen() {
   const { data: topics = [] } = useTopics();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   /*
     FIXED: Split the selector block into raw primitive arrays/objects
@@ -53,13 +62,17 @@ export default function HomeScreen() {
 
   const load = useCallback(async () => {
     try {
+      setLoadError(false);
       // Public now — no token required. Guests get the same feed, just
       // without liked_by_user personalization (the backend still returns
       // it as false for anonymous requests).
-      const perData = await apiFetch<Perception[]>("/api/perceptions", { auth: true });
+      const perData = await apiFetch<Perception[]>("/api/perceptions", {
+        auth: true,
+      });
       hydrateFeed(perData);
     } catch (err) {
       console.error("Failed to load feed:", err);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -72,37 +85,64 @@ export default function HomeScreen() {
 
   const handleLike = (p: Perception) =>
     guard(async () => {
-      const method = p.liked_by_user ? "DELETE" : "POST";
+      const previousLiked = p.liked_by_user;
+      const previousCount = p.likes_count;
+      const nextLiked = !previousLiked;
+      updatePerception(p.id, {
+        liked_by_user: nextLiked,
+        likes_count: Math.max(0, previousCount + (nextLiked ? 1 : -1)),
+      });
       try {
-        const result = await apiFetch<LikeToggle>(`/api/perceptions/${p.id}/like`, { method });
-        updatePerception(p.id, { liked_by_user: result.liked, likes_count: result.likes_count });
+        const method = nextLiked ? "POST" : "DELETE";
+        const result = await apiFetch<LikeToggle>(
+          `/api/perceptions/${p.id}/like`,
+          { method },
+        );
+        updatePerception(p.id, {
+          liked_by_user: result.liked,
+          likes_count: result.likes_count,
+        });
         if (result.liked) void playLikeSound();
       } catch (err) {
+        updatePerception(p.id, {
+          liked_by_user: previousLiked,
+          likes_count: previousCount,
+        });
         console.error("Like toggle failed:", err);
       }
     });
 
   const handleDelete = (p: Perception) => {
-    Alert.alert("Delete perception?", "This action is permanent and cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await apiFetch(`/api/perceptions/${p.id}`, { method: "DELETE" });
-            removePerception(p.id);
-          } catch (err) {
-            Alert.alert("Delete failed", err instanceof Error ? err.message : "Please try again.");
-          }
+    Alert.alert(
+      "Delete perception?",
+      "This action is permanent and cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiFetch(`/api/perceptions/${p.id}`, { method: "DELETE" });
+              removePerception(p.id);
+            } catch (err) {
+              Alert.alert(
+                "Delete failed",
+                err instanceof Error ? err.message : "Please try again.",
+              );
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const byTopic: TopicGroup[] = useMemo(() => {
     return topics
-      .map((topic) => ({ ...topic, items: perceptions.filter((p) => p.topic?.id === topic.id).slice(0, 6) }))
+      .map((topic) => ({
+        ...topic,
+        items: perceptions.filter((p) => p.topic?.id === topic.id).slice(0, 6),
+      }))
       .filter((group) => group.items.length > 0);
   }, [topics, perceptions]);
 
@@ -110,14 +150,33 @@ export default function HomeScreen() {
     let itemIndex = 0;
     return byTopic.flatMap((group) => [
       { type: "header" as const, group },
-      ...group.items.map((item) => ({ type: "item" as const, item, groupId: group.id, itemIndex: itemIndex++ })),
+      ...group.items.map((item) => ({
+        type: "item" as const,
+        item,
+        groupId: group.id,
+        itemIndex: itemIndex++,
+      })),
     ]);
   }, [byTopic]);
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background" style={{ paddingTop: insets.top }}>
-        <Spinner />
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+        <StateView kind="loading" />
+      </View>
+    );
+  }
+
+  if (loadError && perceptions.length === 0) {
+    return (
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+        <StateView
+          kind="error"
+          title="Feed unavailable"
+          message="We couldn’t load Perception right now. Check your connection and try again."
+          actionLabel="Try again"
+          onAction={() => void load()}
+        />
       </View>
     );
   }
@@ -128,19 +187,33 @@ export default function HomeScreen() {
         <View className="flex-row items-center gap-1">
           <VantageMark size={18} color="#f2a33c" />
           <View className="flex-row items-center">
-            <Text className="font-sans-semibold text-xl leading-none text-foreground">Percepti</Text>
-            <Ionicons name="bulb" size={18} color="#f2a33c" style={{ marginHorizontal: -1 }} />
-            <Text className="font-sans-semibold text-xl leading-none text-foreground">n</Text>
+            <Text className="font-sans-semibold text-xl leading-none text-foreground">
+              Percepti
+            </Text>
+            <Ionicons
+              name="bulb"
+              size={18}
+              color="#f2a33c"
+              style={{ marginHorizontal: -1 }}
+            />
+            <Text className="font-sans-semibold text-xl leading-none text-foreground">
+              n
+            </Text>
           </View>
         </View>
-        <Pressable onPress={() => router.push("/search")} className="rounded-control p-1.5">
+        <Pressable
+          onPress={() => router.push("/search")}
+          className="rounded-control p-1.5"
+        >
           <Feather name="search" size={20} color="#8b91a0" />
         </Pressable>
       </View>
 
       <FlatList
         data={flatData}
-        keyExtractor={(row, i) => (row.type === "header" ? `h-${row.group.id}` : `i-${row.item.id}-${i}`)}
+        keyExtractor={(row, i) =>
+          row.type === "header" ? `h-${row.group.id}` : `i-${row.item.id}-${i}`
+        }
         contentContainerStyle={{ paddingBottom: bottomTabBarPadding }}
         ListHeaderComponent={<TopicsCarousel topics={topics} />}
         refreshControl={
@@ -156,15 +229,22 @@ export default function HomeScreen() {
         ListEmptyComponent={
           <View className="items-center gap-3 py-20">
             <VantageMark size={30} color="#8b91a0" />
-            <Text className="font-sans text-sm text-foreground-subtle">No perceptions available yet.</Text>
+            <Text className="font-sans text-sm text-foreground-subtle">
+              No perceptions available yet.
+            </Text>
           </View>
         }
         renderItem={({ item: row }) =>
           row.type === "header" ? (
             <View className="mb-3 mt-5 flex-row items-center justify-between px-4">
-              <Text className="font-sans-semibold text-lg text-foreground">{row.group.name}</Text>
+              <Text className="font-sans-semibold text-lg text-foreground">
+                {row.group.name}
+              </Text>
               {row.group.items.length >= 6 && (
-                <Text onPress={() => router.push(`/topics/${row.group.id}`)} className="font-sans-medium text-sm text-accent">
+                <Text
+                  onPress={() => router.push(`/topics/${row.group.id}`)}
+                  className="font-sans-medium text-sm text-accent"
+                >
                   See more
                 </Text>
               )}
@@ -177,9 +257,13 @@ export default function HomeScreen() {
                 onLike={() => handleLike(row.item)}
                 isOwner={user?.id === row.item.user.id}
                 showOwnerActions
-                onEdit={(p) => guard(() => router.push(`/perceptions/${p.id}/edit`))}
+                onEdit={(p) =>
+                  guard(() => router.push(`/perceptions/${p.id}/edit`))
+                }
                 onDelete={handleDelete}
-                onAnalytics={(p) => guard(() => router.push(`/perceptions/${p.id}/analytics`))}
+                onAnalytics={(p) =>
+                  guard(() => router.push(`/perceptions/${p.id}/analytics`))
+                }
               />
             </View>
           )

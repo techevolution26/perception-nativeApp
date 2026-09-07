@@ -43,7 +43,7 @@ export default function RegisterScreen() {
       setGoogleLoading(true);
       return loginWithGoogle(idToken)
         .then(() => router.replace("/(tabs)"))
-        .catch((err: any) => setError(err.message || "Google sign-up failed"))
+        .catch((err: unknown) => setError(err instanceof Error ? err.message : "Google sign-up failed"))
         .finally(() => setGoogleLoading(false));
     });
   }, [loginWithGoogle, response]);
@@ -53,8 +53,8 @@ export default function RegisterScreen() {
       setGoogleLoading(true);
       setError(null);
       await promptAsync();
-    } catch (err: any) {
-      setError(err.message || "Google sign-up failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Google sign-up failed");
     } finally {
       if (response?.type !== "success") setGoogleLoading(false);
     }
@@ -75,7 +75,7 @@ export default function RegisterScreen() {
       const sanitizedEmail = email.trim().toLowerCase();
       const sanitizedName = name.trim();
       await register(sanitizedName, sanitizedEmail, password, confirm);
-      router.replace("/(tabs)");
+      router.replace("/onboarding/topics");
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { errors?: Record<string, string[]> } | null;
