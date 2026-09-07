@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
@@ -25,12 +18,8 @@ export default function AnalyticsProfileScreen() {
   const [country, setCountry] = useState(user?.country_code ?? "");
   const [region, setRegion] = useState(user?.region ?? "");
   const [city, setCity] = useState(user?.city ?? "");
-  const [primary, setPrimary] = useState<number | null>(
-    user?.primary_analytics_topic_id ?? null,
-  );
-  const [selected, setSelected] = useState<number[]>(
-    user?.analytics_specialties ?? [],
-  );
+  const [primary, setPrimary] = useState<number | null>(user?.primary_analytics_topic_id ?? null);
+  const [selected, setSelected] = useState<number[]>(user?.analytics_specialties ?? []);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -66,10 +55,7 @@ export default function AnalyticsProfileScreen() {
     setSelected((current) => {
       if (current.includes(id)) return current.filter((item) => item !== id);
       if (current.length >= max) {
-        Alert.alert(
-          "Topic limit reached",
-          `Your plan supports ${max} analytics topics.`,
-        );
+        Alert.alert("Topic limit reached", `Your plan supports ${max} analytics topics.`);
         return current;
       }
       return [...current, id];
@@ -102,13 +88,8 @@ export default function AnalyticsProfileScreen() {
       Alert.alert("Saved", "Your analytical profile has been updated.");
     } catch (error) {
       const message =
-        error instanceof ApiError &&
-        typeof error.body === "object" &&
-        error.body !== null
-          ? String(
-              (error.body as { detail?: unknown }).detail ??
-                "Please try again.",
-            )
+        error instanceof ApiError && typeof error.body === "object" && error.body !== null
+          ? String((error.body as { detail?: unknown }).detail ?? "Please try again.")
           : "Please try again.";
       Alert.alert("Save failed", message);
     } finally {
@@ -124,17 +105,11 @@ export default function AnalyticsProfileScreen() {
   return (
     <View className="flex-1 bg-background">
       <View className="flex-row items-center px-4 pb-3 pt-14">
-        <Pressable
-          onPress={() => router.back()}
-          className="rounded-control p-2"
-          hitSlop={8}
-        >
+        <Pressable onPress={() => router.back()} className="rounded-control p-2" hitSlop={8}>
           <Feather name="chevron-left" size={22} color="#8b91a0" />
         </Pressable>
         <View className="ml-2 flex-1">
-          <Text className="font-sans-semibold text-xl text-foreground">
-            Analytical profile
-          </Text>
+          <Text className="font-sans-semibold text-xl text-foreground">Analytical profile</Text>
           <Text className="font-sans text-sm text-foreground-muted">
             Control the professional and topic context used in your analytics.
           </Text>
@@ -145,9 +120,7 @@ export default function AnalyticsProfileScreen() {
         <View className="rounded-card border border-border-hairline bg-surface p-4">
           <View className="flex-row items-start">
             <View className="flex-1">
-              <Text className="font-sans-semibold text-base text-foreground">
-                Professional identity
-              </Text>
+              <Text className="font-sans-semibold text-base text-foreground">Professional identity</Text>
               <Text className="mt-1 font-sans text-sm text-foreground-muted">
                 {hasIdentity
                   ? user.professional_role_labels.join(" · ")
@@ -164,12 +137,7 @@ export default function AnalyticsProfileScreen() {
           </View>
           <View className="mt-3 flex-row gap-2">
             <View className="flex-1">
-              <Button
-                label="Manage identity"
-                variant="outline"
-                size="sm"
-                onPress={() => router.push("/professional-identity")}
-              />
+              <Button label="Manage identity" variant="outline" size="sm" onPress={() => router.push("/professional-identity")} />
             </View>
             <View className="flex-1">
               <Button
@@ -184,48 +152,28 @@ export default function AnalyticsProfileScreen() {
 
         {!hasIdentity && (
           <View className="rounded-card border border-accent/30 bg-accent-soft p-4">
-            <Text className="font-sans-semibold text-base text-foreground">
-              Set your professional identity first
-            </Text>
+            <Text className="font-sans-semibold text-base text-foreground">Set your professional identity first</Text>
             <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
-              Your analytical profile uses your structured professional
-              identity. Choose your industries and roles before interpreting
-              professional audience signals.
+              Your analytical profile uses your structured professional identity. Choose your industries and roles before interpreting professional audience signals.
             </Text>
-            <Button
-              label="Choose professional identity"
-              variant="accent"
-              size="sm"
-              onPress={() => router.push("/professional-identity")}
-            />
+            <Button label="Choose professional identity" variant="accent" size="sm" onPress={() => router.push("/professional-identity")} />
           </View>
         )}
 
         {!subscription?.analytics_enabled && (
           <View className="rounded-card border border-accent/30 bg-accent-soft p-4">
-            <Text className="font-sans-semibold text-base text-foreground">
-              Analytics is locked
-            </Text>
+            <Text className="font-sans-semibold text-base text-foreground">Analytics is locked</Text>
             <Text className="mt-1 font-sans text-sm text-foreground-muted">
-              Your identity can be configured independently, but analytics
-              reports require an analytics-enabled plan.
+              Your identity can be configured independently, but analytics reports require an analytics-enabled plan.
             </Text>
-            <Button
-              label="View plans"
-              variant="accent"
-              size="sm"
-              onPress={() => router.push("/subscription")}
-            />
+            <Button label="View plans" variant="accent" size="sm" onPress={() => router.push("/subscription")} />
           </View>
         )}
 
         <View className="rounded-card border border-border-hairline bg-surface p-4">
-          <Text className="font-sans-semibold text-base text-foreground">
-            Audience location
-          </Text>
+          <Text className="font-sans-semibold text-base text-foreground">Audience location</Text>
           <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">
-            Location context is used only to group aggregate audience signals.
-            It does not expose individual analytics viewers.
+            Location context is used only to group aggregate audience signals. It does not expose individual analytics viewers.
           </Text>
           {[
             ["Country code", country, setCountry, "KE"],
@@ -233,17 +181,13 @@ export default function AnalyticsProfileScreen() {
             ["City", city, setCity, "e.g. Mombasa"],
           ].map(([label, value, setter, placeholder]) => (
             <View key={label as string} className="mt-3">
-              <Text className="mb-1 font-sans-medium text-xs text-foreground-subtle">
-                {label as string}
-              </Text>
+              <Text className="mb-1 font-sans-medium text-xs text-foreground-subtle">{label as string}</Text>
               <TextInput
                 value={value as string}
                 onChangeText={setter as (text: string) => void}
                 placeholder={placeholder as string}
                 placeholderTextColor="#8b91a0"
-                autoCapitalize={
-                  label === "Country code" ? "characters" : "words"
-                }
+                autoCapitalize={label === "Country code" ? "characters" : "words"}
                 className="rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 font-sans text-foreground"
               />
             </View>
@@ -251,19 +195,14 @@ export default function AnalyticsProfileScreen() {
         </View>
 
         <View className="rounded-card border border-border-hairline bg-surface p-4">
-          <Text className="font-sans-semibold text-base text-foreground">
-            Primary analytical topic
-          </Text>
+          <Text className="font-sans-semibold text-base text-foreground">Primary analytical topic</Text>
           <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">
             Choose the topic that should carry the strongest analytical context.
           </Text>
           <View className="mt-3 flex-row flex-wrap gap-2">
             {topics.map((topic) => (
               <Pressable key={topic.id} onPress={() => setPrimary(topic.id)}>
-                <Pill
-                  label={topic.name}
-                  tone={primary === topic.id ? "accent" : undefined}
-                />
+                <Pill label={topic.name} tone={primary === topic.id ? "accent" : undefined} />
               </Pressable>
             ))}
           </View>
@@ -271,31 +210,21 @@ export default function AnalyticsProfileScreen() {
 
         <View className="rounded-card border border-border-hairline bg-surface p-4">
           <Text className="font-sans-semibold text-base text-foreground">
-            Analytical topics ({selected.length}/{subscription?.max_topics ?? 0}
-            )
+            Analytical topics ({selected.length}/{subscription?.max_topics ?? 0})
           </Text>
           <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">
-            Select the fields you want represented in your analytics lens. Your
-            primary topic is always included.
+            Select the fields you want represented in your analytics lens. Your primary topic is always included.
           </Text>
           <View className="mt-3 flex-row flex-wrap gap-2">
             {topics.map((topic) => (
               <Pressable key={topic.id} onPress={() => toggleTopic(topic.id)}>
-                <Pill
-                  label={topic.name}
-                  tone={selected.includes(topic.id) ? "accent" : undefined}
-                />
+                <Pill label={topic.name} tone={selected.includes(topic.id) ? "accent" : undefined} />
               </Pressable>
             ))}
           </View>
         </View>
 
-        <Button
-          label={saving ? "Saving…" : "Save analytical profile"}
-          variant="accent"
-          loading={saving}
-          onPress={save}
-        />
+        <Button label={saving ? "Saving…" : "Save analytical profile"} variant="accent" loading={saving} onPress={save} />
       </ScrollView>
     </View>
   );

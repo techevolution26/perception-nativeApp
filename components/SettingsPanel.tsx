@@ -3,10 +3,16 @@ import { View, Text, Pressable, Alert } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import Card from "./ui/Card";
-import useSettingsStore, { type ThemePreference } from "../store/useSettingsStore";
+import useSettingsStore, {
+  type ThemePreference,
+} from "../store/useSettingsStore";
 import useAuthStore from "../store/useAuthStore";
 
-const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+const THEME_OPTIONS: {
+  value: ThemePreference;
+  label: string;
+  icon: keyof typeof Feather.glyphMap;
+}[] = [
   { value: "light", label: "Light", icon: "sun" },
   { value: "dark", label: "Dark", icon: "moon" },
   { value: "system", label: "System", icon: "smartphone" },
@@ -15,7 +21,10 @@ const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof
 // Clearly-labeled "coming soon" rows rather than silent dead taps — an
 // empty settings screen undersells what's planned, but a row that looks
 // interactive and does nothing is worse.
-const UPCOMING_SETTINGS: { label: string; icon: keyof typeof Feather.glyphMap }[] = [
+const UPCOMING_SETTINGS: {
+  label: string;
+  icon: keyof typeof Feather.glyphMap;
+}[] = [
   { label: "Notification preferences", icon: "bell" },
   { label: "Privacy", icon: "lock" },
   { label: "Help & support", icon: "help-circle" },
@@ -61,8 +70,14 @@ export default function SettingsPanel() {
               onPress={() => setThemePreference(opt.value)}
               className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-control py-2.5 ${active ? "bg-accent-soft" : ""}`}
             >
-              <Feather name={opt.icon} size={15} color={active ? "#c97412" : "#8b91a0"} />
-              <Text className={`font-sans-medium text-sm ${active ? "text-accent-strong" : "text-foreground-muted"}`}>
+              <Feather
+                name={opt.icon}
+                size={15}
+                color={active ? "#c97412" : "#8b91a0"}
+              />
+              <Text
+                className={`font-sans-medium text-sm ${active ? "text-accent-strong" : "text-foreground-muted"}`}
+              >
                 {opt.label}
               </Text>
             </Pressable>
@@ -78,13 +93,34 @@ export default function SettingsPanel() {
             className={`flex-row items-center gap-3 px-4 py-3.5 ${i > 0 ? "border-t border-border-hairline" : ""}`}
           >
             <Feather name={item.icon} size={17} color="#8b91a0" />
-            <Text className="flex-1 font-sans text-[15px] text-foreground-muted">{item.label}</Text>
+            <Text className="flex-1 font-sans text-[15px] text-foreground-muted">
+              {item.label}
+            </Text>
             <View className="rounded-pill bg-surface-sunken px-2 py-0.5">
-              <Text className="font-sans-medium text-[10px] uppercase tracking-wide text-foreground-subtle">Soon</Text>
+              <Text className="font-sans-medium text-[10px] uppercase tracking-wide text-foreground-subtle">
+                Soon
+              </Text>
             </View>
           </View>
         ))}
       </Card>
+
+      <SectionLabel>Security</SectionLabel>
+      <Pressable
+        onPress={() => router.push("/change-password")}
+        className="flex-row items-center gap-3 rounded-card border border-border-hairline bg-surface px-4 py-3.5"
+      >
+        <Feather name="key" size={17} color="#8b91a0" />
+        <View className="flex-1">
+          <Text className="font-sans-medium text-[15px] text-foreground">
+            Change password
+          </Text>
+          <Text className="mt-0.5 font-sans text-xs text-foreground-subtle">
+            Update the password used to sign in
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={17} color="#8b91a0" />
+      </Pressable>
 
       <SectionLabel>Account</SectionLabel>
       <Pressable
@@ -92,7 +128,9 @@ export default function SettingsPanel() {
         className="flex-row items-center gap-3 rounded-card border border-danger/25 bg-danger/5 px-4 py-3.5"
       >
         <Feather name="log-out" size={17} color="#e5484d" />
-        <Text className="font-sans-medium text-[15px] text-danger">Log out</Text>
+        <Text className="font-sans-medium text-[15px] text-danger">
+          Log out
+        </Text>
       </Pressable>
     </View>
   );
