@@ -184,21 +184,32 @@ export default function UserProfileScreen() {
   };
 
   const handleDeletePerception = (perception: Perception) => {
-    Alert.alert("Delete perception?", "This action is permanent and cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await apiFetch(`/api/perceptions/${perception.id}`, { method: "DELETE" });
-            setPerceptions((current) => current.filter((item) => item.id !== perception.id));
-          } catch (err) {
-            Alert.alert("Delete failed", err instanceof Error ? err.message : "Please try again.");
-          }
+    Alert.alert(
+      "Delete perception?",
+      "This action is permanent and cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiFetch(`/api/perceptions/${perception.id}`, {
+                method: "DELETE",
+              });
+              setPerceptions((current) =>
+                current.filter((item) => item.id !== perception.id),
+              );
+            } catch (err) {
+              Alert.alert(
+                "Delete failed",
+                err instanceof Error ? err.message : "Please try again.",
+              );
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   if (loading || !user) {
@@ -222,16 +233,18 @@ export default function UserProfileScreen() {
         >
           <Feather name="chevron-left" size={22} color="#8b91a0" />
         </Pressable>
-        {isOwnProfile && !editing && (tab === "posts" || tab === "analytics") && (
-          <Pressable
-            onPress={startEditing}
-            className="rounded-control p-1"
-            hitSlop={8}
-            accessibilityLabel="Edit profile"
-          >
-            <Feather name="edit-2" size={19} color="#8b91a0" />
-          </Pressable>
-        )}
+        {isOwnProfile &&
+          !editing &&
+          (tab === "posts" || tab === "analytics") && (
+            <Pressable
+              onPress={startEditing}
+              className="rounded-control p-1"
+              hitSlop={8}
+              accessibilityLabel="Edit profile"
+            >
+              <Feather name="edit-2" size={19} color="#8b91a0" />
+            </Pressable>
+          )}
       </View>
 
       <ScrollView contentContainerClassName="pb-10">
@@ -305,23 +318,40 @@ export default function UserProfileScreen() {
                 <Text className="font-sans-semibold text-xl text-foreground">
                   {user.name}
                 </Text>
-                {user.verification_status === "VERIFIED" && (
+                {user.primary_professional_role && (
                   <View className="ml-2">
-                    <VerifiedBadge roleCode={user.primary_professional_role} label={user.primary_professional_role_label ?? user.profession} verified={user.verification_status === "VERIFIED"} />
+                    <VerifiedBadge
+                      roleCode={user.primary_professional_role}
+                      label={
+                        user.primary_professional_role_label ??
+                        user.profession ??
+                        "Professional"
+                      }
+                      verified={user.verification_status === "VERIFIED"}
+                    />
                   </View>
                 )}
               </View>
               {user.primary_professional_role_label ? (
-                <Text className="font-sans text-accent">{user.primary_professional_role_label}</Text>
+                <Text className="font-sans text-accent">
+                  {user.primary_professional_role_label}
+                </Text>
               ) : user.profession ? (
                 <Text className="font-sans text-accent">{user.profession}</Text>
               ) : null}
-              {isOwnProfile && (user.professional_role_labels?.length ?? 0) > 0 && (
-                <View className="mt-2 flex-row flex-wrap justify-center gap-1.5">
-                  {user.professional_role_labels.slice(0, 4).map((label) => <Pill key={label} label={label} />)}
-                  {user.professional_role_labels.length > 4 && <Pill label={`+${user.professional_role_labels.length - 4}`} />}
-                </View>
-              )}
+              {isOwnProfile &&
+                (user.professional_role_labels?.length ?? 0) > 0 && (
+                  <View className="mt-2 flex-row flex-wrap justify-center gap-1.5">
+                    {user.professional_role_labels.slice(0, 4).map((label) => (
+                      <Pill key={label} label={label} />
+                    ))}
+                    {user.professional_role_labels.length > 4 && (
+                      <Pill
+                        label={`+${user.professional_role_labels.length - 4}`}
+                      />
+                    )}
+                  </View>
+                )}
               {user.bio && (
                 <Text className="mt-2 text-center font-sans text-foreground-muted">
                   {user.bio}
@@ -338,7 +368,9 @@ export default function UserProfileScreen() {
                     onPress={toggleFollow}
                   />
                   <Button
-                    label={user.can_message ? "Message" : "Mutual follow required"}
+                    label={
+                      user.can_message ? "Message" : "Mutual follow required"
+                    }
                     variant="outline"
                     size="sm"
                     icon={
@@ -349,7 +381,9 @@ export default function UserProfileScreen() {
                       />
                     }
                     disabled={!user.can_message}
-                    onPress={() => guard(() => router.push(`/(tabs)/messages/${user.id}`))}
+                    onPress={() =>
+                      guard(() => router.push(`/(tabs)/messages/${user.id}`))
+                    }
                   />
                 </View>
               )}
@@ -385,7 +419,11 @@ export default function UserProfileScreen() {
                 <Text
                   className={`font-sans-medium text-sm ${tab === item ? "text-foreground" : "text-foreground-subtle"}`}
                 >
-                  {item === "posts" ? "Posts" : item === "analytics" ? "Analytics" : "Settings"}
+                  {item === "posts"
+                    ? "Posts"
+                    : item === "analytics"
+                      ? "Analytics"
+                      : "Settings"}
                 </Text>
               </Pressable>
             ))}
@@ -397,22 +435,36 @@ export default function UserProfileScreen() {
             <View className="rounded-card border border-border-hairline bg-surface p-4">
               <View className="flex-row items-start">
                 <View className="flex-1">
-                  <Text className="font-sans-semibold text-lg text-foreground">Perception Analytics</Text>
+                  <Text className="font-sans-semibold text-lg text-foreground">
+                    Perception Analytics
+                  </Text>
                   <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
                     {subscription?.analytics_enabled
                       ? `Active · ${subscription.plan?.name ?? "subscription"} · ${subscription.max_topics} topic slots`
                       : "Locked until you start a trial or subscribe."}
                   </Text>
                 </View>
-                <Text className="text-2xl">{user.verification_badge ?? "◌"}</Text>
+                <Text className="text-2xl">
+                  {user.verification_badge ?? "◌"}
+                </Text>
               </View>
               <View className="mt-4 flex-row gap-2">
                 <View className="flex-1">
                   <Button
-                    label={subscription?.analytics_enabled ? "Open analytics" : "Unlock analytics"}
+                    label={
+                      subscription?.analytics_enabled
+                        ? "Open analytics"
+                        : "Unlock analytics"
+                    }
                     variant="accent"
                     size="sm"
-                    onPress={() => router.push(subscription?.analytics_enabled ? "/analytics" : "/subscription")}
+                    onPress={() =>
+                      router.push(
+                        subscription?.analytics_enabled
+                          ? "/analytics"
+                          : "/subscription",
+                      )
+                    }
                   />
                 </View>
                 <View className="flex-1">
@@ -426,16 +478,29 @@ export default function UserProfileScreen() {
               </View>
             </View>
 
-            {me && "role" in me && me.role === "SUPER_ADMIN" && <Button label="Open control room" variant="outline" size="sm" onPress={() => router.push("/admin")} />}
+            {me && "role" in me && me.role === "SUPER_ADMIN" && (
+              <Button
+                label="Open control room"
+                variant="outline"
+                size="sm"
+                onPress={() => router.push("/admin")}
+              />
+            )}
 
             <View className="rounded-card border border-border-hairline bg-surface p-4">
-              <Text className="font-sans-semibold text-base text-foreground">Professional verification</Text>
+              <Text className="font-sans-semibold text-base text-foreground">
+                Professional verification
+              </Text>
               <Text className="mt-1 font-sans text-sm text-foreground-muted">
                 {user.verification_status.replace("_", " ").toLowerCase()}
                 {user.verification_badge ? ` · ${user.verification_badge}` : ""}
               </Text>
               <Button
-                label={user.verification_status === "VERIFIED" ? "Verified" : "Apply / view application"}
+                label={
+                  user.verification_status === "VERIFIED"
+                    ? "Verified"
+                    : "Apply / view application"
+                }
                 variant="outline"
                 size="sm"
                 disabled={user.verification_status === "VERIFIED"}
@@ -464,9 +529,15 @@ export default function UserProfileScreen() {
                       index={i}
                       isOwner={isOwnProfile}
                       showOwnerActions={isOwnProfile}
-                      onEdit={(item) => guard(() => router.push(`/perceptions/${item.id}/edit`))}
+                      onEdit={(item) =>
+                        guard(() => router.push(`/perceptions/${item.id}/edit`))
+                      }
                       onDelete={handleDeletePerception}
-                      onAnalytics={(item) => guard(() => router.push(`/perceptions/${item.id}/analytics`))}
+                      onAnalytics={(item) =>
+                        guard(() =>
+                          router.push(`/perceptions/${item.id}/analytics`),
+                        )
+                      }
                     />
                   ))}
                 </View>

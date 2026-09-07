@@ -85,8 +85,14 @@ export default function PerceptionAnalyticsScreen() {
     <ScrollView className="flex-1 bg-background" contentContainerClassName="px-5 pb-12 pt-14">
       <Text className="font-sans-semibold text-2xl text-foreground">Perception analytics</Text>
       <Text className="mt-1 font-sans text-sm text-foreground-subtle">
-        Observed response to this specific perception · {data.period_days} days
+        {data.topic_name ? `${data.topic_name} · ` : ""}Observed response to this perception · {data.period_days} days
       </Text>
+      <View className="mt-3 rounded-control border border-border-hairline bg-surface p-3">
+        <Text className="font-sans-medium text-xs uppercase tracking-wider text-foreground-subtle">Author lens</Text>
+        <Text className="mt-1 font-sans text-sm text-foreground">
+          {data.author_professional_role ?? "No professional identity"}{data.author_verified ? " · Verified" : ""}
+        </Text>
+      </View>
 
       <View className="mt-6 flex-row flex-wrap gap-3">
         {[
@@ -111,7 +117,57 @@ export default function PerceptionAnalyticsScreen() {
           data.top_countries.map((item) => (
             <View key={item.country_code} className="flex-row justify-between border-b border-border-hairline py-3">
               <Text className="font-sans text-foreground">{item.country_code}</Text>
-              <Text className="font-mono text-foreground-muted">{item.interactions}</Text>
+              <Text className="font-mono text-foreground-muted">{item.participants}</Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">Regional audience</Text>
+        {data.top_regions.length === 0 ? (
+          <Text className="mt-2 font-sans text-sm text-foreground-subtle">
+            {data.audience_breakdown_available
+              ? "No regional interaction data yet."
+              : `Need at least ${data.audience_breakdown_minimum} unique participants for an audience breakdown.`}
+          </Text>
+        ) : (
+          data.top_regions.map((item) => (
+            <View key={item.region} className="flex-row justify-between border-b border-border-hairline py-3">
+              <Text className="flex-1 font-sans text-foreground">{item.region}</Text>
+              <Text className="font-mono text-foreground-muted">{item.participants}</Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">Professional audience</Text>
+        {data.top_professional_roles.length === 0 ? (
+          <Text className="mt-2 font-sans text-sm text-foreground-subtle">
+            Not enough unique participants for a professional breakdown yet.
+          </Text>
+        ) : (
+          data.top_professional_roles.map((item) => (
+            <View key={item.role_code} className="flex-row justify-between border-b border-border-hairline py-3">
+              <Text className="flex-1 font-sans text-foreground">{item.role_label}</Text>
+              <Text className="font-mono text-foreground-muted">{item.participants}</Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">Verified professional audience</Text>
+        {data.top_verified_professional_roles.length === 0 ? (
+          <Text className="mt-2 font-sans text-sm text-foreground-subtle">
+            No verified professional-role signal is available yet.
+          </Text>
+        ) : (
+          data.top_verified_professional_roles.map((item) => (
+            <View key={item.role_code} className="flex-row justify-between border-b border-border-hairline py-3">
+              <Text className="flex-1 font-sans text-foreground">{item.role_label}</Text>
+              <Text className="font-mono text-foreground-muted">{item.participants}</Text>
             </View>
           ))
         )}
