@@ -123,13 +123,19 @@ export default function PerceptionAnalyticsScreen() {
       </View>
 
       <View className="mt-6 flex-row flex-wrap gap-3">
-        {[
-          ["Likes", data.likes],
-          ["Comments", data.comments],
-          ["Views", data.views],
-          ["Shares", data.shares],
-          ["Participants", data.unique_participants],
-        ].map(([label, value]) => (
+        {(data.viewer_lens === "author"
+          ? [
+              ["Likes", data.likes],
+              ["Comments", data.comments],
+              ["Views", data.views],
+              ["Shares", data.shares],
+              ["Participants", data.unique_participants],
+            ]
+          : [
+              ["Comments", data.comments],
+              ["Participants", data.unique_participants],
+            ]
+        ).map(([label, value]) => (
           <View
             key={String(label)}
             className="w-[47%] rounded-card border border-border-hairline bg-surface p-4"
@@ -345,6 +351,92 @@ export default function PerceptionAnalyticsScreen() {
                 </View>
               )}
             </View>
+          </>
+        )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">
+          Professional × geographic intelligence
+        </Text>
+        <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
+          {data.cross_analysis_note}
+        </Text>
+        <Text className="mt-2 font-sans text-xs text-foreground-subtle">
+          {data.cross_analysis_comment_count} analyzed comments · minimum {data.cross_analysis_sample_minimum} per cohort
+        </Text>
+
+        {data.cross_analysis_status === "insufficient_sample" ? (
+          <Text className="mt-4 font-sans text-sm text-foreground-subtle">
+            More analyzed comments are needed before cohort-level semantic comparisons can be shown.
+          </Text>
+        ) : (
+          <>
+            {data.professional_geographic_segments.length > 0 && (
+              <View className="mt-4">
+                <Text className="font-sans-medium text-sm text-foreground">
+                  Professional + region cohorts
+                </Text>
+                {data.professional_geographic_segments.map((item) => (
+                  <View key={`${item.role_code}-${item.geography}`} className="mt-3 rounded-control bg-background p-3">
+                    <View className="flex-row justify-between gap-3">
+                      <Text className="flex-1 font-sans-medium text-sm text-foreground">
+                        {item.role_label} · {item.geography}
+                      </Text>
+                      <Text className="font-mono text-xs text-foreground-muted">
+                        n={item.sample_size}
+                      </Text>
+                    </View>
+                    {item.stance_distribution[0] && (
+                      <Text className="mt-2 font-sans text-xs text-foreground-muted">
+                        Leading stance: {item.stance_distribution[0].label} ({Math.round(item.stance_distribution[0].share * 100)}%)
+                      </Text>
+                    )}
+                    {item.top_themes[0] && (
+                      <Text className="mt-1 font-sans text-xs text-foreground-muted">
+                        Leading theme: {item.top_themes[0].theme}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {data.professional_semantic_segments.length > 0 && (
+              <View className="mt-5">
+                <Text className="font-sans-medium text-sm text-foreground">
+                  Professional perspectives
+                </Text>
+                {data.professional_semantic_segments.slice(0, 5).map((item) => (
+                  <View key={item.role_code} className="mt-3 flex-row justify-between border-b border-border-hairline pb-3">
+                    <Text className="flex-1 font-sans text-sm text-foreground">
+                      {item.role_label}
+                    </Text>
+                    <Text className="font-mono text-xs text-foreground-muted">
+                      n={item.sample_size}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {data.geographic_semantic_segments.length > 0 && (
+              <View className="mt-5">
+                <Text className="font-sans-medium text-sm text-foreground">
+                  Geographic perspectives
+                </Text>
+                {data.geographic_semantic_segments.slice(0, 5).map((item) => (
+                  <View key={item.geography} className="mt-3 flex-row justify-between border-b border-border-hairline pb-3">
+                    <Text className="flex-1 font-sans text-sm text-foreground">
+                      {item.geography}
+                    </Text>
+                    <Text className="font-mono text-xs text-foreground-muted">
+                      n={item.sample_size}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </>
         )}
       </View>

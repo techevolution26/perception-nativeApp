@@ -19,12 +19,7 @@ interface AuthState {
   hydrate: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
-  register: (
-    name: string,
-    email: string,
-    password: string,
-    passwordConfirmation: string,
-  ) => Promise<void>;
+  register: (name: string, email: string, password: string, passwordConfirmation: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
 }
@@ -62,12 +57,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
       });
       await setToken(res.token);
       const user = await apiFetch<UserMe>("/api/user", { auth: true });
-      set({
-        token: res.token,
-        user,
-        loading: false,
-        needsTopicOnboarding: false,
-      });
+      set({ token: res.token, user, loading: false, needsTopicOnboarding: false });
     } catch (err) {
       set({ loading: false });
       throw err;
@@ -77,23 +67,11 @@ const useAuthStore = create<AuthState>((set, get) => ({
   loginWithGoogle: async (idToken) => {
     set({ loading: true });
     try {
-      const res = await apiFetch<AuthResponse>("/api/google", {
-        method: "POST",
-        auth: false,
-        body: { id_token: idToken },
-      });
+      const res = await apiFetch<AuthResponse>("/api/google", { method: "POST", auth: false, body: { id_token: idToken } });
       await setToken(res.token);
       const user = await apiFetch<UserMe>("/api/user", { auth: true });
-      set({
-        token: res.token,
-        user,
-        loading: false,
-        needsTopicOnboarding: Boolean(res.is_new_user),
-      });
-    } catch (err) {
-      set({ loading: false });
-      throw err;
-    }
+      set({ token: res.token, user, loading: false, needsTopicOnboarding: Boolean(res.is_new_user) });
+    } catch (err) { set({ loading: false }); throw err; }
   },
 
   register: async (name, email, password, passwordConfirmation) => {
@@ -102,21 +80,11 @@ const useAuthStore = create<AuthState>((set, get) => ({
       const res = await apiFetch<AuthResponse>("/api/register", {
         method: "POST",
         auth: false,
-        body: {
-          name,
-          email,
-          password,
-          password_confirmation: passwordConfirmation,
-        },
+        body: { name, email, password, password_confirmation: passwordConfirmation },
       });
       await setToken(res.token);
       const user = await apiFetch<UserMe>("/api/user", { auth: true });
-      set({
-        token: res.token,
-        user,
-        loading: false,
-        needsTopicOnboarding: true,
-      });
+      set({ token: res.token, user, loading: false, needsTopicOnboarding: true });
     } catch (err) {
       set({ loading: false });
       throw err;
