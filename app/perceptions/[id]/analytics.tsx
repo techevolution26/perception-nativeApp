@@ -6,18 +6,18 @@ import { Feather } from "@expo/vector-icons";
 import Spinner from "../../../components/ui/Spinner";
 import Button from "../../../components/ui/Button";
 import { ApiError, apiFetch } from "../../../lib/api";
-import type { PerceptionAnalytics } from "../../../types/models";
+import type { PerceptionIntelligence } from "../../../types/models";
 
-export default function PerceptionAnalyticsScreen() {
+export default function PerceptionIntelligenceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [data, setData] = useState<PerceptionAnalytics | null>(null);
+  const [data, setData] = useState<PerceptionIntelligence | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requiresSubscription, setRequiresSubscription] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    apiFetch<PerceptionAnalytics>(`/api/analytics/perceptions/${id}`)
+    apiFetch<PerceptionIntelligence>(`/api/analytics/perceptions/${id}`)
       .then((result) => {
         if (mounted) setData(result);
       })
@@ -100,40 +100,40 @@ export default function PerceptionAnalyticsScreen() {
       contentContainerClassName="px-5 pb-12 pt-14"
     >
       <Text className="font-sans-semibold text-2xl text-foreground">
-        {data.viewer_lens === "author"
+        {data.context.viewer_lens === "author"
           ? "Perception analytics"
           : "Perception intelligence"}
       </Text>
       <Text className="mt-1 font-sans text-sm text-foreground-subtle">
-        {data.topic_name ? `${data.topic_name} · ` : ""}
-        {data.viewer_lens === "author"
+        {data.context.topic_name ? `${data.context.topic_name} · ` : ""}
+        {data.context.viewer_lens === "author"
           ? "Your perception's observed performance"
           : "What is happening in this conversation"}{" "}
-        · {data.period_days} days
+        · {data.context.period_days} days
       </Text>
       <View className="mt-3 rounded-control border border-border-hairline bg-surface p-3">
         <Text className="font-sans-medium text-xs uppercase tracking-wider text-foreground-subtle">
-          {data.viewer_lens === "author" ? "Creator lens" : "Conversation lens"}
+          {data.context.viewer_lens === "author" ? "Creator lens" : "Conversation lens"}
         </Text>
         <Text className="mt-1 font-sans text-sm text-foreground">
-          {data.viewer_lens === "author"
-            ? `${data.author_professional_role ?? "No professional identity"}${data.author_verified ? " · Verified" : ""}`
+          {data.context.viewer_lens === "author"
+            ? `${data.context.author.professional_role ?? "No professional identity"}${data.context.author.verified ? " · Verified" : ""}`
             : "Aggregate signals from people who interacted with this perception"}
         </Text>
       </View>
 
       <View className="mt-6 flex-row flex-wrap gap-3">
-        {(data.viewer_lens === "author"
+        {(data.context.viewer_lens === "author"
           ? [
-              ["Likes", data.likes],
-              ["Comments", data.comments],
-              ["Views", data.views],
-              ["Shares", data.shares],
-              ["Participants", data.unique_participants],
+              ["Likes", data.measurements.likes.value],
+              ["Comments", data.measurements.comments.value],
+              ["Views", data.measurements.views.value],
+              ["Shares", data.measurements.shares.value],
+              ["Participants", data.audience.unique_participants],
             ]
           : [
-              ["Comments", data.comments],
-              ["Participants", data.unique_participants],
+              ["Comments", data.measurements.comments.value],
+              ["Participants", data.audience.unique_participants],
             ]
         ).map(([label, value]) => (
           <View
@@ -152,12 +152,12 @@ export default function PerceptionAnalyticsScreen() {
         <Text className="font-sans-semibold text-base text-foreground">
           Where the conversation came from
         </Text>
-        {data.top_countries.length === 0 ? (
+        {data.audience.breakdown.countries.length === 0 ? (
           <Text className="mt-2 font-sans text-sm text-foreground-subtle">
             No geographic interaction data yet.
           </Text>
         ) : (
-          data.top_countries.map((item) => (
+          data.audience.breakdown.countries.map((item) => (
             <View
               key={item.country_code}
               className="flex-row justify-between border-b border-border-hairline py-3"
@@ -177,14 +177,14 @@ export default function PerceptionAnalyticsScreen() {
         <Text className="font-sans-semibold text-base text-foreground">
           Regional audience
         </Text>
-        {data.top_regions.length === 0 ? (
+        {data.audience.breakdown.regions.length === 0 ? (
           <Text className="mt-2 font-sans text-sm text-foreground-subtle">
-            {data.audience_breakdown_available
+            {data.audience.breakdown.available
               ? "No regional interaction data yet."
-              : `Need at least ${data.audience_breakdown_minimum} unique participants for an audience breakdown.`}
+              : `Need at least ${data.audience.breakdown.minimum} unique participants for an audience breakdown.`}
           </Text>
         ) : (
-          data.top_regions.map((item) => (
+          data.audience.breakdown.regions.map((item) => (
             <View
               key={item.region}
               className="flex-row justify-between border-b border-border-hairline py-3"
@@ -204,12 +204,12 @@ export default function PerceptionAnalyticsScreen() {
         <Text className="font-sans-semibold text-base text-foreground">
           Professional perspectives
         </Text>
-        {data.top_professional_roles.length === 0 ? (
+        {data.audience.breakdown.professional_roles.length === 0 ? (
           <Text className="mt-2 font-sans text-sm text-foreground-subtle">
             Not enough unique participants for a professional breakdown yet.
           </Text>
         ) : (
-          data.top_professional_roles.map((item) => (
+          data.audience.breakdown.professional_roles.map((item) => (
             <View
               key={item.role_code}
               className="flex-row justify-between border-b border-border-hairline py-3"
@@ -229,12 +229,12 @@ export default function PerceptionAnalyticsScreen() {
         <Text className="font-sans-semibold text-base text-foreground">
           Verified professional perspectives
         </Text>
-        {data.top_verified_professional_roles.length === 0 ? (
+        {data.audience.breakdown.verified_professional_roles.length === 0 ? (
           <Text className="mt-2 font-sans text-sm text-foreground-subtle">
             No verified professional-role signal is available yet.
           </Text>
         ) : (
-          data.top_verified_professional_roles.map((item) => (
+          data.audience.breakdown.verified_professional_roles.map((item) => (
             <View
               key={item.role_code}
               className="flex-row justify-between border-b border-border-hairline py-3"
@@ -255,30 +255,30 @@ export default function PerceptionAnalyticsScreen() {
           Semantic intelligence
         </Text>
         <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
-          {data.semantic_analysis_note}
+          {data.semantic.note}
         </Text>
         <View className="mt-3 rounded-control bg-background px-3 py-2">
           <Text className="font-sans-medium text-xs uppercase tracking-wider text-foreground-subtle">
             Status
           </Text>
           <Text className="mt-1 font-sans text-sm text-foreground">
-            {data.semantic_analysis_status === "available"
+            {data.semantic.status === "available"
               ? "Available"
               : "Insufficient sample"}
           </Text>
           <Text className="mt-1 font-sans text-xs text-foreground-subtle">
-            {data.analyzed_comment_count} of {data.semantic_sample_minimum}{" "}
+            {data.semantic.analyzed_comment_count} of {data.semantic.sample_minimum}{" "}
             minimum analyzed comments
           </Text>
         </View>
 
-        {data.semantic_analysis_status === "available" && (
+        {data.semantic.status === "available" && (
           <>
             <View className="mt-4">
               <Text className="font-sans-medium text-sm text-foreground">
                 Sentiment
               </Text>
-              {data.sentiment_distribution.map((item) => (
+              {data.semantic.sentiment_distribution.map((item) => (
                 <View
                   key={item.label}
                   className="mt-2 flex-row justify-between"
@@ -297,7 +297,7 @@ export default function PerceptionAnalyticsScreen() {
               <Text className="font-sans-medium text-sm text-foreground">
                 Stance
               </Text>
-              {data.stance_distribution.map((item) => (
+              {data.semantic.stance_distribution.map((item) => (
                 <View
                   key={item.label}
                   className="mt-2 flex-row justify-between"
@@ -316,7 +316,7 @@ export default function PerceptionAnalyticsScreen() {
               <Text className="font-sans-medium text-sm text-foreground">
                 Themes
               </Text>
-              {data.top_themes.map((item) => (
+              {data.semantic.top_themes.map((item) => (
                 <View
                   key={item.theme}
                   className="mt-2 flex-row justify-between"
@@ -337,16 +337,16 @@ export default function PerceptionAnalyticsScreen() {
                   Questions
                 </Text>
                 <Text className="mt-1 font-mono text-base text-foreground">
-                  {data.question_count}
+                  {data.semantic.question_count}
                 </Text>
               </View>
-              {data.semantic_quality_score !== null && (
+              {data.semantic.quality_score !== null && (
                 <View className="rounded-control bg-background px-3 py-2">
                   <Text className="font-sans text-xs text-foreground-muted">
                     Analysis quality
                   </Text>
                   <Text className="mt-1 font-mono text-base text-foreground">
-                    {Math.round(data.semantic_quality_score * 100)}%
+                    {Math.round(data.semantic.quality_score * 100)}%
                   </Text>
                 </View>
               )}
@@ -360,24 +360,24 @@ export default function PerceptionAnalyticsScreen() {
           Professional × geographic intelligence
         </Text>
         <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
-          {data.cross_analysis_note}
+          {data.perspectives.note}
         </Text>
         <Text className="mt-2 font-sans text-xs text-foreground-subtle">
-          {data.cross_analysis_comment_count} analyzed comments · minimum {data.cross_analysis_sample_minimum} per cohort
+          {data.perspectives.analyzed_comment_count} analyzed comments · minimum {data.perspectives.sample_minimum} per cohort
         </Text>
 
-        {data.cross_analysis_status === "insufficient_sample" ? (
+        {data.perspectives.status === "insufficient_sample" ? (
           <Text className="mt-4 font-sans text-sm text-foreground-subtle">
             More analyzed comments are needed before cohort-level semantic comparisons can be shown.
           </Text>
         ) : (
           <>
-            {data.professional_geographic_segments.length > 0 && (
+            {data.perspectives.cross_lens.length > 0 && (
               <View className="mt-4">
                 <Text className="font-sans-medium text-sm text-foreground">
                   Professional + region cohorts
                 </Text>
-                {data.professional_geographic_segments.map((item) => (
+                {data.perspectives.cross_lens.map((item) => (
                   <View key={`${item.role_code}-${item.geography}`} className="mt-3 rounded-control bg-background p-3">
                     <View className="flex-row justify-between gap-3">
                       <Text className="flex-1 font-sans-medium text-sm text-foreground">
@@ -402,12 +402,12 @@ export default function PerceptionAnalyticsScreen() {
               </View>
             )}
 
-            {data.professional_semantic_segments.length > 0 && (
+            {data.perspectives.professional.length > 0 && (
               <View className="mt-5">
                 <Text className="font-sans-medium text-sm text-foreground">
                   Professional perspectives
                 </Text>
-                {data.professional_semantic_segments.slice(0, 5).map((item) => (
+                {data.perspectives.professional.slice(0, 5).map((item) => (
                   <View key={item.role_code} className="mt-3 flex-row justify-between border-b border-border-hairline pb-3">
                     <Text className="flex-1 font-sans text-sm text-foreground">
                       {item.role_label}
@@ -420,12 +420,12 @@ export default function PerceptionAnalyticsScreen() {
               </View>
             )}
 
-            {data.geographic_semantic_segments.length > 0 && (
+            {data.perspectives.geographic.length > 0 && (
               <View className="mt-5">
                 <Text className="font-sans-medium text-sm text-foreground">
                   Geographic perspectives
                 </Text>
-                {data.geographic_semantic_segments.slice(0, 5).map((item) => (
+                {data.perspectives.geographic.slice(0, 5).map((item) => (
                   <View key={item.geography} className="mt-3 flex-row justify-between border-b border-border-hairline pb-3">
                     <Text className="flex-1 font-sans text-sm text-foreground">
                       {item.geography}
@@ -445,7 +445,7 @@ export default function PerceptionAnalyticsScreen() {
         <Text className="font-sans-semibold text-base text-foreground">
           Methodology
         </Text>
-        {data.methodology.map((item) => (
+        {data.methodology.rules.map((item) => (
           <Text
             key={item}
             className="mt-2 font-sans text-sm leading-5 text-foreground-muted"

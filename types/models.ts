@@ -279,59 +279,25 @@ export interface AnalyticsDecision {
 }
 
 
-export interface PerceptionAnalytics {
-  perception_id: number;
-  viewer_lens: "author" | "observer";
-  intelligence_scope: "creator_analytics" | "conversation_intelligence";
-  period_days: number;
-  created_at: string;
-  topic_id: number | null;
-  topic_name: string | null;
-  author_professional_role: string | null;
-  author_verified: boolean;
-  likes: number;
+export interface IntelligenceDistribution {
+  label: string;
   comments: number;
-  views: number | null;
-  shares: number | null;
-  unique_participants: number;
-  engagement_rate: number | null;
-  daily_activity: Array<{ date: string; interactions: number }> ;
-  audience_breakdown_minimum: number;
-  audience_breakdown_available: boolean;
-  top_countries: Array<{ country_code: string; participants: number }> ;
-  top_regions: Array<{ region: string; participants: number }> ;
-  top_professional_roles: Array<{ role_code: string; role_label: string; participants: number }> ;
-  top_verified_professional_roles: Array<{ role_code: string; role_label: string; participants: number }> ;
-  semantic_analysis_status: "insufficient_sample" | "available";
-  semantic_analysis_note: string;
-  semantic_sample_minimum: number;
-  analyzed_comment_count: number;
-  semantic_period_days: number;
-  semantic_quality_score: number | null;
-  sentiment_distribution: Array<{ label: string; comments: number; share: number }>;
-  stance_distribution: Array<{ label: string; comments: number; share: number }>;
-  top_themes: Array<{ theme: string; comments: number; share: number }>;
-  question_count: number;
-  concern_themes: Array<{ theme: string; comments: number; share: number }>;
-  agreement_themes: Array<{ theme: string; comments: number; share: number }>;
-  disagreement_themes: Array<{ theme: string; comments: number; share: number }>;
-  cross_analysis_status: "insufficient_sample" | "available" | "insufficient_segments";
-  cross_analysis_note: string;
-  cross_analysis_sample_minimum: number;
-  cross_analysis_comment_count: number;
-  professional_semantic_segments: SemanticCohort[];
-  geographic_semantic_segments: GeographicSemanticCohort[];
-  professional_geographic_segments: ProfessionalGeographicSemanticCohort[];
-  methodology: string[];
+  share: number;
+}
+
+export interface IntelligenceTheme {
+  theme: string;
+  comments: number;
+  share: number;
 }
 
 export interface SemanticCohort {
   role_code: string;
   role_label: string;
   sample_size: number;
-  sentiment_distribution: Array<{ label: string; comments: number; share: number }>;
-  stance_distribution: Array<{ label: string; comments: number; share: number }>;
-  top_themes: Array<{ theme: string; comments: number; share: number }>;
+  sentiment_distribution: IntelligenceDistribution[];
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
   question_count: number;
   quality_score: number | null;
 }
@@ -339,13 +305,107 @@ export interface SemanticCohort {
 export interface GeographicSemanticCohort {
   geography: string;
   sample_size: number;
-  sentiment_distribution: Array<{ label: string; comments: number; share: number }>;
-  stance_distribution: Array<{ label: string; comments: number; share: number }>;
-  top_themes: Array<{ theme: string; comments: number; share: number }>;
+  sentiment_distribution: IntelligenceDistribution[];
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
   question_count: number;
   quality_score: number | null;
 }
 
 export interface ProfessionalGeographicSemanticCohort extends SemanticCohort {
   geography: string;
+}
+
+export interface PerceptionIntelligence {
+  context: {
+    schema_version: string;
+    topic_id: number | null;
+    topic_name: string | null;
+    perception_id: number;
+    period_start: string;
+    period_end: string;
+    period_days: number;
+    scope: "creator_analytics" | "conversation_intelligence";
+    viewer_lens: "author" | "observer";
+    author: { professional_role: string | null; verified: boolean };
+  };
+  measurements: {
+    likes: IntelligenceMeasurement;
+    comments: IntelligenceMeasurement;
+    views: IntelligenceMeasurement;
+    shares: IntelligenceMeasurement;
+    engagement_rate: IntelligenceMeasurement;
+    daily_activity: Array<{ date: string; interactions: number }>;
+  };
+  audience: {
+    unique_participants: number;
+    breakdown: {
+      minimum: number;
+      available: boolean;
+      countries: Array<{ country_code: string; participants: number }>;
+      regions: Array<{ region: string; participants: number }>;
+      professional_roles: Array<{ role_code: string; role_label: string; participants: number }>;
+      verified_professional_roles: Array<{ role_code: string; role_label: string; participants: number }>;
+    };
+  };
+  semantic: {
+    status: "insufficient_sample" | "available";
+    note: string;
+    sample_minimum: number;
+    analyzed_comment_count: number;
+    period_days: number;
+    quality_score: number | null;
+    sentiment_distribution: IntelligenceDistribution[];
+    stance_distribution: IntelligenceDistribution[];
+    top_themes: IntelligenceTheme[];
+    question_count: number;
+    concern_themes: IntelligenceTheme[];
+    agreement_themes: IntelligenceTheme[];
+    disagreement_themes: IntelligenceTheme[];
+  };
+  perspectives: {
+    status: "insufficient_sample" | "available" | "insufficient_segments";
+    note: string;
+    sample_minimum: number;
+    analyzed_comment_count: number;
+    professional: SemanticCohort[];
+    geographic: GeographicSemanticCohort[];
+    cross_lens: ProfessionalGeographicSemanticCohort[];
+  };
+  patterns: IntelligencePattern[];
+  signals: IntelligenceSignal[];
+  decision_context: DecisionContext;
+  methodology: {
+    sample_minimum: number;
+    quality_score_definition: string;
+    limitations: string[];
+    rules: string[];
+  };
+}
+
+export interface IntelligenceMeasurement {
+  value: number | null;
+  available: boolean;
+  description: string;
+}
+
+export interface IntelligencePattern {
+  label: string;
+  description: string;
+  evidence_types: string[];
+}
+
+export interface IntelligenceSignal {
+  label: string;
+  description: string;
+  status: "observed_signal";
+  sample_size: number;
+  limitations: string[];
+}
+
+export interface DecisionContext {
+  intent: "research" | "business" | "policy" | "journalism" | "education" | "product" | "professional" | "general_exploration";
+  signals: IntelligenceSignal[];
+  evidence_invariant: boolean;
+  guardrail: string;
 }
