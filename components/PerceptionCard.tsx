@@ -221,6 +221,13 @@ export default function PerceptionCard({
       onPress: handleCopyLink,
     },
 
+    ...(onAnalytics
+      ? [{
+          label: isOwner ? "Perception analytics" : "Perception intelligence",
+          icon: "bar-chart-2" as const,
+          onPress: () => onAnalytics(perception),
+        }]
+      : []),
     ...(showOwnerActions && isOwner
       ? [
           {
@@ -228,7 +235,6 @@ export default function PerceptionCard({
             icon: "edit-2" as const,
             onPress: handleEdit,
           },
-          ...(onAnalytics ? [{ label: "Perception analytics", icon: "bar-chart-2" as const, onPress: () => onAnalytics(perception) }] : []),
           {
             label: "Delete",
             icon: "trash-2" as const,

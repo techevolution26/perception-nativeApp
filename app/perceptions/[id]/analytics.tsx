@@ -83,14 +83,16 @@ export default function PerceptionAnalyticsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="px-5 pb-12 pt-14">
-      <Text className="font-sans-semibold text-2xl text-foreground">Perception analytics</Text>
+      <Text className="font-sans-semibold text-2xl text-foreground">{data.viewer_lens === "author" ? "Perception analytics" : "Perception intelligence"}</Text>
       <Text className="mt-1 font-sans text-sm text-foreground-subtle">
-        {data.topic_name ? `${data.topic_name} · ` : ""}Observed response to this perception · {data.period_days} days
+        {data.topic_name ? `${data.topic_name} · ` : ""}{data.viewer_lens === "author" ? "Your perception's observed performance" : "What is happening in this conversation"} · {data.period_days} days
       </Text>
       <View className="mt-3 rounded-control border border-border-hairline bg-surface p-3">
-        <Text className="font-sans-medium text-xs uppercase tracking-wider text-foreground-subtle">Author lens</Text>
+        <Text className="font-sans-medium text-xs uppercase tracking-wider text-foreground-subtle">{data.viewer_lens === "author" ? "Creator lens" : "Conversation lens"}</Text>
         <Text className="mt-1 font-sans text-sm text-foreground">
-          {data.author_professional_role ?? "No professional identity"}{data.author_verified ? " · Verified" : ""}
+          {data.viewer_lens === "author"
+            ? `${data.author_professional_role ?? "No professional identity"}${data.author_verified ? " · Verified" : ""}`
+            : "Aggregate signals from people who interacted with this perception"}
         </Text>
       </View>
 
@@ -110,7 +112,7 @@ export default function PerceptionAnalyticsScreen() {
       </View>
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
-        <Text className="font-sans-semibold text-base text-foreground">Where interaction came from</Text>
+        <Text className="font-sans-semibold text-base text-foreground">Where the conversation came from</Text>
         {data.top_countries.length === 0 ? (
           <Text className="mt-2 font-sans text-sm text-foreground-subtle">No geographic interaction data yet.</Text>
         ) : (
@@ -142,7 +144,7 @@ export default function PerceptionAnalyticsScreen() {
       </View>
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
-        <Text className="font-sans-semibold text-base text-foreground">Professional audience</Text>
+        <Text className="font-sans-semibold text-base text-foreground">Professional perspectives</Text>
         {data.top_professional_roles.length === 0 ? (
           <Text className="mt-2 font-sans text-sm text-foreground-subtle">
             Not enough unique participants for a professional breakdown yet.
@@ -158,7 +160,7 @@ export default function PerceptionAnalyticsScreen() {
       </View>
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
-        <Text className="font-sans-semibold text-base text-foreground">Verified professional audience</Text>
+        <Text className="font-sans-semibold text-base text-foreground">Verified professional perspectives</Text>
         {data.top_verified_professional_roles.length === 0 ? (
           <Text className="mt-2 font-sans text-sm text-foreground-subtle">
             No verified professional-role signal is available yet.
@@ -171,6 +173,15 @@ export default function PerceptionAnalyticsScreen() {
             </View>
           ))
         )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">Semantic intelligence</Text>
+        <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">{data.semantic_analysis_note}</Text>
+        <View className="mt-3 rounded-control bg-background px-3 py-2">
+          <Text className="font-sans-medium text-xs uppercase tracking-wider text-foreground-subtle">Status</Text>
+          <Text className="mt-1 font-sans text-sm text-foreground">Not yet analyzed</Text>
+        </View>
       </View>
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">

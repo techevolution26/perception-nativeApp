@@ -1,7 +1,7 @@
 import Spinner from "../../../components/ui/Spinner";
 // app/users/[id]/followers.tsx
 import { useEffect, useState } from "react";
-import { Text, FlatList, Pressable } from "react-native";
+import { Text, FlatList, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";

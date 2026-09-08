@@ -281,6 +281,8 @@ export interface AnalyticsDecision {
 
 export interface PerceptionAnalytics {
   perception_id: number;
+  viewer_lens: "author" | "observer";
+  intelligence_scope: "creator_analytics" | "conversation_intelligence";
   period_days: number;
   created_at: string;
   topic_id: number | null;
@@ -300,5 +302,7 @@ export interface PerceptionAnalytics {
   top_regions: Array<{ region: string; participants: number }> ;
   top_professional_roles: Array<{ role_code: string; role_label: string; participants: number }> ;
   top_verified_professional_roles: Array<{ role_code: string; role_label: string; participants: number }> ;
+  semantic_analysis_status: "not_available" | "available";
+  semantic_analysis_note: string;
   methodology: string[];
 }
