@@ -13,9 +13,17 @@ export type Perception = components["schemas"]["PerceptionOut"];
 export type Topic = components["schemas"]["TopicOut"];
 export type TopicSlim = components["schemas"]["TopicSlim"];
 export type Comment = components["schemas"]["CommentOut"];
-export type UserSlim = components["schemas"]["UserSlim"] & { professional_industries: string[]; professional_roles: string[]; primary_professional_role: string | null; primary_professional_role_label: string | null; professional_role_labels: string[]; verified_professional_roles: string[]; };
+export type UserSlim = components["schemas"]["UserSlim"] & {
+  professional_industries: string[];
+  professional_roles: string[];
+  primary_professional_role: string | null;
+  primary_professional_role_label: string | null;
+  professional_role_labels: string[];
+  verified_professional_roles: string[];
+};
 export type UserWithUnread = components["schemas"]["UserWithUnread"];
-export type Notification = components["schemas"]["NotificationsListOut"]["data"][number];
+export type Notification =
+  components["schemas"]["NotificationsListOut"]["data"][number];
 export type Message = components["schemas"]["MessageOut"];
 export type LikeToggle = components["schemas"]["LikeToggleOut"];
 export type FollowToggle = components["schemas"]["FollowToggleOut"];
@@ -31,7 +39,8 @@ export type UserPublic = UserProfile;
 // proper response_models for both list endpoints now, rather than this
 // file having to hand-maintain the envelope shape.
 export type TopicsResponse = components["schemas"]["TopicsListOut"];
-export type NotificationsResponse = components["schemas"]["NotificationsListOut"];
+export type NotificationsResponse =
+  components["schemas"]["NotificationsListOut"];
 
 // Client-only optimistic-UI fields layered on top of a real Message while a
 // send is in flight — never present in what the API actually returns.
@@ -54,8 +63,21 @@ export interface MessagesPage {
 // UI branches on — narrower than the generic `data: Record<string, unknown>`
 // the generated Notification.data field has (Pydantic's `dict` maps to
 // `Record<string, never>` in the schema, which isn't useful to consume).
-export interface FollowNotificationData { type: "follow"; actor_id: number; actor_name: string; message: string; }
-export interface ActionNotificationData { type: "perception_like" | "perception_comment" | "comment_reply" | "message"; perception_id?: number; comment_id?: number; message_id?: number; actor_id?: number; actor_name?: string; body?: string; }
+export interface FollowNotificationData {
+  type: "follow";
+  actor_id: number;
+  actor_name: string;
+  message: string;
+}
+export interface ActionNotificationData {
+  type: "perception_like" | "perception_comment" | "comment_reply" | "message";
+  perception_id?: number;
+  comment_id?: number;
+  message_id?: number;
+  actor_id?: number;
+  actor_name?: string;
+  body?: string;
+}
 export interface PerceptionNotificationData {
   type: "perception";
   perception_id: number;
@@ -67,11 +89,26 @@ export interface DailyNotificationData {
   body: string;
   topic: string;
 }
-export type NotificationData = PerceptionNotificationData | DailyNotificationData | FollowNotificationData | ActionNotificationData;
+export type NotificationData =
+  | PerceptionNotificationData
+  | DailyNotificationData
+  | FollowNotificationData
+  | ActionNotificationData;
 
-export interface ProfessionalIndustry { code: string; label: string; }
-export interface ProfessionalRole { code: string; label: string; industry_code: string; icon: string; }
-export interface ProfessionalTaxonomy { industries: ProfessionalIndustry[]; roles: ProfessionalRole[]; }
+export interface ProfessionalIndustry {
+  code: string;
+  label: string;
+}
+export interface ProfessionalRole {
+  code: string;
+  label: string;
+  industry_code: string;
+  icon: string;
+}
+export interface ProfessionalTaxonomy {
+  industries: ProfessionalIndustry[];
+  roles: ProfessionalRole[];
+}
 
 export interface AnalyticsProfileFields {
   professional_focus: string | null;
@@ -90,8 +127,10 @@ export interface AnalyticsProfileFields {
   verified_professional_roles: string[];
 }
 
-export type UserMe = components["schemas"]["UserMe"] & AnalyticsProfileFields;
-export type UserProfile = components["schemas"]["UserProfile"] & AnalyticsProfileFields & { is_following: boolean; can_message: boolean };
+export type UserMe = components["schemas"]["UserMe"] &
+  AnalyticsProfileFields & { role: string };
+export type UserProfile = components["schemas"]["UserProfile"] &
+  AnalyticsProfileFields & { is_following: boolean; can_message: boolean };
 
 export interface Plan {
   id: number;
@@ -260,7 +299,6 @@ export interface VerificationApplication {
   updated_at: string;
 }
 
-
 export interface AnalyticsDecision {
   period_days: number;
   lens: string;
@@ -278,7 +316,6 @@ export interface AnalyticsDecision {
   guardrail: string;
 }
 
-
 export interface PerceptionAnalytics {
   perception_id: number;
   viewer_lens: "author" | "observer";
@@ -295,25 +332,45 @@ export interface PerceptionAnalytics {
   shares: number;
   unique_participants: number;
   engagement_rate: number;
-  daily_activity: Array<{ date: string; interactions: number }> ;
+  daily_activity: Array<{ date: string; interactions: number }>;
   audience_breakdown_minimum: number;
   audience_breakdown_available: boolean;
-  top_countries: Array<{ country_code: string; participants: number }> ;
-  top_regions: Array<{ region: string; participants: number }> ;
-  top_professional_roles: Array<{ role_code: string; role_label: string; participants: number }> ;
-  top_verified_professional_roles: Array<{ role_code: string; role_label: string; participants: number }> ;
+  top_countries: Array<{ country_code: string; participants: number }>;
+  top_regions: Array<{ region: string; participants: number }>;
+  top_professional_roles: Array<{
+    role_code: string;
+    role_label: string;
+    participants: number;
+  }>;
+  top_verified_professional_roles: Array<{
+    role_code: string;
+    role_label: string;
+    participants: number;
+  }>;
   semantic_analysis_status: "insufficient_sample" | "available";
   semantic_analysis_note: string;
   semantic_sample_minimum: number;
   analyzed_comment_count: number;
   semantic_period_days: number;
   semantic_quality_score: number | null;
-  sentiment_distribution: Array<{ label: string; comments: number; share: number }>;
-  stance_distribution: Array<{ label: string; comments: number; share: number }>;
+  sentiment_distribution: Array<{
+    label: string;
+    comments: number;
+    share: number;
+  }>;
+  stance_distribution: Array<{
+    label: string;
+    comments: number;
+    share: number;
+  }>;
   top_themes: Array<{ theme: string; comments: number; share: number }>;
   question_count: number;
   concern_themes: Array<{ theme: string; comments: number; share: number }>;
   agreement_themes: Array<{ theme: string; comments: number; share: number }>;
-  disagreement_themes: Array<{ theme: string; comments: number; share: number }>;
+  disagreement_themes: Array<{
+    theme: string;
+    comments: number;
+    share: number;
+  }>;
   methodology: string[];
 }

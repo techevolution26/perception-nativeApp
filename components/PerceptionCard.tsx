@@ -151,7 +151,9 @@ export default function PerceptionCard({
   const surfaceColor = colorScheme === "dark" ? "#14151a" : "#ffffff";
   const professionalIndustry = user.professional_industries?.[0] ?? null;
   const professionalTheme = professionalVisual(professionalIndustry);
-  const verifiedProfessional = user.verification_status === "VERIFIED" && (user.verified_professional_roles?.length ?? 0) > 0;
+  const verifiedProfessional =
+    user.verification_status === "VERIFIED" &&
+    (user.verified_professional_roles?.length ?? 0) > 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -222,11 +224,13 @@ export default function PerceptionCard({
     },
 
     ...(onAnalytics
-      ? [{
-          label: isOwner ? "Perception analytics" : "Perception intelligence",
-          icon: "bar-chart-2" as const,
-          onPress: () => onAnalytics(perception),
-        }]
+      ? [
+          {
+            label: isOwner ? "Perception analytics" : "Perception intelligence",
+            icon: "bar-chart-2" as const,
+            onPress: () => onAnalytics(perception),
+          },
+        ]
       : []),
     ...(showOwnerActions && isOwner
       ? [
@@ -271,7 +275,12 @@ export default function PerceptionCard({
     >
       <Card
         className="overflow-hidden"
-        style={{ borderLeftWidth: professionalIndustry ? 3 : 1, borderLeftColor: professionalIndustry ? professionalTheme.color : undefined }}
+        style={{
+          borderLeftWidth: professionalIndustry ? 3 : 1,
+          borderLeftColor: professionalIndustry
+            ? professionalTheme.color
+            : undefined,
+        }}
       >
         {/* ------------------------------------------------------------- */}
         {/* Main navigation area                                         */}
@@ -288,7 +297,15 @@ export default function PerceptionCard({
 
           <View className="flex-row items-start px-3.5 pt-3.5">
             {/* Avatar */}
-            <Pressable className="mr-3" onPress={(event) => { event.stopPropagation?.(); router.push(`/users/${user.id}`); }} accessibilityRole="button" accessibilityLabel={`Open ${user.name}'s profile`}>
+            <Pressable
+              className="mr-3"
+              onPress={(event) => {
+                event.stopPropagation?.();
+                router.push(`/users/${user.id}`);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${user.name}'s profile`}
+            >
               <Avatar uri={user.avatar_url} size="md" />
             </Pressable>
 
@@ -411,18 +428,24 @@ export default function PerceptionCard({
             </Text>
           </Pressable>
 
-          <Pressable
-            onPress={(event) => {
-              event.stopPropagation?.();
-              router.push("/analytics");
-            }}
-            className="flex-row items-center gap-1.5 rounded-control px-2.5 py-2"
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel="View analytics"
-          >
-            <Feather name="bar-chart-2" size={17} color="#666c7a" />
-          </Pressable>
+          {onAnalytics && (
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation?.();
+                onAnalytics(perception);
+              }}
+              className="flex-row items-center gap-1.5 rounded-control px-2.5 py-2"
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isOwner
+                  ? "View perception analytics"
+                  : "View perception intelligence"
+              }
+            >
+              <Feather name="bar-chart-2" size={17} color="#666c7a" />
+            </Pressable>
+          )}
 
           <Pressable
             onPress={handleCommentsPress}

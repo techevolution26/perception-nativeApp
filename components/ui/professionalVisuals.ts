@@ -51,5 +51,5 @@ const INDUSTRY_VISUALS: Record<string, ProfessionalVisual> = {
 };
 
 export function professionalVisual(industryCode?: string | null): ProfessionalVisual {
-  return (industryCode && INDUSTRY_VISUALS[industryCode]) ?? DEFAULT;
+  return (industryCode ? INDUSTRY_VISUALS[industryCode] : undefined) ?? DEFAULT;
 }

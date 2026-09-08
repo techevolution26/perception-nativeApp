@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import { Pressable, Text, View, type ComponentProps } from "react-native";
+import type { ComponentProps } from "react";
+import { Pressable, Text, View } from "react-native";
 import VantageMark from "./VantageMark";
 import Spinner from "./Spinner";
 
