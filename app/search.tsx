@@ -7,6 +7,7 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import Avatar from "../components/ui/Avatar";
 import Card from "../components/ui/Card";
+import VerifiedBadge from "../components/ui/VerifiedBadge";
 import { apiFetch } from "../lib/api";
 import type { Perception } from "../types/models";
 
@@ -78,7 +79,7 @@ export default function SearchScreen() {
               <View className="mb-2 flex-row items-center gap-2.5">
                 <Avatar uri={item.user.avatar_url} size="sm" />
                 <View>
-                  <Text className="font-sans-medium text-foreground">{item.user.name}</Text>
+                  <View className="flex-row items-center"><Text className="font-sans-medium text-foreground">{item.user.name}</Text>{item.user.primary_professional_role&&<VerifiedBadge roleCode={item.user.primary_professional_role} industryCode={item.user.professional_industries?.[0]} compact verified={item.user.verification_status === "VERIFIED" && (item.user.verified_professional_roles?.length ?? 0) > 0}/>}</View>
                   {item.user.profession && (
                     <Text className="font-sans text-sm text-foreground-subtle">{item.user.profession}</Text>
                   )}

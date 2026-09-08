@@ -87,10 +87,20 @@ export default function TopicsIndexScreen() {
           keyExtractor={(item) => String(item.id)}
           contentContainerClassName="gap-3 px-4 pb-10"
           ListHeaderComponent={
-            <View className="mb-1">
+            <View className="mb-2">
+              {isOnboarding && (
+                <View className="mb-3 rounded-card border border-accent/20 bg-accent-soft px-4 py-4">
+                  <Text className="font-sans-semibold text-base text-foreground">Your Perception starts with what matters to you.</Text>
+                  <Text className="mt-1.5 font-sans text-sm leading-5 text-foreground-muted">Choose a few topics to shape the ideas, people, and conversations you see first. You can change this anytime.</Text>
+                  <View className="mt-3 flex-row items-center gap-2">
+                    <View className="h-1.5 flex-1 rounded-full bg-accent" />
+                    <Text className="font-sans-medium text-[11px] text-accent">1 of 1</Text>
+                  </View>
+                </View>
+              )}
               <Text className="font-sans text-sm text-foreground-subtle">
                 {isOnboarding
-                  ? "Follow topics to shape your home feed. This step is optional — you can continue now and come back later."
+                  ? "Pick the topics you care about. This is optional — you can continue now and shape your feed later."
                   : "Follow the topics you care about — they'll shape your home feed."}
               </Text>
               {isOnboarding && (

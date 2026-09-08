@@ -15,6 +15,7 @@ import { useColorScheme } from "nativewind";
 import Avatar from "./ui/Avatar";
 import Card from "./ui/Card";
 import VerifiedBadge from "./ui/VerifiedBadge";
+import { professionalVisual } from "./ui/professionalVisuals";
 import ActionMenu, { type ActionMenuItem } from "./ui/ActionMenu";
 
 import { resolveMediaUrl } from "../lib/api";
@@ -148,6 +149,9 @@ export default function PerceptionCard({
   const { colorScheme } = useColorScheme();
 
   const surfaceColor = colorScheme === "dark" ? "#14151a" : "#ffffff";
+  const professionalIndustry = user.professional_industries?.[0] ?? null;
+  const professionalTheme = professionalVisual(professionalIndustry);
+  const verifiedProfessional = user.verification_status === "VERIFIED" && (user.verified_professional_roles?.length ?? 0) > 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -259,7 +263,10 @@ export default function PerceptionCard({
     <Animated.View
       entering={FadeInDown.delay(Math.min(index, 8) * 60).duration(320)}
     >
-      <Card className="overflow-hidden">
+      <Card
+        className="overflow-hidden"
+        style={{ borderLeftWidth: professionalIndustry ? 3 : 1, borderLeftColor: professionalIndustry ? professionalTheme.color : undefined }}
+      >
         {/* ------------------------------------------------------------- */}
         {/* Main navigation area                                         */}
         {/* ------------------------------------------------------------- */}
@@ -291,7 +298,12 @@ export default function PerceptionCard({
                 </Text>
                 {user.primary_professional_role && (
                   <View className="ml-1.5">
-                    <VerifiedBadge roleCode={user.primary_professional_role} compact verified={user.verification_status === "VERIFIED"} />
+                    <VerifiedBadge
+                      roleCode={user.primary_professional_role}
+                      industryCode={professionalIndustry}
+                      compact
+                      verified={verifiedProfessional}
+                    />
                   </View>
                 )}
               </View>

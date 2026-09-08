@@ -1,12 +1,11 @@
 import Spinner from "../../../components/ui/Spinner";
 // app/users/[id]/followers.tsx
 import { useEffect, useState } from "react";
-import { View, Text, FlatList, Pressable } from "react-native";
+import { Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import Avatar from "../../../components/ui/Avatar";
-import Card from "../../../components/ui/Card";
+import ProfileListItem from "../../../components/ui/ProfileListItem";
 import { apiFetch } from "../../../lib/api";
 import type { UserSlim } from "../../../types/models";
 
@@ -40,15 +39,7 @@ export default function FollowersScreen() {
           contentContainerClassName="gap-3 px-4 pb-10"
           ListEmptyComponent={<Text className="mt-6 text-center font-sans text-foreground-subtle">No followers yet.</Text>}
           renderItem={({ item }) => (
-            <Pressable onPress={() => router.push(`/users/${item.id}`)}>
-              <Card className="flex-row items-center gap-3 p-3.5">
-                <Avatar uri={item.avatar_url} size="md" />
-                <View>
-                  <Text className="font-sans-medium text-foreground">{item.name}</Text>
-                  {item.profession && <Text className="font-sans text-sm text-foreground-subtle">{item.profession}</Text>}
-                </View>
-              </Card>
-            </Pressable>
+            <ProfileListItem user={item} onPress={() => router.push(`/users/${item.id}`)} />
           )}
         />
       )}

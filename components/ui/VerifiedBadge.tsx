@@ -1,8 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { View, Text } from "react-native";
+import { professionalVisual } from "./professionalVisuals";
 
 interface VerifiedBadgeProps {
   roleCode?: string | null;
+  industryCode?: string | null;
   label?: string | null;
   compact?: boolean;
   verified?: boolean;
@@ -28,16 +30,33 @@ const ICONS: Record<string, IconName> = {
   clergy: "church-outline", faith_worker: "church-outline", social_worker: "account-heart-outline",
 };
 
-export default function VerifiedBadge({ roleCode, label, compact = false, verified = false }: VerifiedBadgeProps) {
-  const icon = ICONS[roleCode ?? ""] ?? "briefcase-outline";
+export default function VerifiedBadge({ roleCode, industryCode, label, compact = false, verified = false }: VerifiedBadgeProps) {
+  const visual = professionalVisual(industryCode);
+  const icon = ICONS[roleCode ?? ""] ?? visual.icon;
   const text = label ?? "Professional";
+
+  if (compact) {
+    return (
+      <View className="relative h-6 w-6 items-center justify-center" accessibilityLabel={`${text}${verified ? " verified" : " professional"}`}>
+        <MaterialCommunityIcons name={icon} size={18} color={visual.color} />
+        {verified && (
+          <View
+            className="absolute -bottom-0.5 -right-1 h-3.5 w-3.5 items-center justify-center rounded-full border border-background bg-background"
+          >
+            <MaterialCommunityIcons name="check-decagram" size={12} color={visual.color} />
+          </View>
+        )}
+      </View>
+    );
+  }
+
   return (
-    <View
-      className={`flex-row items-center rounded-full border border-accent/30 bg-accent-soft ${compact ? "px-1 py-0.5" : "px-1.5 py-0.5"}`}
-      accessibilityLabel={`${text}${verified ? " verified" : " professional"}`}
-    >
-      <MaterialCommunityIcons name={icon} size={compact ? 12 : 13} color="#f2a33c" />
-      {!compact && <Text className="ml-1 font-sans-medium text-[10px] text-accent">{text}{verified ? " · Verified" : ""}</Text>}
+    <View className="flex-row items-center" accessibilityLabel={`${text}${verified ? " verified" : " professional"}`}>
+      <MaterialCommunityIcons name={icon} size={18} color={visual.color} />
+      <Text className="ml-1.5 font-sans-medium text-[11px]" style={{ color: visual.color }} numberOfLines={1}>
+        {text}
+      </Text>
+      {verified && <MaterialCommunityIcons name="check-decagram" size={15} color={visual.color} style={{ marginLeft: 3 }} />}
     </View>
   );
 }

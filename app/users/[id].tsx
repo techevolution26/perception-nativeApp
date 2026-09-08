@@ -53,6 +53,7 @@ export default function UserProfileScreen() {
   const [saving, setSaving] = useState(false);
 
   const isOwnProfile = me?.id === Number(id);
+  const profileIndustry = user?.professional_industries?.[0] ?? null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -310,7 +311,8 @@ export default function UserProfileScreen() {
                     <VerifiedBadge
                       roleCode={user.primary_professional_role}
                       label={user.primary_professional_role_label ?? user.profession ?? "Professional"}
-                      verified={user.verification_status === "VERIFIED"}
+                      industryCode={profileIndustry}
+                      verified={user.verification_status === "VERIFIED" && (user.verified_professional_roles?.length ?? 0) > 0}
                     />
                   </View>
                 )}
