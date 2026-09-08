@@ -302,7 +302,18 @@ export interface PerceptionAnalytics {
   top_regions: Array<{ region: string; participants: number }> ;
   top_professional_roles: Array<{ role_code: string; role_label: string; participants: number }> ;
   top_verified_professional_roles: Array<{ role_code: string; role_label: string; participants: number }> ;
-  semantic_analysis_status: "not_available" | "available";
+  semantic_analysis_status: "insufficient_sample" | "available";
   semantic_analysis_note: string;
+  semantic_sample_minimum: number;
+  analyzed_comment_count: number;
+  semantic_period_days: number;
+  semantic_quality_score: number | null;
+  sentiment_distribution: Array<{ label: string; comments: number; share: number }>;
+  stance_distribution: Array<{ label: string; comments: number; share: number }>;
+  top_themes: Array<{ theme: string; comments: number; share: number }>;
+  question_count: number;
+  concern_themes: Array<{ theme: string; comments: number; share: number }>;
+  agreement_themes: Array<{ theme: string; comments: number; share: number }>;
+  disagreement_themes: Array<{ theme: string; comments: number; share: number }>;
   methodology: string[];
 }
