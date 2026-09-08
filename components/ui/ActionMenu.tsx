@@ -18,12 +18,25 @@ interface ActionMenuProps {
   title?: string;
 }
 
-export default function ActionMenu({ visible, onClose, items, title }: ActionMenuProps) {
+export default function ActionMenu({
+  visible,
+  onClose,
+  items,
+  title,
+}: ActionMenuProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Animated.View entering={FadeIn.duration(150)} className="flex-1 justify-end bg-overlay">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+    >
+      <Animated.View
+        entering={FadeIn.duration(150)}
+        className="flex-1 justify-end bg-overlay"
+      >
         <Pressable className="absolute inset-0" onPress={onClose} />
         <Animated.View
           entering={SlideInDown.duration(220).damping(18)}
@@ -49,15 +62,26 @@ export default function ActionMenu({ visible, onClose, items, title }: ActionMen
               }}
               className={`flex-row items-center gap-3 px-5 py-3.5 ${i > 0 ? "border-t border-border-hairline" : ""}`}
             >
-              <Feather name={item.icon} size={18} color={item.destructive ? "#e5484d" : "#666c7a"} />
-              <Text className={`font-sans text-[15px] ${item.destructive ? "text-danger" : "text-foreground"}`}>
+              <Feather
+                name={item.icon}
+                size={18}
+                color={item.destructive ? "#e5484d" : "#666c7a"}
+              />
+              <Text
+                className={`font-sans text-[15px] ${item.destructive ? "text-danger" : "text-foreground"}`}
+              >
                 {item.label}
               </Text>
             </Pressable>
           ))}
 
-          <Pressable onPress={onClose} className="mx-4 mt-2 items-center rounded-control bg-surface-sunken py-3.5">
-            <Text className="font-sans-medium text-[15px] text-foreground-muted">Cancel</Text>
+          <Pressable
+            onPress={onClose}
+            className="mx-4 mt-2 items-center rounded-control bg-surface-sunken py-3.5"
+          >
+            <Text className="font-sans-medium text-[15px] text-foreground-muted">
+              Cancel
+            </Text>
           </Pressable>
         </Animated.View>
       </Animated.View>
