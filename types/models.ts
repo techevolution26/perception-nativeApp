@@ -127,8 +127,7 @@ export interface AnalyticsProfileFields {
   verified_professional_roles: string[];
 }
 
-export type UserMe = components["schemas"]["UserMe"] &
-  AnalyticsProfileFields & { role: string };
+export type UserMe = components["schemas"]["UserMe"] & AnalyticsProfileFields;
 export type UserProfile = components["schemas"]["UserProfile"] &
   AnalyticsProfileFields & { is_following: boolean; can_message: boolean };
 

@@ -428,24 +428,18 @@ export default function PerceptionCard({
             </Text>
           </Pressable>
 
-          {onAnalytics && (
-            <Pressable
-              onPress={(event) => {
-                event.stopPropagation?.();
-                onAnalytics(perception);
-              }}
-              className="flex-row items-center gap-1.5 rounded-control px-2.5 py-2"
-              hitSlop={6}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isOwner
-                  ? "View perception analytics"
-                  : "View perception intelligence"
-              }
-            >
-              <Feather name="bar-chart-2" size={17} color="#666c7a" />
-            </Pressable>
-          )}
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation?.();
+              onAnalytics?.(perception);
+            }}
+            className="flex-row items-center gap-1.5 rounded-control px-2.5 py-2"
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="View analytics"
+          >
+            <Feather name="bar-chart-2" size={17} color="#666c7a" />
+          </Pressable>
 
           <Pressable
             onPress={handleCommentsPress}

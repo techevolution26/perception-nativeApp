@@ -821,6 +821,32 @@ export interface components {
       verification_status?: string;
       /** Verification Badge */
       verification_badge?: string | null;
+      /** Professional Focus */
+      professional_focus?: string | null;
+      /** Country Code */
+      country_code?: string | null;
+      /** Region */
+      region?: string | null;
+      /** City */
+      city?: string | null;
+      /** Analytics Specialties */
+      analytics_specialties?: number[];
+      /** Primary Analytics Topic Id */
+      primary_analytics_topic_id?: number | null;
+      /** Professional Industries */
+      professional_industries?: string[];
+      /** Professional Roles */
+      professional_roles?: string[];
+      /** Primary Professional Role */
+      primary_professional_role?: string | null;
+      /** Primary Professional Role Label */
+      primary_professional_role_label?: string | null;
+      /** Professional Role Labels */
+      professional_role_labels?: string[];
+      /** Verified Professional Roles */
+      verified_professional_roles?: string[];
+      /** Role */
+      role?: string;
       /**
        * Created At
        * Format: date-time
@@ -831,20 +857,6 @@ export interface components {
        * Format: email
        */
       email: string;
-      /** Role */
-      role: string;
-      /** Professional Focus */
-      professional_focus?: string | null;
-      /** Country Code */
-      country_code?: string | null;
-      /** Region */
-      region?: string | null;
-      /** City */
-      city?: string | null;
-      /** Analytics Specialties */
-      analytics_specialties: number[];
-      /** Primary Analytics Topic Id */
-      primary_analytics_topic_id?: number | null;
     };
     /**
      * UserProfile
@@ -907,17 +919,17 @@ export interface components {
       /** Verification Badge */
       verification_badge?: string | null;
       /** Professional Industries */
-      professional_industries: string[];
+      professional_industries?: string[];
       /** Professional Roles */
-      professional_roles: string[];
+      professional_roles?: string[];
       /** Primary Professional Role */
       primary_professional_role?: string | null;
       /** Primary Professional Role Label */
       primary_professional_role_label?: string | null;
       /** Professional Role Labels */
-      professional_role_labels: string[];
+      professional_role_labels?: string[];
       /** Verified Professional Roles */
-      verified_professional_roles: string[];
+      verified_professional_roles?: string[];
     };
     /** UserWithUnread */
     UserWithUnread: {

@@ -61,7 +61,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
         body: { email, password },
       });
       await setToken(res.token);
-      const user = await apiFetch<UserMe>("/api/user");
+      const user = await apiFetch<UserMe>("/api/user", { auth: true });
       set({
         token: res.token,
         user,
@@ -83,7 +83,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
         body: { id_token: idToken },
       });
       await setToken(res.token);
-      const user = await apiFetch<UserMe>("/api/user");
+      const user = await apiFetch<UserMe>("/api/user", { auth: true });
       set({
         token: res.token,
         user,
@@ -110,7 +110,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
         },
       });
       await setToken(res.token);
-      const user = await apiFetch<UserMe>("/api/user");
+      const user = await apiFetch<UserMe>("/api/user", { auth: true });
       set({
         token: res.token,
         user,
