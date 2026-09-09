@@ -77,10 +77,13 @@ export default function AnalyticsScreen() {
           <Feather name="chevron-left" size={22} color="#8b91a0" />
         </Pressable>
         <View className="ml-2 flex-1">
-          <Text className="font-sans-semibold text-xl text-foreground">Analytics</Text>
+          <Text className="font-sans-semibold text-xl text-foreground">Portfolio analytics</Text>
           <Text className="font-sans text-sm text-foreground-muted">Observed signals, not predictions</Text>
         </View>
-        <Pressable onPress={() => router.push("/analytics-profile")} className="rounded-control p-2">
+        <Pressable onPress={() => router.push("/profile-intelligence")} className="rounded-control p-2" accessibilityLabel="Profile intelligence">
+          <Feather name="activity" size={18} color="#8b91a0" />
+        </Pressable>
+        <Pressable onPress={() => router.push("/analytics-profile")} className="rounded-control p-2" accessibilityLabel="Analytical profile settings">
           <Feather name="settings" size={18} color="#8b91a0" />
         </Pressable>
       </View>

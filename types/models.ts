@@ -469,3 +469,57 @@ export interface DecisionContext {
   evidence_invariant: boolean;
   guardrail: string;
 }
+
+export interface ProfileIntelligenceTopic {
+  topic_id: number | null;
+  topic_name: string;
+  perception_count: number;
+  sample_size: number;
+  sentiment_distribution: IntelligenceDistribution[];
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
+  question_count: number;
+  quality_score: number | null;
+}
+
+export interface ProfileIntelligenceTheme {
+  theme: string;
+  comment_count: number;
+  topic_count: number;
+  topics: string[];
+}
+
+export interface ProfileTemporalBucket {
+  period_start: string;
+  period_end: string;
+  sample_size: number;
+  status: "available" | "insufficient_sample";
+  sentiment_distribution: IntelligenceDistribution[];
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
+  question_count: number;
+  quality_score: number | null;
+}
+
+export interface ProfileIntelligence {
+  schema_version: string;
+  period_start: string;
+  period_end: string;
+  period_days: number;
+  sample_minimum: number;
+  perception_count: number;
+  topic_count: number;
+  analyzed_comment_count: number;
+  qualifying_perception_count: number;
+  topics: ProfileIntelligenceTopic[];
+  recurring_themes: ProfileIntelligenceTheme[];
+  temporal: {
+    bucket_days: number;
+    qualifying_bucket_count: number;
+    buckets: ProfileTemporalBucket[];
+    status: "available" | "insufficient_sample";
+    note: string;
+  };
+  patterns: Array<{ label: string; description: string; sample_size: number; limitations: string[] }>;
+  limitations: string[];
+}

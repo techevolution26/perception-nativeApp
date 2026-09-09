@@ -403,7 +403,7 @@ export default function UserProfileScreen() {
             <View className="rounded-card border border-border-hairline bg-surface p-4">
               <View className="flex-row items-start">
                 <View className="flex-1">
-                  <Text className="font-sans-semibold text-lg text-foreground">Perception Analytics</Text>
+                  <Text className="font-sans-semibold text-lg text-foreground">Analytics & intelligence</Text>
                   <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
                     {subscription?.analytics_enabled
                       ? `Active · ${subscription.plan?.name ?? "subscription"} · ${subscription.max_topics} topic slots`
@@ -415,10 +415,10 @@ export default function UserProfileScreen() {
               <View className="mt-4 flex-row gap-2">
                 <View className="flex-1">
                   <Button
-                    label={subscription?.analytics_enabled ? "Open analytics" : "Unlock analytics"}
+                    label={subscription?.analytics_enabled ? "Profile intelligence" : "Unlock analytics"}
                     variant="accent"
                     size="sm"
-                    onPress={() => router.push(subscription?.analytics_enabled ? "/analytics" : "/subscription")}
+                    onPress={() => router.push(subscription?.analytics_enabled ? "/profile-intelligence" : "/subscription")}
                   />
                 </View>
                 <View className="flex-1">

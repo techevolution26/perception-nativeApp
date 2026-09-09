@@ -5,7 +5,6 @@ import { Feather } from "@expo/vector-icons";
 
 import Button from "../components/ui/Button";
 import Pill from "../components/ui/Pill";
-import VerifiedBadge from "../components/ui/VerifiedBadge";
 import { apiFetch, ApiError } from "../lib/api";
 import useAuthStore from "../store/useAuthStore";
 import type { Subscription, Topic, UserMe } from "../types/models";
@@ -99,9 +98,6 @@ export default function AnalyticsProfileScreen() {
 
   if (!user) return null;
 
-  const hasIdentity = (user.professional_roles?.length ?? 0) > 0;
-  const isVerified = user.verification_status === "VERIFIED";
-
   return (
     <View className="flex-1 bg-background">
       <View className="flex-row items-center px-4 pb-3 pt-14">
@@ -111,55 +107,12 @@ export default function AnalyticsProfileScreen() {
         <View className="ml-2 flex-1">
           <Text className="font-sans-semibold text-xl text-foreground">Analytical profile</Text>
           <Text className="font-sans text-sm text-foreground-muted">
-            Control the professional and topic context used in your analytics.
+            Control the topic scope and geographic context used in your analytics. Your professional identity is managed separately.
           </Text>
         </View>
       </View>
 
       <ScrollView contentContainerClassName="gap-4 px-4 pb-12">
-        <View className="rounded-card border border-border-hairline bg-surface p-4">
-          <View className="flex-row items-start">
-            <View className="flex-1">
-              <Text className="font-sans-semibold text-base text-foreground">Professional identity</Text>
-              <Text className="mt-1 font-sans text-sm text-foreground-muted">
-                {hasIdentity
-                  ? user.professional_role_labels.join(" · ")
-                  : "No professional identity selected yet."}
-              </Text>
-            </View>
-            {hasIdentity && user.primary_professional_role && (
-              <VerifiedBadge
-                roleCode={user.primary_professional_role}
-                label={user.primary_professional_role_label ?? "Professional"}
-                verified={isVerified}
-              />
-            )}
-          </View>
-          <View className="mt-3 flex-row gap-2">
-            <View className="flex-1">
-              <Button label="Manage identity" variant="outline" size="sm" onPress={() => router.push("/professional-identity")} />
-            </View>
-            <View className="flex-1">
-              <Button
-                label={isVerified ? "Verified" : "Verification"}
-                variant={isVerified ? "outline" : "accent"}
-                size="sm"
-                onPress={() => router.push("/verification")}
-              />
-            </View>
-          </View>
-        </View>
-
-        {!hasIdentity && (
-          <View className="rounded-card border border-accent/30 bg-accent-soft p-4">
-            <Text className="font-sans-semibold text-base text-foreground">Set your professional identity first</Text>
-            <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
-              Your analytical profile uses your structured professional identity. Choose your industries and roles before interpreting professional audience signals.
-            </Text>
-            <Button label="Choose professional identity" variant="accent" size="sm" onPress={() => router.push("/professional-identity")} />
-          </View>
-        )}
-
         {!subscription?.analytics_enabled && (
           <View className="rounded-card border border-accent/30 bg-accent-soft p-4">
             <Text className="font-sans-semibold text-base text-foreground">Analytics is locked</Text>
