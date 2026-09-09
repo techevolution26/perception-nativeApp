@@ -316,6 +316,27 @@ export interface ProfessionalGeographicSemanticCohort extends SemanticCohort {
   geography: string;
 }
 
+export interface CrossLensComparison {
+  dimension: "professional" | "geographic" | "professional_geographic";
+  cohort_a: string;
+  cohort_b: string;
+  sample_size_a: number;
+  sample_size_b: number;
+  leading_stance_a: string | null;
+  leading_stance_b: string | null;
+  shared_themes: string[];
+  type: "stance_and_theme_convergence" | "stance_divergence" | "thematic_divergence";
+  description: string;
+}
+
+export interface CrossLensComparisonAnalysis {
+  status: "available" | "insufficient_comparison";
+  sample_minimum: number;
+  convergence: CrossLensComparison[];
+  divergence: CrossLensComparison[];
+  note: string;
+}
+
 export interface PerceptionIntelligence {
   context: {
     schema_version: string;
@@ -363,6 +384,7 @@ export interface PerceptionIntelligence {
     agreement_themes: IntelligenceTheme[];
     disagreement_themes: IntelligenceTheme[];
   };
+  cross_lens_analysis: CrossLensComparisonAnalysis;
   perspectives: {
     status: "insufficient_sample" | "available" | "insufficient_segments";
     note: string;

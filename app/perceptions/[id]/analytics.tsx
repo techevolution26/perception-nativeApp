@@ -443,6 +443,73 @@ export default function PerceptionIntelligenceScreen() {
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
         <Text className="font-sans-semibold text-base text-foreground">
+          Cross-lens comparison
+        </Text>
+        <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
+          {data.cross_lens_analysis.note}
+        </Text>
+        {data.cross_lens_analysis.status === "insufficient_comparison" ? (
+          <Text className="mt-3 font-sans text-sm text-foreground-subtle">
+            More qualifying cohorts are needed before convergence or divergence can be compared.
+          </Text>
+        ) : (
+          <>
+            {data.cross_lens_analysis.convergence.length > 0 && (
+              <View className="mt-4">
+                <Text className="font-sans-medium text-sm text-foreground">Convergence</Text>
+                {data.cross_lens_analysis.convergence.slice(0, 5).map((item, index) => (
+                  <View key={`convergence-${item.dimension}-${item.cohort_a}-${item.cohort_b}-${index}`} className="mt-3 rounded-control bg-background p-3">
+                    <View className="flex-row justify-between gap-3">
+                      <Text className="flex-1 font-sans-medium text-sm text-foreground">
+                        {item.cohort_a} ↔ {item.cohort_b}
+                      </Text>
+                      <Text className="font-mono text-xs text-foreground-muted">
+                        n={item.sample_size_a}/{item.sample_size_b}
+                      </Text>
+                    </View>
+                    <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+                      {item.description}
+                    </Text>
+                    {item.shared_themes.length > 0 && (
+                      <Text className="mt-1 font-sans text-xs text-foreground-subtle">
+                        Shared themes: {item.shared_themes.join(", ")}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+            {data.cross_lens_analysis.divergence.length > 0 && (
+              <View className="mt-5">
+                <Text className="font-sans-medium text-sm text-foreground">Divergence</Text>
+                {data.cross_lens_analysis.divergence.slice(0, 5).map((item, index) => (
+                  <View key={`divergence-${item.dimension}-${item.cohort_a}-${item.cohort_b}-${index}`} className="mt-3 rounded-control bg-background p-3">
+                    <View className="flex-row justify-between gap-3">
+                      <Text className="flex-1 font-sans-medium text-sm text-foreground">
+                        {item.cohort_a} ↔ {item.cohort_b}
+                      </Text>
+                      <Text className="font-mono text-xs text-foreground-muted">
+                        n={item.sample_size_a}/{item.sample_size_b}
+                      </Text>
+                    </View>
+                    <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+                      {item.description}
+                    </Text>
+                    {item.shared_themes.length > 0 && (
+                      <Text className="mt-1 font-sans text-xs text-foreground-subtle">
+                        Shared themes: {item.shared_themes.join(", ")}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">
           Observed patterns
         </Text>
         {data.patterns.length === 0 ? (
