@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
@@ -13,11 +13,12 @@ export default function PerceptionIntelligenceScreen() {
   const [data, setData] = useState<PerceptionIntelligence | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requiresSubscription, setRequiresSubscription] = useState(false);
+  const [decisionIntent, setDecisionIntent] = useState<PerceptionIntelligence["decision_context"]["intent"]>("general_exploration");
 
   useEffect(() => {
     let mounted = true;
 
-    apiFetch<PerceptionIntelligence>(`/api/analytics/perceptions/${id}`)
+    apiFetch<PerceptionIntelligence>(`/api/analytics/perceptions/${id}?decision_intent=${decisionIntent}`)
       .then((result) => {
         if (mounted) setData(result);
       })
@@ -39,7 +40,7 @@ export default function PerceptionIntelligenceScreen() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, decisionIntent]);
 
   if (!data && !error && !requiresSubscription) {
     return (
@@ -111,6 +112,46 @@ export default function PerceptionIntelligenceScreen() {
           : "What is happening in this conversation"}{" "}
         · {data.context.period_days} days
       </Text>
+      <View className="mt-4">
+        <Text className="font-sans-medium text-sm text-foreground">
+          Decision lens
+        </Text>
+        <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">
+          Change the framing without changing the underlying evidence.
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2">
+          <View className="flex-row gap-2">
+            {[
+              "general_exploration",
+              "research",
+              "business",
+              "policy",
+              "journalism",
+              "education",
+              "product",
+              "professional",
+            ].map((intent) => {
+              const selected = decisionIntent === intent;
+              return (
+                <Pressable
+                  key={intent}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    if (intent !== decisionIntent) setDecisionIntent(intent as PerceptionIntelligence["decision_context"]["intent"]);
+                  }}
+                  className={`rounded-full border px-3 py-2 ${selected ? "border-foreground bg-foreground" : "border-border-hairline bg-surface"}`}
+                >
+                  <Text className={`font-sans-medium text-xs capitalize ${selected ? "text-background" : "text-foreground-muted"}`}>
+                    {intent.split("_").join(" ")}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </View>
+
       <View className="mt-3 rounded-control border border-border-hairline bg-surface p-3">
         <Text className="font-sans-medium text-xs uppercase tracking-wider text-foreground-subtle">
           {data.context.viewer_lens === "author" ? "Creator lens" : "Conversation lens"}
@@ -605,14 +646,59 @@ export default function PerceptionIntelligenceScreen() {
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
         <Text className="font-sans-semibold text-base text-foreground">
-          Decision context
+          Decision intelligence
         </Text>
-        <Text className="mt-2 font-sans text-sm text-foreground">
-          {data.decision_context.intent.split("_").join(" ")}
+        <Text className="mt-1 font-sans text-sm capitalize text-foreground-subtle">
+          {data.decision_context.intent.split("_").join(" ")} · {data.decision_context.status.replace("_", " ")}
         </Text>
-        <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
-          {data.decision_context.guardrail}
+        <Text className="mt-3 font-sans text-sm leading-5 text-foreground">
+          {data.decision_context.summary}
         </Text>
+
+        {data.decision_context.observations.length > 0 && (
+          <View className="mt-4">
+            <Text className="font-sans-medium text-sm text-foreground">
+              Evidence-backed observations
+            </Text>
+            {data.decision_context.observations.slice(0, 6).map((item) => (
+              <View key={`${item.title}-${item.evidence_source}`} className="mt-3 rounded-control bg-background p-3">
+                <View className="flex-row items-center justify-between gap-3">
+                  <Text className="flex-1 font-sans-medium text-sm text-foreground">
+                    {item.title}
+                  </Text>
+                  <Text className="font-mono text-xs text-foreground-muted">
+                    n={item.sample_size}
+                  </Text>
+                </View>
+                <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+                  {item.description}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <View className="mt-4">
+          <Text className="font-sans-medium text-sm text-foreground">
+            How to use this lens
+          </Text>
+          {data.decision_context.considerations.map((item) => (
+            <View key={item.title} className="mt-2">
+              <Text className="font-sans-medium text-xs text-foreground">
+                {item.title}
+              </Text>
+              <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+                {item.description}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <View className="mt-4 rounded-control bg-background p-3">
+          <Text className="font-sans text-xs leading-5 text-foreground-subtle">
+            {data.decision_context.guardrail}
+          </Text>
+        </View>
       </View>
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">

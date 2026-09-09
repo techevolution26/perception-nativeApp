@@ -463,11 +463,27 @@ export interface IntelligenceSignal {
   limitations: string[];
 }
 
+export interface DecisionObservation {
+  title: string;
+  description: string;
+  evidence_source: string;
+  sample_size: number;
+}
+
+export interface DecisionConsideration {
+  title: string;
+  description: string;
+}
+
 export interface DecisionContext {
   intent: "research" | "business" | "policy" | "journalism" | "education" | "product" | "professional" | "general_exploration";
-  signals: IntelligenceSignal[];
+  status: "available" | "insufficient_sample";
+  summary: string;
+  observations: DecisionObservation[];
+  considerations: DecisionConsideration[];
   evidence_invariant: boolean;
   guardrail: string;
+  limitations: string[];
 }
 
 export interface ProfileIntelligenceTopic {
