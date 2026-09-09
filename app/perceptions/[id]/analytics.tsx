@@ -443,6 +443,61 @@ export default function PerceptionIntelligenceScreen() {
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
         <Text className="font-sans-semibold text-base text-foreground">
+          Observed patterns
+        </Text>
+        {data.patterns.length === 0 ? (
+          <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
+            Patterns are withheld until the semantic evidence reaches the minimum sample.
+          </Text>
+        ) : (
+          data.patterns.map((item) => (
+            <View key={item.label} className="mt-3 rounded-control bg-background p-3">
+              <Text className="font-sans-medium text-sm text-foreground">{item.label}</Text>
+              <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+                {item.description}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">
+          Observed signals
+        </Text>
+        {data.signals.length === 0 ? (
+          <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
+            No evidence-backed signals are qualified yet.
+          </Text>
+        ) : (
+          data.signals.map((item) => (
+            <View key={item.label} className="mt-3 rounded-control bg-background p-3">
+              <View className="flex-row items-center justify-between gap-3">
+                <Text className="flex-1 font-sans-medium text-sm text-foreground">{item.label}</Text>
+                <Text className="font-mono text-xs text-foreground-muted">n={item.sample_size}</Text>
+              </View>
+              <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+                {item.description}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">
+          Decision context
+        </Text>
+        <Text className="mt-2 font-sans text-sm text-foreground">
+          {data.decision_context.intent.split("_").join(" ")}
+        </Text>
+        <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+          {data.decision_context.guardrail}
+        </Text>
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">
           Methodology
         </Text>
         {data.methodology.rules.map((item) => (
