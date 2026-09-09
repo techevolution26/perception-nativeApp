@@ -7,6 +7,7 @@ import Spinner from "../../../components/ui/Spinner";
 import Button from "../../../components/ui/Button";
 import { ApiError, apiFetch } from "../../../lib/api";
 import type { PerceptionIntelligence } from "../../../types/models";
+import { AnalyticsBadge, AnalyticsLegend, freshnessKind, sentimentKind, stanceKind } from "../../../components/ui/AnalyticsBadge";
 
 export default function PerceptionIntelligenceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -112,6 +113,7 @@ export default function PerceptionIntelligenceScreen() {
           : "What is happening in this conversation"}{" "}
         · {data.context.period_days} days
       </Text>
+      <AnalyticsLegend />
       <View className="mt-4">
         <Text className="font-sans-medium text-sm text-foreground">
           Decision lens
@@ -160,6 +162,20 @@ export default function PerceptionIntelligenceScreen() {
           {data.context.viewer_lens === "author"
             ? `${data.context.author.professional_role ?? "No professional identity"}${data.context.author.verified ? " · Verified" : ""}`
             : "Aggregate signals from people who interacted with this perception"}
+        </Text>
+      </View>
+
+      <View className="mt-4 rounded-card border border-border-hairline bg-surface p-4">
+        <View className="flex-row items-center justify-between gap-3">
+          <View className="flex-1">
+            <Text className="font-sans-semibold text-base text-foreground">Intelligence freshness</Text>
+            <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">{data.freshness.note}</Text>
+          </View>
+          <AnalyticsBadge label={data.freshness.status} kind={freshnessKind(data.freshness.status)} />
+        </View>
+        <Text className="mt-3 font-mono text-xs text-foreground-muted">
+          {data.freshness.analyzed_comment_count}/{data.freshness.source_comment_count} comments analyzed
+          {data.freshness.recalculation_required ? " · recalculation required" : " · current"}
         </Text>
       </View>
 
@@ -320,16 +336,9 @@ export default function PerceptionIntelligenceScreen() {
                 Sentiment
               </Text>
               {data.semantic.sentiment_distribution.map((item) => (
-                <View
-                  key={item.label}
-                  className="mt-2 flex-row justify-between"
-                >
-                  <Text className="font-sans text-sm capitalize text-foreground-muted">
-                    {item.label}
-                  </Text>
-                  <Text className="font-mono text-sm text-foreground-muted">
-                    {Math.round(item.share * 100)}%
-                  </Text>
+                <View key={item.label} className="mt-2 flex-row items-center justify-between gap-3">
+                  <AnalyticsBadge label={item.label} kind={sentimentKind(item.label)} />
+                  <Text className="font-mono text-sm text-foreground-muted">{Math.round(item.share * 100)}% · n={item.comments}</Text>
                 </View>
               ))}
             </View>
@@ -339,16 +348,9 @@ export default function PerceptionIntelligenceScreen() {
                 Stance
               </Text>
               {data.semantic.stance_distribution.map((item) => (
-                <View
-                  key={item.label}
-                  className="mt-2 flex-row justify-between"
-                >
-                  <Text className="font-sans text-sm capitalize text-foreground-muted">
-                    {item.label}
-                  </Text>
-                  <Text className="font-mono text-sm text-foreground-muted">
-                    {Math.round(item.share * 100)}%
-                  </Text>
+                <View key={item.label} className="mt-2 flex-row items-center justify-between gap-3">
+                  <AnalyticsBadge label={item.label} kind={stanceKind(item.label)} />
+                  <Text className="font-mono text-sm text-foreground-muted">{Math.round(item.share * 100)}% · n={item.comments}</Text>
                 </View>
               ))}
             </View>
@@ -603,6 +605,28 @@ export default function PerceptionIntelligenceScreen() {
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
         <Text className="font-sans-semibold text-base text-foreground">
+          Evidence provenance
+        </Text>
+        <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
+          This intelligence is derived from {data.provenance.source.replaceAll("_", " ")} and the qualifying observations in the selected period.
+        </Text>
+        <View className="mt-3 rounded-control bg-background p-3">
+          <Text className="font-sans text-xs text-foreground-subtle">
+            Sample: n={data.provenance.sample_size} · Scope: {data.provenance.scope.replaceAll("_", " ")} · Lens: {data.provenance.viewer_lens}
+          </Text>
+          <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">
+            {data.provenance.qualification}
+          </Text>
+        </View>
+        {data.provenance.limitations.slice(0, 3).map((item) => (
+          <Text key={item} className="mt-2 font-sans text-xs leading-5 text-foreground-subtle">
+            • {item}
+          </Text>
+        ))}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">
           Observed patterns
         </Text>
         {data.patterns.length === 0 ? (
@@ -612,7 +636,8 @@ export default function PerceptionIntelligenceScreen() {
         ) : (
           data.patterns.map((item) => (
             <View key={item.label} className="mt-3 rounded-control bg-background p-3">
-              <Text className="font-sans-medium text-sm text-foreground">{item.label}</Text>
+              <AnalyticsBadge label="Observed pattern" kind="info" />
+              <Text className="mt-2 font-sans-medium text-sm text-foreground">{item.label}</Text>
               <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
                 {item.description}
               </Text>
@@ -633,6 +658,7 @@ export default function PerceptionIntelligenceScreen() {
           data.signals.map((item) => (
             <View key={item.label} className="mt-3 rounded-control bg-background p-3">
               <View className="flex-row items-center justify-between gap-3">
+                <AnalyticsBadge label="Observed signal" kind="warning" />
                 <Text className="flex-1 font-sans-medium text-sm text-foreground">{item.label}</Text>
                 <Text className="font-mono text-xs text-foreground-muted">n={item.sample_size}</Text>
               </View>

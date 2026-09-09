@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import Spinner from "../components/ui/Spinner";
 import { ApiError, apiFetch } from "../lib/api";
 import type { ProfileIntelligence } from "../types/models";
+import { AnalyticsBadge, AnalyticsLegend, sentimentKind, stanceKind } from "../components/ui/AnalyticsBadge";
 
 function percent(value: number): string {
   return `${(value * 100).toFixed(0)}%`;
@@ -53,6 +54,7 @@ export default function ProfileIntelligenceScreen() {
         <View className="ml-2 flex-1">
           <Text className="font-sans-semibold text-xl text-foreground">Profile intelligence</Text>
           <Text className="font-sans text-sm text-foreground-muted">Recurring patterns across your Perceptions and Topics</Text>
+          <AnalyticsLegend />
         </View>
       </View>
 
@@ -98,8 +100,8 @@ export default function ProfileIntelligenceScreen() {
                   <Text className="flex-1 font-sans-medium text-sm text-foreground">{topic.topic_name}</Text>
                   <Text className="font-mono text-xs text-foreground-muted">n={topic.sample_size}</Text>
                 </View>
-                {stance && <Text className="mt-1 font-sans text-xs text-foreground-muted">Leading stance: {stance.label} · {percent(stance.share)}</Text>}
-                {theme && <Text className="mt-1 font-sans text-xs text-foreground-muted">Leading theme: {theme.theme} · {percent(theme.share)}</Text>}
+                {stance && <View className="mt-2 flex-row items-center gap-2"><AnalyticsBadge label={stance.label} kind={stanceKind(stance.label)} /><Text className="font-mono text-xs text-foreground-muted">{percent(stance.share)}</Text></View>}
+                {theme && <View className="mt-2 flex-row items-center gap-2"><AnalyticsBadge label="Recurring theme" kind="info" /><Text className="flex-1 font-sans text-xs text-foreground-muted">{theme.theme} · {percent(theme.share)}</Text></View>}
                 <Text className="mt-1 font-sans text-xs text-foreground-subtle">{topic.perception_count} authored Perception{topic.perception_count === 1 ? "" : "s"}</Text>
               </View>
             );

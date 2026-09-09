@@ -374,6 +374,18 @@ export interface TemporalIntelligence {
   limitations: string[];
 }
 
+export interface IntelligenceFreshness {
+  status: "current" | "pending" | "stale";
+  recalculation_required: boolean;
+  source_comment_count: number;
+  analyzed_comment_count: number;
+  pending_comment_count: number;
+  failed_comment_count: number;
+  latest_source_at: string | null;
+  latest_analysis_at: string | null;
+  note: string;
+}
+
 export interface PerceptionIntelligence {
   context: {
     schema_version: string;
@@ -387,6 +399,8 @@ export interface PerceptionIntelligence {
     viewer_lens: "author" | "observer";
     author: { professional_role: string | null; verified: boolean };
   };
+  provenance: IntelligenceProvenance;
+  freshness: IntelligenceFreshness;
   measurements: {
     likes: IntelligenceMeasurement;
     comments: IntelligenceMeasurement;
@@ -449,10 +463,30 @@ export interface IntelligenceMeasurement {
   description: string;
 }
 
+export interface IntelligenceProvenance {
+  source: 
+    | "comment_intelligence"
+    | "comment_participants"
+    | "cross_lens_analysis"
+    | "temporal_intelligence"
+    | "profile_intelligence"
+    | "platform_measurements";
+  evidence_types: string[];
+  sample_size: number;
+  period_start: string;
+  period_end: string;
+  scope: "creator_analytics" | "conversation_intelligence";
+  viewer_lens: "author" | "observer";
+  quality_score: number | null;
+  qualification: string;
+  limitations: string[];
+}
+
 export interface IntelligencePattern {
   label: string;
   description: string;
   evidence_types: string[];
+  provenance: IntelligenceProvenance;
 }
 
 export interface IntelligenceSignal {
@@ -461,6 +495,7 @@ export interface IntelligenceSignal {
   status: "observed_signal";
   sample_size: number;
   limitations: string[];
+  provenance: IntelligenceProvenance;
 }
 
 export interface DecisionObservation {

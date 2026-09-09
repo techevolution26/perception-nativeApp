@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { ApiError, apiFetch } from "../lib/api";
 import type { AnalyticsDecision, AnalyticsIntelligence, AnalyticsOverview } from "../types/models";
+import { AnalyticsBadge, AnalyticsLegend } from "../components/ui/AnalyticsBadge";
 
 const PERIODS = [7, 30, 90] as const;
 
@@ -79,6 +80,7 @@ export default function AnalyticsScreen() {
         <View className="ml-2 flex-1">
           <Text className="font-sans-semibold text-xl text-foreground">Portfolio analytics</Text>
           <Text className="font-sans text-sm text-foreground-muted">Observed signals, not predictions</Text>
+          <AnalyticsLegend />
         </View>
         <Pressable onPress={() => router.push("/profile-intelligence")} className="rounded-control p-2" accessibilityLabel="Profile intelligence">
           <Feather name="activity" size={18} color="#8b91a0" />
@@ -137,7 +139,7 @@ export default function AnalyticsScreen() {
                 <View key={`${insight.kind}-${insight.title}`} className="rounded-control bg-surface-sunken p-3">
                   <View className="flex-row items-center justify-between gap-2">
                     <Text className="flex-1 font-sans-medium text-sm text-foreground">{insight.title}</Text>
-                    <Text className="font-mono text-[10px] uppercase text-foreground-subtle">{insight.confidence}</Text>
+                    <AnalyticsBadge label={insight.confidence} kind={insight.confidence === "high" ? "positive" : insight.confidence === "medium" ? "warning" : "neutral"} />
                   </View>
                   <Text className="mt-1 font-sans text-xs leading-5 text-foreground-muted">{insight.detail}</Text>
                 </View>
@@ -217,7 +219,7 @@ export default function AnalyticsScreen() {
               <View key={topic.topic_id} className="border-b border-border-hairline pb-3">
                 <View className="flex-row items-center justify-between">
                   <Text className="flex-1 font-sans-medium text-sm text-foreground">{topic.topic_name}</Text>
-                  <Text className="font-mono text-xs text-foreground-muted">{topic.signal_strength.toFixed(2)}</Text>
+                  <AnalyticsBadge label={`${topic.evidence_level} evidence`} kind={topic.evidence_level === "strong" || topic.evidence_level === "moderate" ? "positive" : topic.evidence_level === "early" ? "warning" : "neutral"} />
                 </View>
                 <View className="mt-1 flex-row items-center justify-between">
                   <Text className="font-sans text-xs text-foreground-subtle">
