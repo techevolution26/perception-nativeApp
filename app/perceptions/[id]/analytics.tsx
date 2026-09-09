@@ -510,6 +510,58 @@ export default function PerceptionIntelligenceScreen() {
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
         <Text className="font-sans-semibold text-base text-foreground">
+          Conversation over time
+        </Text>
+        <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
+          {data.temporal.note}
+        </Text>
+        {data.temporal.status === "insufficient_sample" ? (
+          <Text className="mt-3 font-sans text-sm text-foreground-subtle">
+            No qualifying time window is available yet.
+          </Text>
+        ) : (
+          <>
+            {data.temporal.buckets.filter((bucket) => bucket.status === "available").slice(-6).map((bucket) => {
+              const stance = bucket.stance_distribution[0]?.label ?? "—";
+              const theme = bucket.top_themes[0]?.theme ?? "—";
+              return (
+                <View key={bucket.period_start} className="mt-3 rounded-control bg-background p-3">
+                  <View className="flex-row justify-between gap-3">
+                    <Text className="flex-1 font-sans-medium text-sm text-foreground">
+                      {new Date(bucket.period_start).toLocaleDateString()} → {new Date(bucket.period_end).toLocaleDateString()}
+                    </Text>
+                    <Text className="font-mono text-xs text-foreground-muted">n={bucket.sample_size}</Text>
+                  </View>
+                  <Text className="mt-2 font-sans text-xs text-foreground-muted">
+                    Leading stance: {stance}
+                  </Text>
+                  <Text className="mt-1 font-sans text-xs text-foreground-muted">
+                    Leading theme: {theme}
+                  </Text>
+                  <Text className="mt-1 font-sans text-xs text-foreground-subtle">
+                    Questions: {bucket.question_count}
+                  </Text>
+                </View>
+              );
+            })}
+            {data.temporal.changes.length > 0 && (
+              <View className="mt-5">
+                <Text className="font-sans-medium text-sm text-foreground">Observed changes</Text>
+                {data.temporal.changes.slice(-5).map((change) => (
+                  <View key={`${change.from_period_start}-${change.to_period_end}`} className="mt-3 rounded-control bg-background p-3">
+                    <Text className="font-sans text-sm leading-5 text-foreground-muted">
+                      {change.stance_changed ? `Leading stance changed from ${change.leading_stance_from ?? "unknown"} to ${change.leading_stance_to ?? "unknown"}.` : "Leading stance remained the same."} {change.theme_changed ? `Leading theme changed from ${change.leading_theme_from ?? "unknown"} to ${change.leading_theme_to ?? "unknown"}.` : "Leading theme remained the same."}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <Text className="font-sans-semibold text-base text-foreground">
           Observed patterns
         </Text>
         {data.patterns.length === 0 ? (

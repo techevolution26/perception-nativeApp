@@ -337,6 +337,43 @@ export interface CrossLensComparisonAnalysis {
   note: string;
 }
 
+export interface TemporalBucket {
+  period_start: string;
+  period_end: string;
+  sample_size: number;
+  status: "available" | "insufficient_sample";
+  sentiment_distribution: IntelligenceDistribution[];
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
+  question_count: number;
+  quality_score: number | null;
+}
+
+export interface TemporalChange {
+  from_period_start: string;
+  to_period_end: string;
+  sample_size_from: number;
+  sample_size_to: number;
+  leading_stance_from: string | null;
+  leading_stance_to: string | null;
+  leading_theme_from: string | null;
+  leading_theme_to: string | null;
+  stance_changed: boolean;
+  theme_changed: boolean;
+}
+
+export interface TemporalIntelligence {
+  schema_version: string;
+  status: "available" | "insufficient_sample";
+  bucket_days: number;
+  sample_minimum: number;
+  qualifying_bucket_count: number;
+  buckets: TemporalBucket[];
+  changes: TemporalChange[];
+  note: string;
+  limitations: string[];
+}
+
 export interface PerceptionIntelligence {
   context: {
     schema_version: string;
@@ -385,6 +422,7 @@ export interface PerceptionIntelligence {
     disagreement_themes: IntelligenceTheme[];
   };
   cross_lens_analysis: CrossLensComparisonAnalysis;
+  temporal: TemporalIntelligence;
   perspectives: {
     status: "insufficient_sample" | "available" | "insufficient_segments";
     note: string;
