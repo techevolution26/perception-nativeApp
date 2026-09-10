@@ -115,6 +115,21 @@ export default function PerceptionIntelligenceScreen() {
         · {data.context.period_days} days
       </Text>
       <AnalyticsLegend />
+
+      {data.context.access_tier === "free_teaser" && (
+        <View className="mt-4 rounded-card border border-accent/25 bg-accent-soft p-4">
+          <View className="flex-row items-center gap-2">
+            <Feather name="unlock" size={16} color="#c97412" />
+            <Text className="flex-1 font-sans-semibold text-sm text-foreground">Free intelligence preview</Text>
+          </View>
+          <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
+            You are seeing the strongest available conversation insight. Subscribe to unlock deeper professional and geographic perspectives, cross-lens comparisons, conversation-over-time analysis, and fuller decision intelligence.
+          </Text>
+          <View className="mt-3">
+            <Button label="Explore plans" variant="accent" size="sm" onPress={() => router.push("/subscription")} />
+          </View>
+        </View>
+      )}
       <View className="mt-4">
         <Text className="font-sans-medium text-sm text-foreground">
           Decision lens

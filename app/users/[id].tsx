@@ -469,6 +469,8 @@ export default function UserProfileScreen() {
                       perception={p}
                       index={i}
                       isOwner={isOwnProfile}
+                      fromProfile
+                      showAiAnalysis={isOwnProfile && subscription?.analytics_enabled === true}
                       showOwnerActions={isOwnProfile}
                       onEdit={(item) => guard(() => router.push(`/perceptions/${item.id}/edit`))}
                       onDelete={handleDeletePerception}

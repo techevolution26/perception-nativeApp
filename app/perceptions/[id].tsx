@@ -34,7 +34,7 @@ import { API_BASE, apiFetch, resolveMediaUrl } from "../../lib/api";
 import { getToken } from "../../lib/storage";
 import { playPostSuccessSound } from "../../lib/sound";
 
-import type { Comment } from "../../types/models";
+import type { Comment, Subscription } from "../../types/models";
 
 type MediaAsset = ImagePicker.ImagePickerAsset;
 
@@ -42,6 +42,7 @@ interface CommentItemProps {
   comment: Comment;
   onReplyAdded: (parentId: number, reply: Comment) => void;
   depth?: number;
+  showAiAnalysis?: boolean;
 }
 
 interface CommentComposerProps {
@@ -405,7 +406,13 @@ async function hydrateCommentList(comments: Comment[]): Promise<Comment[]> {
  * 6. Deeper replies become quieter through surface treatment rather than
  *    becoming physically smaller.
  */
-function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
+function CommentItem({
+  comment,
+  onReplyAdded,
+  depth = 0,
+  fromProfile,
+  showAiAnalysis,
+}: CommentItemProps & { fromProfile?: string }) {
   const [replying, setReplying] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [showReplies, setShowReplies] = useState(false);
@@ -483,21 +490,26 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
                     : "rounded-control bg-surface-sunken/50 px-3 py-2.5"
               }
             >
-              <View className="mb-1.5 flex-row items-baseline gap-2">
-                <Text
-                  numberOfLines={1}
-                  className="max-w-[68%] font-sans-semibold text-[15px] text-foreground"
-                >
-                  {comment.user.name}
-                </Text>
+              <View className="mb-1.5 flex-row items-center gap-2">
+                <View className="min-w-0 flex-1 flex-row items-center gap-2">
+                  <Text
+                    numberOfLines={1}
+                    className="max-w-[68%] font-sans-semibold text-[15px] text-foreground"
+                  >
+                    {comment.user.name}
+                  </Text>
 
-                <Text className="font-mono text-[10px] text-foreground-subtle">
-                  {new Date(comment.created_at).toLocaleDateString([], {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </Text>
-                <AIAnalysisBadge status={comment.ai_analysis_status} />
+                  <Text className="font-mono text-[10px] text-foreground-subtle">
+                    {new Date(comment.created_at).toLocaleDateString([], {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </Text>
+                </View>
+
+                {showAiAnalysis === true && (
+                  <AIAnalysisBadge status={comment.ai_analysis_status} />
+                )}
               </View>
 
               {comment.body && (
@@ -573,6 +585,8 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
                     comment={reply}
                     onReplyAdded={onReplyAdded}
                     depth={depth + 1}
+                    fromProfile={fromProfile}
+                    showAiAnalysis={showAiAnalysis}
                   />
                 ))}
               </View>
@@ -586,7 +600,11 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
 
 export default function PerceptionDetailScreen() {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, fromProfile, aiAnalysis } = useLocalSearchParams<{
+    id: string;
+    fromProfile?: string;
+    aiAnalysis?: string;
+  }>();
 
   const me = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
@@ -600,7 +618,34 @@ export default function PerceptionDetailScreen() {
   const [commentBody, setCommentBody] = useState("");
   const [posting, setPosting] = useState(false);
   const [hydratingComments, setHydratingComments] = useState(false);
+  const [showAiAnalysis, setShowAiAnalysis] = useState(false);
   const hydratedCommentsRef = useRef<Comment[] | null>(null);
+
+  // AI-analysis labels are an owner-only subscription feature. The profile
+  // route may request the label, but the detail screen verifies ownership and
+  // current analytics entitlement before exposing it to the comment tree.
+  useEffect(() => {
+    let mounted = true;
+
+    if (!aiAnalysis || aiAnalysis !== "1" || !me || !perception || me.id !== perception.user.id) {
+      setShowAiAnalysis(false);
+      return;
+    }
+
+    apiFetch<Subscription>("/api/subscription")
+      .then((subscription) => {
+        if (mounted) {
+          setShowAiAnalysis(subscription.analytics_enabled === true);
+        }
+      })
+      .catch(() => {
+        if (mounted) setShowAiAnalysis(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [aiAnalysis, me, perception]);
 
   // Count one authenticated view per perception per day. The backend
   // deduplicates the event, so revisiting a perception does not manufacture
@@ -866,6 +911,8 @@ export default function PerceptionDetailScreen() {
                 key={comment.id}
                 comment={comment}
                 onReplyAdded={addReply}
+                fromProfile={fromProfile}
+                showAiAnalysis={showAiAnalysis}
               />
             ))}
           </View>

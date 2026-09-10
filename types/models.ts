@@ -316,6 +316,45 @@ export interface ProfessionalGeographicSemanticCohort extends SemanticCohort {
   geography: string;
 }
 
+
+export interface ComparativePerception {
+  perception_id: number;
+  title: string;
+  topic_name: string | null;
+  sample_size: number;
+  status: "available" | "insufficient_sample";
+  leading_stance: string | null;
+  leading_theme: string | null;
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
+}
+
+export interface ComparativeComparison {
+  perception_a_id: number;
+  perception_a_title: string;
+  perception_b_id: number;
+  perception_b_title: string;
+  sample_size_a: number;
+  sample_size_b: number;
+  leading_stance_a: string | null;
+  leading_stance_b: string | null;
+  shared_themes: string[];
+  type: "aligned" | "stance_difference" | "theme_difference" | "mixed";
+  description: string;
+}
+
+export interface ComparativeIntelligence {
+  schema_version: string;
+  intent: DecisionContext["intent"];
+  status: "available" | "insufficient_sample";
+  sample_minimum: number;
+  perceptions: ComparativePerception[];
+  comparisons: ComparativeComparison[];
+  observations: Array<Record<string, string | number | null>>;
+  limitations: string[];
+  decision_note: string;
+}
+
 export interface CrossLensComparison {
   dimension: "professional" | "geographic" | "professional_geographic";
   cohort_a: string;
@@ -425,6 +464,9 @@ export interface PerceptionIntelligence {
     scope: "creator_analytics" | "conversation_intelligence";
     viewer_lens: "author" | "observer";
     author: { professional_role: string | null; verified: boolean };
+    access_tier: "full" | "free_teaser";
+    upgrade_available: boolean;
+    upgrade_message: string | null;
   };
   provenance: IntelligenceProvenance;
   freshness: IntelligenceFreshness;

@@ -31,6 +31,8 @@ interface PerceptionCardProps {
   isOwner?: boolean;
   detailView?: boolean;
   index?: number;
+  fromProfile?: boolean;
+  showAiAnalysis?: boolean;
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -133,6 +135,8 @@ export default function PerceptionCard({
   isOwner = false,
   detailView = false,
   index = 0,
+  fromProfile = false,
+  showAiAnalysis = false,
 }: PerceptionCardProps) {
   const {
     id,
@@ -167,7 +171,11 @@ export default function PerceptionCard({
       return;
     }
 
-    router.push(`/perceptions/${id}`);
+    router.push(
+      fromProfile
+        ? `/perceptions/${id}?fromProfile=1${showAiAnalysis ? "&aiAnalysis=1" : ""}`
+        : `/perceptions/${id}`,
+    );
   };
 
   const handleShare = async () => {

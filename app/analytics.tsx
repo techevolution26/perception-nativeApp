@@ -85,6 +85,9 @@ export default function AnalyticsScreen() {
         <Pressable onPress={() => router.push("/profile-intelligence")} className="rounded-control p-2" accessibilityLabel="Profile intelligence">
           <Feather name="activity" size={18} color="#8b91a0" />
         </Pressable>
+        <Pressable onPress={() => router.push("/compare-intelligence")} className="rounded-control p-2" accessibilityLabel="Compare intelligence">
+          <Feather name="git-merge" size={18} color="#8b91a0" />
+        </Pressable>
         <Pressable onPress={() => router.push("/analytics-profile")} className="rounded-control p-2" accessibilityLabel="Analytical profile settings">
           <Feather name="settings" size={18} color="#8b91a0" />
         </Pressable>
