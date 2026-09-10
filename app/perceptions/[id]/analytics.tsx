@@ -8,6 +8,7 @@ import Button from "../../../components/ui/Button";
 import { ApiError, apiFetch } from "../../../lib/api";
 import type { PerceptionIntelligence } from "../../../types/models";
 import { AnalyticsBadge, AnalyticsLegend, freshnessKind, sentimentKind, stanceKind } from "../../../components/ui/AnalyticsBadge";
+import { AIAnalysisBadge } from "../../../components/ui/AIAnalysisBadge";
 
 export default function PerceptionIntelligenceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -177,6 +178,58 @@ export default function PerceptionIntelligenceScreen() {
           {data.freshness.analyzed_comment_count}/{data.freshness.source_comment_count} comments analyzed
           {data.freshness.recalculation_required ? " · recalculation required" : " · current"}
         </Text>
+      </View>
+
+      <View className="mt-4 rounded-card border border-success/20 bg-success/5 p-4">
+        <View className="flex-row items-center gap-2">
+          <AIAnalysisBadge status="analyzed" />
+          <Text className="flex-1 font-sans text-xs leading-5 text-foreground-muted">
+            The semantic patterns and signals below are derived from responses carrying this badge. Responses still marked as processing are not counted as analyzed evidence.
+          </Text>
+        </View>
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <View className="flex-row items-center justify-between gap-3">
+          <View className="flex-1">
+            <Text className="font-sans-semibold text-base text-foreground">Analysis quality</Text>
+            <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">{data.quality.note}</Text>
+          </View>
+          <AnalyticsBadge
+            label={data.quality.status === "available" ? "available" : "not ready"}
+            kind={data.quality.status === "available" ? "strong" : "neutral"}
+          />
+        </View>
+        {data.quality.status === "available" ? (
+          <>
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              <View className="rounded-control bg-background px-3 py-2">
+                <Text className="font-sans text-xs text-foreground-muted">Quality score</Text>
+                <Text className="mt-1 font-mono text-base text-foreground">
+                  {data.quality.quality_score === null ? "—" : `${Math.round(data.quality.quality_score * 100)}%`}
+                </Text>
+              </View>
+              <View className="rounded-control bg-background px-3 py-2">
+                <Text className="font-sans text-xs text-foreground-muted">Low-quality analyses</Text>
+                <Text className="mt-1 font-mono text-base text-foreground">
+                  {data.quality.low_quality_comment_count}
+                  {data.quality.low_quality_share !== null ? ` · ${Math.round(data.quality.low_quality_share * 100)}%` : ""}
+                </Text>
+              </View>
+              <View className="rounded-control bg-background px-3 py-2">
+                <Text className="font-sans text-xs text-foreground-muted">Pending</Text>
+                <Text className="mt-1 font-mono text-base text-foreground">{data.quality.pending_comment_count}</Text>
+              </View>
+              <View className="rounded-control bg-background px-3 py-2">
+                <Text className="font-sans text-xs text-foreground-muted">Failed</Text>
+                <Text className="mt-1 font-mono text-base text-foreground">{data.quality.failed_comment_count}</Text>
+              </View>
+            </View>
+            <Text className="mt-3 font-sans text-xs leading-5 text-foreground-subtle">
+              Quality is a processing indicator, not statistical confidence or proof that the underlying conversation is representative.
+            </Text>
+          </>
+        ) : null}
       </View>
 
       <View className="mt-6 flex-row flex-wrap gap-3">
@@ -604,12 +657,37 @@ export default function PerceptionIntelligenceScreen() {
       </View>
 
       <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="font-sans-semibold text-base text-foreground">Evidence governance</Text>
+          <AnalyticsBadge label={data.evidence_governance.status} kind={data.evidence_governance.status === "eligible" ? "strong" : data.evidence_governance.status === "provisional" ? "warning" : "negative"} />
+        </View>
+        <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">Patterns: {data.evidence_governance.patterns_eligible ? "eligible" : "restricted"} · Signals: {data.evidence_governance.signals_eligible ? "eligible" : "restricted"}</Text>
+        {data.evidence_governance.reasons.slice(0, 4).map((reason) => <Text key={reason} className="mt-2 font-sans text-xs leading-5 text-foreground-subtle">• {reason}</Text>)}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="font-sans-semibold text-base text-foreground">Semantic model governance</Text>
+          <AnalyticsBadge label={data.semantic_model_governance.status.replace("_", " ")} kind={data.semantic_model_governance.status === "stable" ? "strong" : data.semantic_model_governance.status === "review_required" ? "warning" : "neutral"} />
+        </View>
+        <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">Latest: {data.semantic_model_governance.latest_model_version ?? "unknown"} · baseline: {data.semantic_model_governance.baseline_model_version ?? "none"}</Text>
+        <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">{data.semantic_model_governance.note}</Text>
+        {data.semantic_model_governance.distribution_shifts.map((item) => <Text key={String(item.dimension)} className="mt-2 font-mono text-[10px] text-foreground-subtle">{String(item.dimension)} · {item.max_distribution_shift !== undefined ? `shift ${item.max_distribution_shift}` : `theme overlap ${item.top_theme_overlap}`}</Text>)}
+      </View>
+
+      <View className="mt-5 rounded-card border border-border-hairline bg-surface p-4">
         <Text className="font-sans-semibold text-base text-foreground">
           Evidence provenance
         </Text>
         <Text className="mt-2 font-sans text-sm leading-5 text-foreground-muted">
           This intelligence is derived from {data.provenance.source.replaceAll("_", " ")} and the qualifying observations in the selected period.
         </Text>
+        <View className="mt-3 rounded-control bg-background p-3">
+          <Text className="font-sans-medium text-xs text-foreground">Evidence trace</Text>
+          <Text className="mt-1 font-mono text-[10px] text-foreground-subtle">{data.provenance.trace_id}</Text>
+          <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">{data.provenance.evidence_chain.join(" → ")}</Text>
+        </View>
+
         <View className="mt-3 rounded-control bg-background p-3">
           <Text className="font-sans text-xs text-foreground-subtle">
             Sample: n={data.provenance.sample_size} · Scope: {data.provenance.scope.replaceAll("_", " ")} · Lens: {data.provenance.viewer_lens}

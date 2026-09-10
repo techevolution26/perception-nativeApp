@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { AIAnalysisBadge } from "../../components/ui/AIAnalysisBadge";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -496,6 +497,7 @@ function CommentItem({ comment, onReplyAdded, depth = 0 }: CommentItemProps) {
                     day: "numeric",
                   })}
                 </Text>
+                <AIAnalysisBadge status={comment.ai_analysis_status} />
               </View>
 
               {comment.body && (

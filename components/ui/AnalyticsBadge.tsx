@@ -46,6 +46,7 @@ export function AnalyticsLegend() {
       <View className="flex-row items-center gap-1.5"><View className="h-2 w-2 rounded-full bg-success" /><Text className="font-sans text-[10px] text-foreground-subtle">strong/current</Text></View>
       <View className="flex-row items-center gap-1.5"><View className="h-2 w-2 rounded-full bg-accent" /><Text className="font-sans text-[10px] text-foreground-subtle">watch/early</Text></View>
       <View className="flex-row items-center gap-1.5"><View className="h-2 w-2 rounded-full bg-danger" /><Text className="font-sans text-[10px] text-foreground-subtle">caution/change</Text></View>
+      <View className="flex-row items-center gap-1.5"><View className="h-2 w-2 rounded-full bg-success" /><Text className="font-sans text-[10px] text-foreground-subtle">AI analyzed response</Text></View>
     </View>
   );
 }

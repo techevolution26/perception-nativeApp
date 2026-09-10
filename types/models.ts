@@ -12,7 +12,7 @@ import type { components } from "./api";
 export type Perception = components["schemas"]["PerceptionOut"];
 export type Topic = components["schemas"]["TopicOut"];
 export type TopicSlim = components["schemas"]["TopicSlim"];
-export type Comment = components["schemas"]["CommentOut"];
+export type Comment = components["schemas"]["CommentOut"] & { ai_analysis_status?: "pending" | "analyzed" | "failed" | null };
 export type UserSlim = components["schemas"]["UserSlim"] & { professional_industries: string[]; professional_roles: string[]; primary_professional_role: string | null; primary_professional_role_label: string | null; professional_role_labels: string[]; verified_professional_roles: string[]; };
 export type UserWithUnread = components["schemas"]["UserWithUnread"];
 export type Notification = components["schemas"]["NotificationsListOut"]["data"][number];
@@ -386,6 +386,33 @@ export interface IntelligenceFreshness {
   note: string;
 }
 
+export interface IntelligenceQuality {
+  status: "not_ready" | "available";
+  analyzed_comment_count: number;
+  quality_score: number | null;
+  low_quality_comment_count: number;
+  low_quality_share: number | null;
+  failed_comment_count: number;
+  pending_comment_count: number;
+  model_versions: Array<{ model_version: string; comments: number }>;
+  note: string;
+  limitations: string[];
+}
+
+export interface SemanticModelGovernance {
+  status: "stable" | "review_required" | "insufficient_sample";
+  active_model_versions: Array<{ model_version: string; comments: number }>;
+  baseline_model_version: string | null; latest_model_version: string | null; compared_sample_size: number;
+  distribution_shifts: Array<Record<string, string | number | boolean>>; note: string; limitations: string[];
+}
+
+export interface EvidenceGovernance {
+  status: "eligible" | "provisional" | "restricted";
+  minimum_sample: number; analyzed_comment_count: number; pending_comment_count: number; failed_comment_count: number;
+  quality_threshold: number; quality_score: number | null; freshness_status: "current" | "pending" | "stale";
+  patterns_eligible: boolean; signals_eligible: boolean; reasons: string[]; rules: string[];
+}
+
 export interface PerceptionIntelligence {
   context: {
     schema_version: string;
@@ -401,6 +428,9 @@ export interface PerceptionIntelligence {
   };
   provenance: IntelligenceProvenance;
   freshness: IntelligenceFreshness;
+  quality: IntelligenceQuality;
+  evidence_governance: EvidenceGovernance;
+  semantic_model_governance: SemanticModelGovernance;
   measurements: {
     likes: IntelligenceMeasurement;
     comments: IntelligenceMeasurement;
@@ -464,6 +494,8 @@ export interface IntelligenceMeasurement {
 }
 
 export interface IntelligenceProvenance {
+  trace_id: string;
+  evidence_chain: string[];
   source: 
     | "comment_intelligence"
     | "comment_participants"
