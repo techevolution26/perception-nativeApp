@@ -1,7 +1,7 @@
 import Spinner from "../components/ui/Spinner";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import Button from "../components/ui/Button";
@@ -12,6 +12,8 @@ import useAuthStore from "../store/useAuthStore";
 import type { VerificationApplication } from "../types/models";
 
 export default function VerificationScreen() {
+  const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
+  const isOnboarding = onboarding === "1";
   const user = useAuthStore((s) => s.user);
   const [taxonomy, setTaxonomy] = useState<ProfessionalTaxonomy | null>(null);
   const [industries, setIndustries] = useState<string[]>(user?.professional_industries ?? []);
@@ -22,6 +24,7 @@ export default function VerificationScreen() {
   const [evidence, setEvidence] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [canApply, setCanApply] = useState(true);
 
   const load = useCallback(async () => {
     try {
@@ -31,9 +34,11 @@ export default function VerificationScreen() {
       ]);
       setApplication(app);
       setTaxonomy(taxonomyData);
+      setCanApply(true);
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {
-        Alert.alert("Verification requires the right plan", "Choose a plan that includes professional verification.");
+        setCanApply(false);
+        if (!isOnboarding) Alert.alert("Verification requires the right plan", "Choose a plan that includes professional verification.");
       }
     } finally {
       setLoading(false);
@@ -93,7 +98,13 @@ export default function VerificationScreen() {
       </View>
 
       <ScrollView contentContainerClassName="gap-4 px-4 pb-12">
-        {application ? (
+        {isOnboarding && <View className="rounded-card border border-accent/20 bg-accent-soft p-4"><View className="flex-row items-center gap-2"><Feather name="shield" size={17} color="#c97412" /><Text className="font-sans-semibold text-sm text-foreground">Step 3 of your setup</Text></View><Text className="mt-1.5 font-sans text-xs leading-5 text-foreground-muted">Verification is optional. If you apply, give the reviewer enough context to understand your professional claim. You may include public links to portfolios, employer pages, professional directories, publications, certificates or other relevant evidence. Never submit passwords, private access links or secrets.</Text></View>}
+        {!canApply && !application ? (
+          <View className="rounded-card border border-border-hairline bg-surface p-4">
+            <View className="flex-row items-center gap-2"><Feather name="info" size={17} color="#8b91a0" /><Text className="font-sans-semibold text-base text-foreground">Verification is optional and plan-dependent</Text></View>
+            <Text className="mt-1.5 font-sans text-sm leading-5 text-foreground-muted">Your professional identity is saved independently. You can return later when you have a plan that includes professional verification.</Text>
+          </View>
+        ) : application ? (
           <View className="rounded-card border border-border-hairline bg-surface p-4">
             <Text className="font-sans-semibold text-base text-foreground">
               Application {application.status.toLowerCase()}
@@ -133,7 +144,7 @@ export default function VerificationScreen() {
               <TextInput
                 value={evidence}
                 onChangeText={setEvidence}
-                placeholder="Tell the reviewer what supports your professional identity"
+                placeholder="Explain what supports your identity; you may include public evidence links"
                 placeholderTextColor="#8b91a0"
                 multiline
                 className="min-h-[90px] rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5 font-sans text-foreground"
@@ -150,6 +161,7 @@ export default function VerificationScreen() {
             <Button label={saving ? "Submitting…" : "Submit application"} variant="accent" loading={saving} onPress={submit} />
           </>
         )}
+        {isOnboarding && <Pressable onPress={() => router.replace("/(tabs)")} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip verification and finish setup</Text></Pressable>}
       </ScrollView>
     </View>
   );

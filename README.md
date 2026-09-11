@@ -148,7 +148,3 @@ Set `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, 
 - Profile avatars open public read-only profiles; private account fields are never part of the public profile response.
 - Perception owners with analytics access can open analytics for an individual perception as well as aggregate analytics.
 - Google sign-in requires Expo OAuth client IDs in `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
-
-## Stage 4H.20
-
-Production privacy acceptance gate: see `docs/STAGE4H_20_PRODUCTION_PRIVACY_ACCEPTANCE.md`.

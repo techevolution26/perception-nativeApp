@@ -504,9 +504,7 @@ function CommentItem({
                     day: "numeric",
                   })}
                 </Text>
-                {showAiAnalysis === true && (
-                  <AIAnalysisBadge status={comment.ai_analysis_status} />
-                )}
+                {showAiAnalysis === true && <AIAnalysisBadge status={comment.ai_analysis_status} />}
               </View>
 
               {comment.body && (
@@ -624,13 +622,7 @@ export default function PerceptionDetailScreen() {
   useEffect(() => {
     let mounted = true;
 
-    if (
-      !aiAnalysis ||
-      aiAnalysis !== "1" ||
-      !me ||
-      !perception ||
-      me.id !== perception.user.id
-    ) {
+    if (!aiAnalysis || aiAnalysis !== "1" || !me || !perception || me.id !== perception.user.id) {
       setShowAiAnalysis(false);
       return;
     }
@@ -667,7 +659,10 @@ export default function PerceptionDetailScreen() {
    * Hydrate the complete descendant tree after the root comments arrive.
    */
   useEffect(() => {
-    if (!comments.length || comments === hydratedCommentsRef.current) {
+    if (
+      !comments.length ||
+      comments === hydratedCommentsRef.current
+    ) {
       return;
     }
 

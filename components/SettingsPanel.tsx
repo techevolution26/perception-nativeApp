@@ -15,13 +15,6 @@ const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof
 // Clearly-labeled "coming soon" rows rather than silent dead taps — an
 // empty settings screen undersells what's planned, but a row that looks
 // interactive and does nothing is worse.
-const UPCOMING_SETTINGS: { label: string; icon: keyof typeof Feather.glyphMap }[] = [
-  { label: "Notification preferences", icon: "bell" },
-  { label: "Privacy", icon: "lock" },
-  { label: "Help & support", icon: "help-circle" },
-  { label: "About Perception", icon: "info" },
-];
-
 function SectionLabel({ children }: { children: string }) {
   return (
     <Text className="mb-2 mt-6 px-1 font-sans-medium text-xs uppercase tracking-wide text-foreground-subtle first:mt-0">
@@ -72,17 +65,17 @@ export default function SettingsPanel() {
 
       <SectionLabel>More settings</SectionLabel>
       <Card className="overflow-hidden">
-        {UPCOMING_SETTINGS.map((item, i) => (
-          <View
-            key={item.label}
-            className={`flex-row items-center gap-3 px-4 py-3.5 ${i > 0 ? "border-t border-border-hairline" : ""}`}
-          >
-            <Feather name={item.icon} size={17} color="#8b91a0" />
-            <Text className="flex-1 font-sans text-[15px] text-foreground-muted">{item.label}</Text>
-            <View className="rounded-pill bg-surface-sunken px-2 py-0.5">
-              <Text className="font-sans-medium text-[10px] uppercase tracking-wide text-foreground-subtle">Soon</Text>
-            </View>
-          </View>
+        {[
+          ["Notification preferences", "bell", "/notification-preferences"],
+          ["Privacy", "lock", "/privacy"],
+          ["Help & support", "help-circle", "/help-support"],
+          ["About Perception", "info", "/about"],
+        ].map(([label, icon, path], i) => (
+          <Pressable key={label} onPress={() => router.push(path as never)} className={`flex-row items-center gap-3 px-4 py-3.5 ${i > 0 ? "border-t border-border-hairline" : ""}`}>
+            <Feather name={icon as keyof typeof Feather.glyphMap} size={17} color="#8b91a0" />
+            <Text className="flex-1 font-sans text-[15px] text-foreground">{label}</Text>
+            <Feather name="chevron-right" size={17} color="#8b91a0" />
+          </Pressable>
         ))}
       </Card>
 

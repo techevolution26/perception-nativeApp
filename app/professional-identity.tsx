@@ -1,5 +1,6 @@
 import Spinner from "../components/ui/Spinner";
 import { useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -9,6 +10,8 @@ import useAuthStore from "../store/useAuthStore";
 import { apiFetch, ApiError } from "../lib/api";
 
 export default function ProfessionalIdentityScreen() {
+  const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
+  const isOnboarding = onboarding === "1";
   const user = useAuthStore((s) => s.user);
   const refreshMe = useAuthStore((s) => s.refreshMe);
   const [industries, setIndustries] = useState<string[]>(user?.professional_industries ?? []);
@@ -39,6 +42,10 @@ export default function ProfessionalIdentityScreen() {
         body: { professional_industries: industries, professional_roles: roles, primary_professional_role: primaryRole },
       });
       await refreshMe();
+      if (isOnboarding) {
+        router.replace("/verification?onboarding=1");
+        return;
+      }
       Alert.alert("Saved", "Your professional identity has been updated.");
     } catch (error) {
       Alert.alert("Could not save", error instanceof ApiError ? error.message : "Please try again.");
@@ -73,6 +80,12 @@ export default function ProfessionalIdentityScreen() {
             onChange={(value) => { setIndustries(value.industries); setRoles(value.roles); setPrimaryRole(value.primaryRole); }}
           />
         </View>
+        {isOnboarding && (
+          <View className="rounded-card border border-accent/20 bg-accent-soft p-4">
+            <View className="flex-row items-center gap-2"><Feather name="compass" size={17} color="#c97412" /><Text className="font-sans-semibold text-sm text-foreground">Step 2 of your setup</Text></View>
+            <Text className="mt-1.5 font-sans text-xs leading-5 text-foreground-muted">Choose the roles and industries that genuinely describe your work. This gives later conversations useful context without deciding what your responses mean.</Text>
+          </View>
+        )}
         <View className="rounded-card border border-accent/20 bg-accent-soft p-4">
           <Text className="font-sans-semibold text-sm text-foreground">Professional badge ≠ verification</Text>
           <Text className="mt-1 font-sans text-xs leading-5 text-foreground-muted">
@@ -80,6 +93,7 @@ export default function ProfessionalIdentityScreen() {
           </Text>
         </View>
         <Button label="Save professional identity" variant="accent" loading={saving} onPress={() => void save()} />
+        {isOnboarding && <Pressable onPress={() => router.replace("/verification?onboarding=1")} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip this step for now</Text></Pressable>}
       </ScrollView>
     </View>
   );

@@ -94,7 +94,7 @@ export default function TopicsIndexScreen() {
                   <Text className="mt-1.5 font-sans text-sm leading-5 text-foreground-muted">Choose a few topics to shape the ideas, people, and conversations you see first. You can change this anytime.</Text>
                   <View className="mt-3 flex-row items-center gap-2">
                     <View className="h-1.5 flex-1 rounded-full bg-accent" />
-                    <Text className="font-sans-medium text-[11px] text-accent">1 of 1</Text>
+                    <Text className="font-sans-medium text-[11px] text-accent">1 of 3</Text>
                   </View>
                 </View>
               )}
@@ -111,15 +111,18 @@ export default function TopicsIndexScreen() {
           ListFooterComponent={isOnboarding ? (
             <View className="mt-3">
               <Button
-                label="Continue to Perception"
+                label="Continue to professional identity"
                 variant="accent"
                 size="lg"
                 onPress={() => {
                   const hasTopics = topics.some((topic) => topic.followed);
                   void setTopicReminderPending(!hasTopics);
-                  router.replace("/(tabs)");
+                  router.replace("/professional-identity?onboarding=1");
                 }}
               />
+              <Pressable onPress={() => router.replace("/(tabs)")} className="items-center py-3">
+                <Text className="font-sans-medium text-sm text-foreground-subtle">Skip setup for now</Text>
+              </Pressable>
             </View>
           ) : null}
           renderItem={({ item }) => (

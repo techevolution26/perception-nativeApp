@@ -193,6 +193,7 @@ export default function TopicOnboardingScreen() {
           </Pressable>
         )}
       />
+      <Pressable onPress={() => router.replace("/(tabs)")} className="absolute right-5 bottom-[92px] px-2 py-1"><Text className="font-sans-medium text-xs text-foreground-subtle">Skip for now</Text></Pressable>
       <View
         className="absolute bottom-0 left-0 right-0 border-t border-border-hairline bg-background px-5 pt-3"
         style={{ paddingBottom: Math.max(insets.bottom, 12) }}
@@ -206,7 +207,7 @@ export default function TopicOnboardingScreen() {
           variant="accent"
           size="lg"
           disabled={selectedCount === 0}
-          onPress={() => router.replace("/(tabs)")}
+          onPress={() => router.replace("/professional-identity?onboarding=1")}
         />
       </View>
     </View>
