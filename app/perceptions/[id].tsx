@@ -490,23 +490,20 @@ function CommentItem({
                     : "rounded-control bg-surface-sunken/50 px-3 py-2.5"
               }
             >
-              <View className="mb-1.5 flex-row items-center gap-2">
-                <View className="min-w-0 flex-1 flex-row items-center gap-2">
-                  <Text
-                    numberOfLines={1}
-                    className="max-w-[68%] font-sans-semibold text-[15px] text-foreground"
-                  >
-                    {comment.user.name}
-                  </Text>
+              <View className="mb-1.5 flex-row items-baseline gap-2">
+                <Text
+                  numberOfLines={1}
+                  className="max-w-[68%] font-sans-semibold text-[15px] text-foreground"
+                >
+                  {comment.user.name}
+                </Text>
 
-                  <Text className="font-mono text-[10px] text-foreground-subtle">
-                    {new Date(comment.created_at).toLocaleDateString([], {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </Text>
-                </View>
-
+                <Text className="font-mono text-[10px] text-foreground-subtle">
+                  {new Date(comment.created_at).toLocaleDateString([], {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </Text>
                 {showAiAnalysis === true && (
                   <AIAnalysisBadge status={comment.ai_analysis_status} />
                 )}
@@ -627,7 +624,13 @@ export default function PerceptionDetailScreen() {
   useEffect(() => {
     let mounted = true;
 
-    if (!aiAnalysis || aiAnalysis !== "1" || !me || !perception || me.id !== perception.user.id) {
+    if (
+      !aiAnalysis ||
+      aiAnalysis !== "1" ||
+      !me ||
+      !perception ||
+      me.id !== perception.user.id
+    ) {
       setShowAiAnalysis(false);
       return;
     }
@@ -664,10 +667,7 @@ export default function PerceptionDetailScreen() {
    * Hydrate the complete descendant tree after the root comments arrive.
    */
   useEffect(() => {
-    if (
-      !comments.length ||
-      comments === hydratedCommentsRef.current
-    ) {
+    if (!comments.length || comments === hydratedCommentsRef.current) {
       return;
     }
 

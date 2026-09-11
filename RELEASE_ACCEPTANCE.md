@@ -41,21 +41,3 @@ This checklist is the mobile half of the Stage 3 release gate. Complete it again
 ## Sign-off
 
 Do not mark the mobile release PASS until every applicable item above is checked on the target Android device.
-
-## Stage 4H.20 — Intelligence Production Gate
-
-- [ ] Perception Intelligence screen loads for an entitled owner.
-- [ ] Free viewer receives the bounded intelligence teaser.
-- [ ] Creator-only measurements are not shown to observers.
-- [ ] Evidence/provenance/freshness/governance sections render without errors.
-- [ ] Temporal intelligence is shown only when the entitlement and sample rules permit it.
-- [ ] Profile Intelligence opens for the entitled owner.
-- [ ] Comparative Intelligence accepts 2–5 owned perceptions only.
-- [ ] AI response badge appears at the far right of comments and replies for the owner with an analytics-enabled subscription when status is available.
-- [ ] AI response badge/status is absent for free owners and non-owners.
-- [ ] No TypeScript errors (`npm run typecheck`).
-- [ ] No production navigation regression from the intelligence routes.
-
-### Stage 4H freeze
-
-Do not treat a UI rendering issue, missing sample, or provider cooldown as a reason to weaken the evidence/privacy contracts. Resolve the underlying defect or wait for the legitimate data/provider state.
