@@ -13,12 +13,7 @@
       "bundleIdentifier": "com.techresolute.perception"
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#0a0b0e",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
+      "icon": "./assets/icon.png",
       "backgroundColor": "#fcfcfb",
       "userInterfaceStyle": "automatic",
       "package": "com.techresolute.perception",

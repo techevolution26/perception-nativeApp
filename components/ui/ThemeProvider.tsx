@@ -56,18 +56,13 @@ export default function ThemeProvider({ children }: PropsWithChildren) {
   const systemBarColor = isDark ? "#0a0b0e" : "#fcfcfb";
 
   return (
-    <View
-      style={[
-        { flex: 1, backgroundColor: systemBarColor },
-        vars(theme),
-      ]}
-    >
+    <View style={[{ flex: 1, backgroundColor: systemBarColor }, vars(theme)]}>
       <StatusBar style={isDark ? "light" : "dark"} animated />
       {Platform.OS === "android" ? (
         <NativeStatusBar
           barStyle={isDark ? "light-content" : "dark-content"}
-          backgroundColor={systemBarColor}
-          translucent={false}
+          backgroundColor="transparent"
+          translucent
         />
       ) : null}
       {children}

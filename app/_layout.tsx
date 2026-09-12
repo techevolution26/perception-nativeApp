@@ -3,7 +3,7 @@ import "./global.css";
 import "react-native-reanimated";
 
 import { useEffect, useState } from "react";
-import { Animated, Easing, StyleSheet } from "react-native";
+import { Animated, Easing, StyleSheet, Text } from "react-native";
 import Svg, { Circle, Line, Rect } from "react-native-svg";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -30,7 +30,6 @@ import useSettingsStore from "../store/useSettingsStore";
 import ThemeProvider from "../components/ui/ThemeProvider";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
-SplashScreen.setOptions({ duration: 450, fade: true });
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -62,6 +61,12 @@ export default function RootLayout() {
   }, [hydrateAuth, hydrateSettings]);
 
   const appReady = fontsLoaded && authHydrated && settingsHydrated;
+  const { colorScheme } = useColorScheme();
+  const themePreference = useSettingsStore((s) => s.themePreference);
+  const isDark =
+    themePreference === "dark" ||
+    (themePreference === "system" && colorScheme === "dark");
+  const rootBackgroundColor = isDark ? "#0a0b0e" : "#fcfcfb";
 
   useEffect(() => {
     if (appReady) {
@@ -74,7 +79,9 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: rootBackgroundColor }}
+    >
       <LaunchAnimation />
       <KeyboardProvider>
         <SafeAreaProvider>
@@ -153,49 +160,65 @@ function LaunchAnimation() {
         { opacity, backgroundColor: isDark ? "#0a0b0e" : "#fcfcfb" },
       ]}
     >
-      <Animated.View
-        style={{
-          transform: [
-            {
-              rotate: rotation.interpolate({
-                inputRange: [-1, 1],
-                outputRange: ["-360deg", "360deg"],
-              }),
-            },
-          ],
-        }}
-      >
-        <Svg width={120} height={120} viewBox="0 0 24 24" fill="none">
-          <Rect width="24" height="24" rx="6" fill="#0a0b0e" />
-          <Circle cx="12" cy="12" r="4.25" stroke="#f2a33c" strokeWidth="1.8" />
-          <Line
-            x1="12"
-            y1="2.5"
-            x2="12"
-            y2="6"
-            stroke="#f2a33c"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-          <Line
-            x1="20.3"
-            y1="15.6"
-            x2="17"
-            y2="14"
-            stroke="#f2a33c"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-          <Line
-            x1="5.4"
-            y1="18.3"
-            x2="7.8"
-            y2="15.3"
-            stroke="#f2a33c"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-        </Svg>
+      <Animated.View style={{ alignItems: "center" }}>
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: rotation.interpolate({
+                  inputRange: [-1, 1],
+                  outputRange: ["-360deg", "360deg"],
+                }),
+              },
+            ],
+          }}
+        >
+          <Svg width={120} height={120} viewBox="0 0 24 24" fill="none">
+            <Rect width="24" height="24" rx="6" fill="#0a0b0e" />
+            <Circle
+              cx="12"
+              cy="12"
+              r="4.25"
+              stroke="#f2a33c"
+              strokeWidth="1.8"
+            />
+            <Line
+              x1="12"
+              y1="2.5"
+              x2="12"
+              y2="6"
+              stroke="#f2a33c"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <Line
+              x1="20.3"
+              y1="15.6"
+              x2="17"
+              y2="14"
+              stroke="#f2a33c"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <Line
+              x1="5.4"
+              y1="18.3"
+              x2="7.8"
+              y2="15.3"
+              stroke="#f2a33c"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </Svg>
+        </Animated.View>
+        <Text
+          style={[
+            styles.launchTitle,
+            { color: isDark ? "#f7f7f8" : "#14151a" },
+          ]}
+        >
+          Perception
+        </Text>
       </Animated.View>
     </Animated.View>
   );
@@ -208,5 +231,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#0a0b0e",
     zIndex: 10,
+  },
+  launchTitle: {
+    marginTop: 16,
+    fontFamily: "Geist_600SemiBold",
+    fontSize: 24,
+    letterSpacing: 0,
   },
 });
