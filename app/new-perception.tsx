@@ -37,6 +37,7 @@ export default function NewPerceptionModal() {
   const [topicId, setTopicId] = useState<number | null>(null);
   const [media, setMedia] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [loading, setLoading] = useState(false);
+  const [posted, setPosted] = useState(false);
 
   const addPerception = usePerceptionsStore((s) => s.addPerception);
 
@@ -93,8 +94,8 @@ export default function NewPerceptionModal() {
 
       addPerception(created);
       playPostSuccessSound();
-
-      router.back();
+      setPosted(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       Alert.alert(
         "Couldn't post",
@@ -122,79 +123,95 @@ export default function NewPerceptionModal() {
         </Pressable>
       </View>
 
-      <ScrollView
-        className="flex-1 px-4 py-4"
-        keyboardShouldPersistTaps="handled"
-      >
-        <TextInput
-          value={body}
-          onChangeText={setBody}
-          placeholder="What's your take on this?"
-          placeholderTextColor="#8b91a0"
-          multiline
-          className="min-h-[110px] rounded-control border border-border-hairline bg-surface-sunken p-3 font-sans text-[15px] text-foreground"
-          textAlignVertical="top"
-        />
-
-        {media && (
-          <View className="relative mt-3">
-            <Image
-              source={{ uri: media.uri }}
-              style={{ width: "100%", height: 180, borderRadius: 10 }}
-              contentFit="cover"
-            />
-            <Pressable
-              onPress={() => setMedia(null)}
-              className="absolute -right-2 -top-2 rounded-full bg-foreground p-1.5"
-            >
-              <Feather name="x" size={14} color="#fcfcfb" />
-            </Pressable>
+      {posted ? (
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-success/10">
+            <Feather name="check" size={30} color="#2fae6a" />
           </View>
-        )}
-
-        <Text className="mb-2 mt-5 font-sans-medium text-xs uppercase tracking-wide text-foreground-subtle">
-          Topic
-        </Text>
-        <View className="flex-row flex-wrap gap-2">
-          {topics.map((topic) => {
-            const selected = topicId === topic.id;
-            return (
-              <Pressable
-                key={topic.id}
-                onPress={() => setTopicId(topic.id)}
-                className={`rounded-control border px-3 py-2 ${selected ? "border-accent/60 bg-accent-soft" : "border-border-hairline"}`}
-              >
-                <Text
-                  className={`font-sans text-sm ${selected ? "text-accent-strong" : "text-foreground-muted"}`}
-                >
-                  {topic.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Pressable
-          onPress={pickMedia}
-          className="mt-5 flex-row items-center gap-2 self-start rounded-control border border-border-hairline px-3.5 py-2.5"
-        >
-          <Feather name="image" size={16} color="#666c7a" />
-          <Text className="font-sans text-sm text-foreground-muted">
-            {media ? "Change media" : "Add photo or video"}
+          <Text className="font-sans-semibold text-xl text-foreground">
+            Perception posted
           </Text>
-        </Pressable>
-      </ScrollView>
+          <Text className="mt-2 text-center font-sans text-sm text-foreground-muted">
+            Your perception is now live.
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          className="flex-1 px-4 py-4"
+          keyboardShouldPersistTaps="handled"
+        >
+          <TextInput
+            value={body}
+            onChangeText={setBody}
+            placeholder="What's your take on this?"
+            placeholderTextColor="#8b91a0"
+            multiline
+            className="min-h-[110px] rounded-control border border-border-hairline bg-surface-sunken p-3 font-sans text-[15px] text-foreground"
+            textAlignVertical="top"
+          />
 
-      <View className="border-t border-border-hairline px-4 py-3">
-        <Button
-          label={loading ? "Posting…" : "Post perception"}
-          variant="accent"
-          size="lg"
-          loading={loading}
-          disabled={!body.trim() || !topicId}
-          onPress={handleSubmit}
-        />
-      </View>
+          {media && (
+            <View className="relative mt-3">
+              <Image
+                source={{ uri: media.uri }}
+                style={{ width: "100%", height: 180, borderRadius: 10 }}
+                contentFit="cover"
+              />
+              <Pressable
+                onPress={() => setMedia(null)}
+                className="absolute -right-2 -top-2 rounded-full bg-foreground p-1.5"
+              >
+                <Feather name="x" size={14} color="#fcfcfb" />
+              </Pressable>
+            </View>
+          )}
+
+          <Text className="mb-2 mt-5 font-sans-medium text-xs uppercase tracking-wide text-foreground-subtle">
+            Topic
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            {topics.map((topic) => {
+              const selected = topicId === topic.id;
+              return (
+                <Pressable
+                  key={topic.id}
+                  onPress={() => setTopicId(topic.id)}
+                  className={`rounded-control border px-3 py-2 ${selected ? "border-accent/60 bg-accent-soft" : "border-border-hairline"}`}
+                >
+                  <Text
+                    className={`font-sans text-sm ${selected ? "text-accent-strong" : "text-foreground-muted"}`}
+                  >
+                    {topic.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Pressable
+            onPress={pickMedia}
+            className="mt-5 flex-row items-center gap-2 self-start rounded-control border border-border-hairline px-3.5 py-2.5"
+          >
+            <Feather name="image" size={16} color="#666c7a" />
+            <Text className="font-sans text-sm text-foreground-muted">
+              {media ? "Change media" : "Add photo or video"}
+            </Text>
+          </Pressable>
+        </ScrollView>
+      )}
+
+      {!posted && (
+        <View className="border-t border-border-hairline px-4 py-3">
+          <Button
+            label={loading ? "Posting…" : "Post perception"}
+            variant="accent"
+            size="lg"
+            loading={loading}
+            disabled={!body.trim() || !topicId}
+            onPress={handleSubmit}
+          />
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
