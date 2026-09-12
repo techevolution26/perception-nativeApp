@@ -1,5 +1,5 @@
 import { PropsWithChildren } from "react";
-import { View } from "react-native";
+import { Platform, StatusBar as NativeStatusBar, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { vars, useColorScheme } from "nativewind";
 import useSettingsStore from "../../store/useSettingsStore";
@@ -53,15 +53,23 @@ export default function ThemeProvider({ children }: PropsWithChildren) {
 
   const theme = effectiveScheme === "dark" ? darkTheme : lightTheme;
   const isDark = effectiveScheme === "dark";
+  const systemBarColor = isDark ? "#0a0b0e" : "#fcfcfb";
 
   return (
     <View
       style={[
-        { flex: 1, backgroundColor: isDark ? "#0a0b0e" : "#fcfcfb" },
+        { flex: 1, backgroundColor: systemBarColor },
         vars(theme),
       ]}
     >
       <StatusBar style={isDark ? "light" : "dark"} animated />
+      {Platform.OS === "android" ? (
+        <NativeStatusBar
+          barStyle={isDark ? "light-content" : "dark-content"}
+          backgroundColor={systemBarColor}
+          translucent={false}
+        />
+      ) : null}
       {children}
     </View>
   );
