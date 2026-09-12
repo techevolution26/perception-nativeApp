@@ -1,5 +1,6 @@
 import { PropsWithChildren } from "react";
 import { View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { vars, useColorScheme } from "nativewind";
 import useSettingsStore from "../../store/useSettingsStore";
 
@@ -51,6 +52,17 @@ export default function ThemeProvider({ children }: PropsWithChildren) {
       : themePreference;
 
   const theme = effectiveScheme === "dark" ? darkTheme : lightTheme;
+  const isDark = effectiveScheme === "dark";
 
-  return <View style={[{ flex: 1 }, vars(theme)]}>{children}</View>;
+  return (
+    <View
+      style={[
+        { flex: 1, backgroundColor: isDark ? "#0a0b0e" : "#fcfcfb" },
+        vars(theme),
+      ]}
+    >
+      <StatusBar style={isDark ? "light" : "dark"} animated />
+      {children}
+    </View>
+  );
 }
