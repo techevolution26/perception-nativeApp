@@ -6,7 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import Spinner from "../components/ui/Spinner";
 import { ApiError, apiFetch } from "../lib/api";
 import type { ProfileIntelligence } from "../types/models";
-import { AnalyticsBadge, AnalyticsLegend, sentimentKind, stanceKind } from "../components/ui/AnalyticsBadge";
+import { AnalyticsBadge, AnalyticsLegend, stanceKind } from "../components/ui/AnalyticsBadge";
 
 function percent(value: number): string {
   return `${(value * 100).toFixed(0)}%`;

@@ -6,10 +6,9 @@ import { Feather } from "@expo/vector-icons";
 
 import Button from "../components/ui/Button";
 import ProfessionalIdentityPicker from "../components/ui/ProfessionalIdentityPicker";
-import type { ProfessionalTaxonomy } from "../types/models";
+import type { ProfessionalTaxonomy, VerificationApplication } from "../types/models";
 import { ApiError, apiFetch, getApiErrorMessage } from "../lib/api";
 import useAuthStore from "../store/useAuthStore";
-import type { VerificationApplication } from "../types/models";
 
 export default function VerificationScreen() {
   const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
@@ -43,7 +42,7 @@ export default function VerificationScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isOnboarding]);
 
   useEffect(() => {
     void Promise.resolve().then(() => load());

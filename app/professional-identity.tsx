@@ -1,8 +1,6 @@
-import Spinner from "../components/ui/Spinner";
 import { useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import Button from "../components/ui/Button";
 import ProfessionalIdentityPicker from "../components/ui/ProfessionalIdentityPicker";

@@ -1,10 +1,9 @@
 import Spinner from "../../components/ui/Spinner";
 // app/topics/index.tsx
 import { useEffect, useState, useCallback } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import Button from "../../components/ui/Button";

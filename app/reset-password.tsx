@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Feather } from "@expo/vector-icons";
 import Button from "../components/ui/Button";
 import VantageMark from "../components/ui/VantageMark";
 import { apiFetch, getValidationErrors } from "../lib/api";
