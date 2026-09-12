@@ -1,4 +1,4 @@
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useEffect } from "react";
 import { Platform, StatusBar as NativeStatusBar, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { vars, useColorScheme } from "nativewind";
@@ -55,13 +55,20 @@ export default function ThemeProvider({ children }: PropsWithChildren) {
   const isDark = effectiveScheme === "dark";
   const systemBarColor = isDark ? "#0a0b0e" : "#fcfcfb";
 
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      NativeStatusBar.setBackgroundColor(systemBarColor, true);
+      NativeStatusBar.setBarStyle(isDark ? "light-content" : "dark-content", true);
+    }
+  }, [isDark, systemBarColor]);
+
   return (
     <View style={[{ flex: 1, backgroundColor: systemBarColor }, vars(theme)]}>
       <StatusBar style={isDark ? "light" : "dark"} animated />
       {Platform.OS === "android" ? (
         <NativeStatusBar
           barStyle={isDark ? "light-content" : "dark-content"}
-          backgroundColor="transparent"
+          backgroundColor={systemBarColor}
           translucent
         />
       ) : null}
