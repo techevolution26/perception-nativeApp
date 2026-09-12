@@ -31,7 +31,9 @@ export default function NotificationPreferencesScreen() {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { if (user) void load(); }, [load, user]);
+  useEffect(() => {
+    if (user) void Promise.resolve().then(load);
+  }, [load, user]);
 
   const toggle = async (key: keyof typeof DEFAULTS) => {
     const next = !prefs[key];

@@ -1,5 +1,5 @@
 import Spinner from "../components/ui/Spinner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
@@ -18,13 +18,6 @@ export default function ProfessionalIdentityScreen() {
   const [roles, setRoles] = useState<string[]>(user?.professional_roles ?? []);
   const [primaryRole, setPrimaryRole] = useState<string | null>(user?.primary_professional_role ?? null);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    setIndustries(user.professional_industries ?? []);
-    setRoles(user.professional_roles ?? []);
-    setPrimaryRole(user.primary_professional_role ?? null);
-  }, [user]);
 
   const save = async () => {
     if (!roles.length) {

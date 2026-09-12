@@ -615,6 +615,8 @@ export default function PerceptionDetailScreen() {
   const [hydratingComments, setHydratingComments] = useState(false);
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
   const hydratedCommentsRef = useRef<Comment[] | null>(null);
+  const canRequestAiAnalysis =
+    aiAnalysis === "1" && !!me && !!perception && me.id === perception.user.id;
 
   // AI-analysis labels are an owner-only subscription feature. The profile
   // route may request the label, but the detail screen verifies ownership and
@@ -622,10 +624,7 @@ export default function PerceptionDetailScreen() {
   useEffect(() => {
     let mounted = true;
 
-    if (!aiAnalysis || aiAnalysis !== "1" || !me || !perception || me.id !== perception.user.id) {
-      setShowAiAnalysis(false);
-      return;
-    }
+    if (!canRequestAiAnalysis) return;
 
     apiFetch<Subscription>("/api/subscription")
       .then((subscription) => {
@@ -640,7 +639,7 @@ export default function PerceptionDetailScreen() {
     return () => {
       mounted = false;
     };
-  }, [aiAnalysis, me, perception]);
+  }, [canRequestAiAnalysis]);
 
   // Count one authenticated view per perception per day. The backend
   // deduplicates the event, so revisiting a perception does not manufacture

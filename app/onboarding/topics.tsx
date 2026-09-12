@@ -55,7 +55,7 @@ export default function TopicOnboardingScreen() {
   );
 
   useEffect(() => {
-    void load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   const selectedCount = useMemo(

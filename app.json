@@ -5,7 +5,7 @@
     "scheme": "perception",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon.svg",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -34,7 +34,9 @@
       [
         "expo-notifications",
         {
-          "sounds": ["./assets/sounds/notification.wav"]
+          "sounds": [
+            "./assets/sounds/notification.wav"
+          ]
         }
       ],
       "expo-secure-store",
