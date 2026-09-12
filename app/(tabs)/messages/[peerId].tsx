@@ -17,18 +17,26 @@ import useAuthStore from "../../../store/useAuthStore";
 import type { DisplayMessage, MessagesPage, UserPublic } from "../../../types/models";
 
 export default function ChatScreen() {
-  const insets=useSafeAreaInsets(); const {peerId:raw}=useLocalSearchParams<{peerId:string}>(); const peerId=Number(raw); const me=useAuthStore(s=>s.user); const echo=useContext(EchoContext); const qc=useQueryClient(); const listRef=useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
+  const { peerId: rawPeerId } = useLocalSearchParams<{ peerId?: string | string[] }>();
+  const peerIdValue = Array.isArray(rawPeerId) ? rawPeerId[0] : rawPeerId;
+  const parsedPeerId = Number(peerIdValue);
+  const peerId = Number.isInteger(parsedPeerId) && parsedPeerId > 0 ? parsedPeerId : null;
+  const me = useAuthStore((s) => s.user);
+  const echo = useContext(EchoContext);
+  const qc = useQueryClient();
+  const listRef = useRef<FlatList>(null);
   const [peer,setPeer]=useState<UserPublic|null>(null); const [input,setInput]=useState(""); const [emojiOpen,setEmojiOpen]=useState(false); const [menuMessage,setMenuMessage]=useState<DisplayMessage|null>(null); const [editing,setEditing]=useState<DisplayMessage|null>(null); const [editText,setEditText]=useState("");
   useEffect(()=>{if(!me) router.replace("/(auth)/login")},[me]);
   const query=useMessages(peerId,Boolean(me));
-  useEffect(()=>{apiFetch<UserPublic>(`/api/users/${peerId}`,{auth:false}).then(setPeer).catch(()=>{})},[peerId]);
+  useEffect(()=>{if(!peerId)return;apiFetch<UserPublic>(`/api/users/${peerId}`,{auth:false}).then(setPeer).catch(()=>{})},[peerId]);
   useEffect(()=>{if(!echo||!peerId)return; const channel=echo.channel(`conversations.${peerId}`); const prepend=(message:DisplayMessage)=>qc.setQueryData<InfiniteData<MessagesPage>>(["messages",peerId],old=>old?{...old,pages:[{...old.pages[0],data:[...old.pages[0].data,message]},...old.pages.slice(1)]}:old); const update=(message:DisplayMessage)=>qc.setQueryData<InfiniteData<MessagesPage>>(["messages",peerId],old=>old?{...old,pages:old.pages.map(page=>({...page,data:page.data.map(item=>item.id===message.id?{...item,...message}:item)}))}:old); channel.listen(".NewMessage",({message}:{message:DisplayMessage})=>prepend(message)); channel.listen(".MessageUpdated",({message}:{message:DisplayMessage})=>update(message)); return()=>{channel.stopListening(".NewMessage");channel.stopListening(".MessageUpdated")}},[echo,peerId,qc]);
-  const sendMutation=useMutation({mutationFn:(body:string)=>apiFetch<DisplayMessage>(`/api/conversations/${peerId}`,{method:"POST",body:{body}}),onMutate:async(body)=>{await qc.cancelQueries({queryKey:["messages",peerId]});const prev=qc.getQueryData<InfiniteData<MessagesPage>>(["messages",peerId]);qc.setQueryData<InfiniteData<MessagesPage>>(["messages",peerId],old=>old?{...old,pages:[{...old.pages[0],data:[...old.pages[0].data,{id:-Date.now(),body,from_user_id:me?.id??-1,to_user_id:peerId,read_at:null,sending:true,created_at:new Date().toISOString()}]},...old.pages.slice(1)]}:old);return{prev}},onError:(_e,_b,c)=>{if(c?.prev)qc.setQueryData(["messages",peerId],c.prev)},onSuccess:()=>void playMessageSentSound(),onSettled:()=>qc.invalidateQueries({queryKey:["messages",peerId]})});
+  const sendMutation=useMutation({mutationFn:(body:string)=>apiFetch<DisplayMessage>(`/api/conversations/${peerId}`,{method:"POST",body:{body}}),onMutate:async(body)=>{await qc.cancelQueries({queryKey:["messages",peerId]});const prev=qc.getQueryData<InfiniteData<MessagesPage>>(["messages",peerId]);qc.setQueryData<InfiniteData<MessagesPage>>(["messages",peerId],old=>old?{...old,pages:[{...old.pages[0],data:[...old.pages[0].data,{id:-Date.now(),body,from_user_id:me?.id??-1,to_user_id:peerId??-1,read_at:null,sending:true,created_at:new Date().toISOString()}]},...old.pages.slice(1)]}:old);return{prev}},onError:(_e,_b,c)=>{if(c?.prev)qc.setQueryData(["messages",peerId],c.prev)},onSuccess:()=>void playMessageSentSound(),onSettled:()=>qc.invalidateQueries({queryKey:["messages",peerId]})});
   const editMutation=useMutation({mutationFn:({id,body}:{id:number;body:string})=>apiFetch<DisplayMessage>(`/api/messages/${id}`,{method:"PATCH",body:{body}}),onSettled:()=>qc.invalidateQueries({queryKey:["messages",peerId]})});
   const deleteMutation=useMutation({mutationFn:(id:number)=>apiFetch<DisplayMessage>(`/api/messages/${id}`,{method:"DELETE"}),onSettled:()=>qc.invalidateQueries({queryKey:["messages",peerId]})});
   const flat=(query.data?.pages??[]).flatMap(p=>p.data);
   useEffect(()=>{if(flat.length)setTimeout(()=>listRef.current?.scrollToEnd({animated:true}),50)},[flat.length]);
-  const send=()=>{const body=input.trim();if(!body)return;setInput("");sendMutation.mutate(body)};
+  const send=()=>{const body=input.trim();if(!body||!peerId)return;setInput("");sendMutation.mutate(body)};
   const menuItems:ActionMenuItem[]=menuMessage?[{label:"Copy",icon:"copy" as const,onPress:()=>void Clipboard.setStringAsync(menuMessage.body)},...(menuMessage.from_user_id===me?.id&&!menuMessage.sending&&!menuMessage.deleted_at?[{label:"Edit",icon:"edit-2" as const,onPress:()=>{setEditText(menuMessage.body);setEditing(menuMessage);setMenuMessage(null)}},{label:"Recall for everyone",icon:"rotate-ccw" as const,destructive:true,onPress:()=>deleteMutation.mutate(menuMessage.id)}]:[])]:[];
   const content = <View className="flex-1 bg-background" style={{paddingTop:insets.top}}>
     <View className="flex-row items-center border-b border-border-hairline px-4 py-3"><Pressable onPress={()=>router.back()} className="mr-3 p-1"><Feather name="chevron-left" size={22} color="#8b91a0"/></Pressable>{peer?<View className="flex-row items-center gap-3"><Avatar uri={peer.avatar_url} size="sm"/><Text className="font-sans-semibold text-foreground">{peer.name}</Text></View>:<Spinner size={18}/>}</View>
@@ -50,6 +58,10 @@ export default function ChatScreen() {
       </View>
     </Modal>
   </View>;
+
+  if (!peerId) {
+    return <View className="flex-1 items-center justify-center bg-background"><Text className="font-sans text-foreground-muted">Conversation unavailable.</Text></View>;
+  }
 
   return (
     <KeyboardAvoidingView
