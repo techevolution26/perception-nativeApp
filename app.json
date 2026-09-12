@@ -5,7 +5,7 @@
     "scheme": "perception",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.svg",
+    "icon": "./assets/icon.png",
     "backgroundColor": "#fcfcfb",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -18,10 +18,7 @@
       "userInterfaceStyle": "automatic",
       "package": "com.techresolute.perception",
       "softwareKeyboardLayoutMode": "resize",
-      "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ]
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png",
