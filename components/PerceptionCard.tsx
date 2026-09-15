@@ -159,7 +159,7 @@ export default function PerceptionCard({
   const { colorScheme } = useColorScheme();
 
   const surfaceColor = colorScheme === "dark" ? "#14151a" : "#ffffff";
-  const professionalIndustry = user.professional_industries?.[0] ?? null;
+  const professionalIndustry = user.primary_professional_industry ?? user.professional_industries?.[0] ?? null;
   const professionalTheme = professionalVisual(professionalIndustry);
   const verifiedProfessional = user.verification_status === "VERIFIED" && (user.verified_professional_roles?.length ?? 0) > 0;
 
@@ -262,7 +262,7 @@ export default function PerceptionCard({
     ...(onSave
       ? [{
           label: perception.saved_by_user ? "Remove from saved" : "Save perception",
-          icon: "bookmark",
+          icon: "bookmark" as const,
           onPress: () => onSave(id),
         }]
       : []),

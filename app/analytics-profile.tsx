@@ -1,3 +1,4 @@
+import { useToast } from "../contexts/ToastContext";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
@@ -12,6 +13,7 @@ import type { Subscription, Topic, UserMe } from "../types/models";
 export default function AnalyticsProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const refreshMe = useAuthStore((s) => s.refreshMe);
+  const { showToast } = useToast();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [country, setCountry] = useState(user?.country_code ?? "");
@@ -84,13 +86,13 @@ export default function AnalyticsProfileScreen() {
         },
       });
       await refreshMe();
-      Alert.alert("Saved", "Your analytical profile has been updated.");
+      showToast({ title: "Analytical profile updated", message: "Your changes are now active.", tone: "success" });
     } catch (error) {
       const message =
         error instanceof ApiError && typeof error.body === "object" && error.body !== null
           ? String((error.body as { detail?: unknown }).detail ?? "Please try again.")
           : "Please try again.";
-      Alert.alert("Save failed", message);
+      showToast({ title: "Analytical profile not saved", message, tone: "error" });
     } finally {
       setSaving(false);
     }

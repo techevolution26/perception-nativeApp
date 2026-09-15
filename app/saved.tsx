@@ -11,6 +11,7 @@ import useReportPerception from "../hooks/useReportPerception";
 import useGuardAction from "../hooks/useGuardAction";
 import useAuthStore from "../store/useAuthStore";
 import { apiFetch } from "../lib/api";
+import { useToast } from "../contexts/ToastContext";
 import type { Perception } from "../types/models";
 
 export default function SavedPerceptionsScreen() {
@@ -20,6 +21,7 @@ export default function SavedPerceptionsScreen() {
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
   const reportPerception = useReportPerception();
+  const { showToast } = useToast();
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -91,7 +93,14 @@ export default function SavedPerceptionsScreen() {
 
 
   const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
-    void reportPerception(perceptionId, reason, undefined, () => {});
+    void reportPerception(
+      perceptionId,
+      reason,
+      undefined,
+      (error) => showToast({ title: "Report not submitted", message: error instanceof Error ? error.message : "Please try again.", tone: "error" }),
+    ).then((submitted) => {
+      if (submitted) showToast({ title: "Report submitted", message: "Thank you. Moderation will review this privately.", tone: "success" });
+    });
   };
 
   return (
@@ -129,11 +138,16 @@ export default function SavedPerceptionsScreen() {
             }
             onSave={() =>
               guard(() =>
-                toggleSave(item, (saved) => {
-                  if (!saved) {
-                    setPerceptions((current) => current.filter((p) => p.id !== item.id));
-                  }
-                }),
+                toggleSave(
+                  item,
+                  (saved) => {
+                    if (!saved) {
+                      setPerceptions((current) => current.filter((p) => p.id !== item.id));
+                    }
+                    showToast({ title: "Bookmark removed", message: "Removed from your saved perceptions.", tone: "success" });
+                  },
+                  (error) => showToast({ title: "Bookmark update failed", message: error instanceof Error ? error.message : "Please try again.", tone: "error" }),
+                ),
               )
             }
             onReport={handleReport}

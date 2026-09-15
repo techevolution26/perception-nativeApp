@@ -848,6 +848,7 @@ export interface components {
             professional_industries?: string[];
             professional_roles?: string[];
             primary_professional_role?: string | null;
+            primary_professional_industry?: string | null;
             primary_professional_role_label?: string | null;
             professional_role_labels?: string[];
             verified_professional_roles?: string[];
@@ -869,6 +870,13 @@ export interface components {
             profession?: string | null;
             verification_status?: string;
             verification_badge?: string | null;
+            professional_industries?: string[];
+            professional_roles?: string[];
+            primary_professional_role?: string | null;
+            primary_professional_industry?: string | null;
+            primary_professional_role_label?: string | null;
+            professional_role_labels?: string[];
+            verified_professional_roles?: string[];
             /**
              * Created At
              * Format: date-time
@@ -915,6 +923,7 @@ export interface components {
             professional_industries?: string[];
             professional_roles?: string[];
             primary_professional_role?: string | null;
+            primary_professional_industry?: string | null;
             primary_professional_role_label?: string | null;
             professional_role_labels?: string[];
             verified_professional_roles?: string[];
@@ -929,6 +938,13 @@ export interface components {
             avatar_url?: string | null;
             /** Profession */
             profession?: string | null;
+            professional_industries?: string[];
+            professional_roles?: string[];
+            primary_professional_role?: string | null;
+            primary_professional_industry?: string | null;
+            primary_professional_role_label?: string | null;
+            professional_role_labels?: string[];
+            verified_professional_roles?: string[];
             /**
              * Unread
              * @default 0

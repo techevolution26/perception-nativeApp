@@ -21,6 +21,7 @@ import useTopics from "../../../hooks/useTopics";
 import { apiFetch, resolveMediaUrl } from "../../../lib/api";
 import usePerceptionsStore from "../../../store/usePerceptionsStore";
 import type { Perception } from "../../../types/models";
+import { useToast } from "../../../contexts/ToastContext";
 
 type MediaAsset = ImagePicker.ImagePickerAsset;
 
@@ -77,6 +78,7 @@ export default function EditPerceptionScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pickingMedia, setPickingMedia] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     let mounted = true;
@@ -222,13 +224,15 @@ export default function EditPerceptionScreen() {
       });
 
       updatePerception(updated.id, updated);
+      showToast({ title: "Perception updated", message: "Your changes are now live.", tone: "success" });
 
       router.back();
     } catch (err) {
-      Alert.alert(
-        "Save failed",
-        err instanceof Error ? err.message : "Please try again.",
-      );
+      showToast({
+        title: "Changes not saved",
+        message: err instanceof Error ? err.message : "Please try again.",
+        tone: "error",
+      });
     } finally {
       setSaving(false);
     }

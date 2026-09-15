@@ -28,6 +28,7 @@ import { EchoProvider } from "../contexts/EchoContext";
 import useAuthStore from "../store/useAuthStore";
 import useSettingsStore from "../store/useSettingsStore";
 import ThemeProvider from "../components/ui/ThemeProvider";
+import { ToastProvider } from "../contexts/ToastContext";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -88,7 +89,8 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <EchoProvider>
               <ThemeProvider>
-                <Stack screenOptions={{ headerShown: false }}>
+                <ToastProvider>
+                  <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="(auth)" />
                   <Stack.Screen
@@ -99,7 +101,8 @@ export default function RootLayout() {
                     name="perceptions/[id]/edit"
                     options={{ presentation: "modal" }}
                   />
-                </Stack>
+                  </Stack>
+                </ToastProvider>
               </ThemeProvider>
             </EchoProvider>
           </QueryClientProvider>

@@ -21,6 +21,7 @@ import { getToken } from "../lib/storage";
 import usePerceptionsStore from "../store/usePerceptionsStore";
 import useAuthStore from "../store/useAuthStore";
 import { playPostSuccessSound } from "../lib/sound";
+import { useToast } from "../contexts/ToastContext";
 import type { Perception } from "../types/models";
 import { File } from "expo-file-system";
 
@@ -38,6 +39,7 @@ export default function NewPerceptionModal() {
   const [media, setMedia] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [loading, setLoading] = useState(false);
   const [posted, setPosted] = useState(false);
+  const { showToast } = useToast();
 
   const addPerception = usePerceptionsStore((s) => s.addPerception);
 
@@ -94,13 +96,15 @@ export default function NewPerceptionModal() {
 
       addPerception(created);
       playPostSuccessSound();
+      showToast({ title: "Perception posted", message: "Your perspective is now live.", tone: "success" });
       setPosted(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
-      Alert.alert(
-        "Couldn't post",
-        err instanceof Error ? err.message : "Please try again.",
-      );
+      showToast({
+        title: "Perception not posted",
+        message: err instanceof Error ? err.message : "Please try again.",
+        tone: "error",
+      });
     } finally {
       setLoading(false);
     }

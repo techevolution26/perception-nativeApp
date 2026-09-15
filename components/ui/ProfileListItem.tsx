@@ -10,7 +10,7 @@ interface ProfileListItemProps {
 
 export default function ProfileListItem({ user, onPress }: ProfileListItemProps) {
   const roleLabel = user.primary_professional_role_label ?? user.professional_role_labels?.[0] ?? user.profession;
-  const industryCode = user.professional_industries?.[0] ?? null;
+  const industryCode = user.primary_professional_industry ?? user.professional_industries?.[0] ?? null;
   const verified = user.verification_status === "VERIFIED" && (user.verified_professional_roles?.length ?? 0) > 0;
 
   return (

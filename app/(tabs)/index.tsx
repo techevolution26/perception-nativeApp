@@ -16,6 +16,7 @@ import useSaveToggle from "../../hooks/useSaveToggle";
 import useReportPerception from "../../hooks/useReportPerception";
 import usePerceptionsStore from "../../store/usePerceptionsStore";
 import useTopics from "../../hooks/useTopics";
+import { useToast } from "../../contexts/ToastContext";
 import type { Perception, Topic } from "../../types/models";
 import { playLikeSound } from "../../lib/sound";
 import { setTopicReminderPending } from "../../lib/topicReminder";
@@ -31,6 +32,7 @@ export default function HomeScreen() {
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
   const reportPerception = useReportPerception();
+  const { showToast } = useToast();
   const { data: topics = [] } = useTopics();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -107,13 +109,27 @@ export default function HomeScreen() {
     guard(async () => {
       await toggleSave(
         p,
-        (saved) => updatePerception(p.id, { saved_by_user: saved }),
-        (error) => console.error("Save toggle failed:", error),
+        (saved) => {
+          updatePerception(p.id, { saved_by_user: saved });
+          showToast({
+            title: saved ? "Perception bookmarked" : "Bookmark removed",
+            message: saved ? "Saved to your private collection." : "Removed from your saved perceptions.",
+            tone: "success",
+          });
+        },
+        (error) => showToast({ title: "Bookmark failed", message: error instanceof Error ? error.message : "Please try again.", tone: "error" }),
       );
     });
 
   const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
-    void reportPerception(perceptionId, reason, undefined, () => {});
+    void reportPerception(
+      perceptionId,
+      reason,
+      undefined,
+      (error) => showToast({ title: "Report not submitted", message: error instanceof Error ? error.message : "Please try again.", tone: "error" }),
+    ).then((submitted) => {
+      if (submitted) showToast({ title: "Report submitted", message: "Thank you. Moderation will review this privately.", tone: "success" });
+    });
   };
 
   const handleDelete = (p: Perception) => {

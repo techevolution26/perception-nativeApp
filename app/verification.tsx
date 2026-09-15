@@ -2,6 +2,7 @@ import Spinner from "../components/ui/Spinner";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useToast } from "../contexts/ToastContext";
 import { Feather } from "@expo/vector-icons";
 
 import Button from "../components/ui/Button";
@@ -14,6 +15,7 @@ export default function VerificationScreen() {
   const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
   const isOnboarding = onboarding === "1";
   const user = useAuthStore((s) => s.user);
+  const { showToast } = useToast();
   const [taxonomy, setTaxonomy] = useState<ProfessionalTaxonomy | null>(null);
   const [industries, setIndustries] = useState<string[]>(user?.professional_industries ?? []);
   const [roles, setRoles] = useState<string[]>(user?.professional_roles ?? []);
@@ -68,9 +70,9 @@ export default function VerificationScreen() {
         },
       });
       setApplication(result);
-      Alert.alert("Application submitted", "Your verification application is now under review.");
+      showToast({ title: "Verification application submitted", message: "Your application is now under review.", tone: "success" });
     } catch (error) {
-      Alert.alert("Could not submit", getApiErrorMessage(error, "Please try again."));
+      showToast({ title: "Verification not submitted", message: getApiErrorMessage(error, "Please try again."), tone: "error" });
     } finally {
       setSaving(false);
     }

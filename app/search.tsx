@@ -11,6 +11,7 @@ import useSaveToggle from "../hooks/useSaveToggle";
 import useReportPerception from "../hooks/useReportPerception";
 import useGuardAction from "../hooks/useGuardAction";
 import { apiFetch } from "../lib/api";
+import { useToast } from "../contexts/ToastContext";
 import type { Perception } from "../types/models";
 
 export default function SearchScreen() {
@@ -22,6 +23,7 @@ export default function SearchScreen() {
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
   const reportPerception = useReportPerception();
+  const { showToast } = useToast();
 
   const updatePerception = (id: number, changes: Partial<Perception>) => {
     setResults((current) =>
@@ -51,7 +53,14 @@ export default function SearchScreen() {
 
 
   const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
-    void reportPerception(perceptionId, reason, undefined, () => {});
+    void reportPerception(
+      perceptionId,
+      reason,
+      undefined,
+      (error) => showToast({ title: "Report not submitted", message: error instanceof Error ? error.message : "Please try again.", tone: "error" }),
+    ).then((submitted) => {
+      if (submitted) showToast({ title: "Report submitted", message: "Thank you. Moderation will review this privately.", tone: "success" });
+    });
   };
 
   return (
@@ -106,7 +115,14 @@ export default function SearchScreen() {
             }
             onSave={() =>
               guard(() =>
-                toggleSave(item, (saved) => updatePerception(item.id, { saved_by_user: saved })),
+                toggleSave(
+                  item,
+                  (saved) => {
+                    updatePerception(item.id, { saved_by_user: saved });
+                    showToast({ title: saved ? "Perception bookmarked" : "Bookmark removed", message: saved ? "Saved to your private collection." : "Removed from your saved perceptions.", tone: "success" });
+                  },
+                  (error) => showToast({ title: "Bookmark failed", message: error instanceof Error ? error.message : "Please try again.", tone: "error" }),
+                ),
               )
             }
             onReport={handleReport}

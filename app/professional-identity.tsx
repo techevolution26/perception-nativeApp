@@ -6,6 +6,7 @@ import Button from "../components/ui/Button";
 import ProfessionalIdentityPicker from "../components/ui/ProfessionalIdentityPicker";
 import useAuthStore from "../store/useAuthStore";
 import { apiFetch, ApiError } from "../lib/api";
+import { useToast } from "../contexts/ToastContext";
 
 export default function ProfessionalIdentityScreen() {
   const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
@@ -16,6 +17,7 @@ export default function ProfessionalIdentityScreen() {
   const [roles, setRoles] = useState<string[]>(user?.professional_roles ?? []);
   const [primaryRole, setPrimaryRole] = useState<string | null>(user?.primary_professional_role ?? null);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   const save = async () => {
     if (!roles.length) {
@@ -37,9 +39,9 @@ export default function ProfessionalIdentityScreen() {
         router.replace("/verification?onboarding=1");
         return;
       }
-      Alert.alert("Saved", "Your professional identity has been updated.");
+      showToast({ title: "Professional identity updated", message: "Your role and industry colors are now in sync.", tone: "success" });
     } catch (error) {
-      Alert.alert("Could not save", error instanceof ApiError ? error.message : "Please try again.");
+      showToast({ title: "Identity update failed", message: error instanceof ApiError ? error.message : "Please try again.", tone: "error" });
     } finally {
       setSaving(false);
     }

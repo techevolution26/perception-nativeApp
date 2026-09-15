@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Pill from "./Pill";
 import Spinner from "./Spinner";
+import { professionalVisual } from "./professionalVisuals";
 import { apiFetch, ApiError } from "../../lib/api";
 
 export interface ProfessionalIndustry { code: string; label: string; }
@@ -68,7 +69,10 @@ export default function ProfessionalIdentityPicker({ industries, roles, primaryR
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
           {taxonomy.industries.map((industry) => (
             <Pressable key={industry.code} onPress={() => toggleIndustry(industry.code)}>
-              <Pill label={industry.label} tone={industries.includes(industry.code) ? "accent" : undefined} />
+              <Pill
+                label={industry.label}
+                color={professionalVisual(industry.code).color}
+              />
             </Pressable>
           ))}
         </ScrollView>
@@ -87,10 +91,18 @@ export default function ProfessionalIdentityPicker({ industries, roles, primaryR
               <Pressable
                 key={role.code}
                 onPress={() => toggleRole(role.code)}
-                className={`flex-row items-center rounded-full border px-3 py-2 ${selected ? "border-accent/40 bg-accent-soft" : "border-border-hairline bg-surface-sunken"}`}
+                className="flex-row items-center rounded-full border px-3 py-2"
+                style={selected ? { borderColor: `${professionalVisual(role.industry_code).color}66`, backgroundColor: `${professionalVisual(role.industry_code).color}14` } : undefined}
               >
-                <MaterialCommunityIcons name={icon} size={15} color={selected ? "#f2a33c" : "#8b91a0"} />
-                <Text className={`ml-1.5 font-sans-medium text-xs ${selected ? "text-accent" : "text-foreground"}`}>{role.label}</Text>
+                <MaterialCommunityIcons
+                  name={icon}
+                  size={15}
+                  color={selected ? professionalVisual(role.industry_code).color : "#8b91a0"}
+                />
+                <Text
+                  className={`ml-1.5 font-sans-medium text-xs ${selected ? "" : "text-foreground"}`}
+                  style={selected ? { color: professionalVisual(role.industry_code).color } : undefined}
+                >{role.label}</Text>
               </Pressable>
             );
           })}
@@ -104,7 +116,12 @@ export default function ProfessionalIdentityPicker({ industries, roles, primaryR
             {roles.map((code) => {
               const role = taxonomy.roles.find((item) => item.code === code);
               if (!role) return null;
-              return <Pressable key={code} onPress={() => onChange({ industries, roles, primaryRole: code })}><Pill label={role.label} tone={primaryRole === code ? "accent" : undefined} /></Pressable>;
+              const visual = professionalVisual(role.industry_code);
+              return (
+                <Pressable key={code} onPress={() => onChange({ industries, roles, primaryRole: code })}>
+                  <Pill label={role.label} color={primaryRole === code ? visual.color : undefined} tone={primaryRole === code ? undefined : "neutral"} />
+                </Pressable>
+              );
             })}
           </View>
         </View>
