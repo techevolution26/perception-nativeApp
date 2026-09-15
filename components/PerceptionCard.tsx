@@ -262,7 +262,7 @@ export default function PerceptionCard({
     ...(onSave
       ? [{
           label: perception.saved_by_user ? "Remove from saved" : "Save perception",
-          icon: (perception.saved_by_user ? "bookmark" : "bookmark") as const,
+          icon: "bookmark",
           onPress: () => onSave(id),
         }]
       : []),
@@ -457,7 +457,7 @@ export default function PerceptionCard({
             <Feather
               name="heart"
               size={17}
-              color={liked_by_user ? "#f2a33c" : "#666c7a"}
+              color={liked_by_user ? professionalTheme.color : "#666c7a"}
             />
 
             <Text className="font-mono text-xs text-foreground-muted">

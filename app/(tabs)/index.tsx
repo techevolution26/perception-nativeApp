@@ -100,7 +100,6 @@ export default function HomeScreen() {
           updatePerception(id, { liked_by_user: liked, likes_count: likesCount });
           if (liked) void playLikeSound();
         },
-        (error) => console.error("Like toggle failed:", error),
       );
     });
 

@@ -213,7 +213,7 @@ function CommentComposer({
   );
 }
 
-function CommentMedia({ uri, compact }: { uri: string; compact: boolean }) {
+function CommentMediaPreview({ uri, compact }: { uri: string; compact: boolean }) {
   const isVideo = /\.(mp4|mov|m4v|webm|avi|mkv)(\?.*)?$/i.test(uri);
 
   if (!isVideo) {
@@ -458,7 +458,7 @@ function CommentItem({
                 </Text>
               )}
 
-              {media && <CommentMedia uri={media} compact={!isRoot} />}
+              {media && <CommentMediaPreview uri={media} compact={!isRoot} />}
             </View>
 
             <View

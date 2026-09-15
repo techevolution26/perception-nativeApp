@@ -1,9 +1,8 @@
 import Spinner from "../../components/ui/Spinner";
 // app/(tabs)/search.tsx
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, FlatList, Pressable } from "react-native";
+import { View, Text, TextInput, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import PerceptionCard from "../../components/PerceptionCard";
 import useLikeToggle from "../../hooks/useLikeToggle";

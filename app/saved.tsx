@@ -25,10 +25,8 @@ export default function SavedPerceptionsScreen() {
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!token) return;
+
     setLoading(true);
     setError(false);
     try {
@@ -42,8 +40,24 @@ export default function SavedPerceptionsScreen() {
   }, [token]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!token) return undefined;
+
+    let active = true;
+    void apiFetch<Perception[]>("/api/users/me/saved-perceptions")
+      .then((data) => {
+        if (active) setPerceptions(data);
+      })
+      .catch(() => {
+        if (active) setError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   if (!token) {
     return (
