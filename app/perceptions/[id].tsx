@@ -22,6 +22,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import PerceptionCard from "../../components/PerceptionCard";
 import PerceiveComposer from "../../components/PerceiveComposer";
 import Avatar from "../../components/ui/Avatar";
+import VerifiedBadge from "../../components/ui/VerifiedBadge";
 import Button from "../../components/ui/Button";
 import VantageMark from "../../components/ui/VantageMark";
 
@@ -29,9 +30,7 @@ import { usePerceptionDetail } from "../../hooks/usePerceptionDetail";
 import useLikeToggle from "../../hooks/useLikeToggle";
 import useSaveToggle from "../../hooks/useSaveToggle";
 import useReportPerception from "../../hooks/useReportPerception";
-import useCommentActions, {
-  type CommentMedia,
-} from "../../hooks/useCommentActions";
+import useCommentActions, { type CommentMedia } from "../../hooks/useCommentActions";
 import useGuardAction from "../../hooks/useGuardAction";
 import useAuthStore from "../../store/useAuthStore";
 import { apiFetch, resolveMediaUrl } from "../../lib/api";
@@ -216,13 +215,7 @@ function CommentComposer({
   );
 }
 
-function CommentMediaPreview({
-  uri,
-  compact,
-}: {
-  uri: string;
-  compact: boolean;
-}) {
+function CommentMediaPreview({ uri, compact }: { uri: string; compact: boolean }) {
   const isVideo = /\.(mp4|mov|m4v|webm|avi|mkv)(\?.*)?$/i.test(uri);
 
   if (!isVideo) {
@@ -451,6 +444,14 @@ function CommentItem({
                 >
                   {comment.user.name}
                 </Text>
+                {(comment.user.primary_professional_role || (comment.user.verified_professional_roles?.length ?? 0) > 0) && (
+                  <VerifiedBadge
+                    roleCode={comment.user.primary_professional_role ?? comment.user.verified_professional_roles?.[0] ?? null}
+                    industryCode={comment.user.primary_professional_industry ?? comment.user.professional_industries?.[0] ?? null}
+                    compact
+                    verified={comment.user.verification_status === "VERIFIED" && (comment.user.verified_professional_roles?.length ?? 0) > 0}
+                  />
+                )}
 
                 <Text className="font-mono text-[10px] text-foreground-subtle">
                   {new Date(comment.created_at).toLocaleDateString([], {
@@ -458,9 +459,7 @@ function CommentItem({
                     day: "numeric",
                   })}
                 </Text>
-                {showAiAnalysis === true && (
-                  <AIAnalysisBadge status={comment.ai_analysis_status} />
-                )}
+                {showAiAnalysis === true && <AIAnalysisBadge status={comment.ai_analysis_status} />}
               </View>
 
               {comment.body && (
@@ -620,42 +619,21 @@ export default function PerceptionDetailScreen() {
           setPerception((current) =>
             current ? { ...current, saved_by_user: saved } : current,
           );
-          showToast({
-            title: saved ? "Perception bookmarked" : "Bookmark removed",
-            message: saved
-              ? "Saved to your private collection."
-              : "Removed from your saved perceptions.",
-            tone: "success",
-          });
+          showToast({ title: saved ? "Perception bookmarked" : "Bookmark removed", message: saved ? "Saved to your private collection." : "Removed from your saved perceptions.", tone: "success" });
         },
-        (error) =>
-          showToast({
-            title: "Bookmark failed",
-            message:
-              error instanceof Error ? error.message : "Please try again.",
-            tone: "error",
-          }),
+        (error) => showToast({ title: "Bookmark failed", message: error instanceof Error ? error.message : "Please try again.", tone: "error" }),
       );
     });
   };
 
-  const handleReport = (
-    perceptionId: number,
-    reason: Parameters<typeof reportPerception>[1],
-  ) => {
-    void reportPerception(perceptionId, reason, undefined, (error) =>
-      showToast({
-        title: "Report not submitted",
-        message: error instanceof Error ? error.message : "Please try again.",
-        tone: "error",
-      }),
+  const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
+    void reportPerception(
+      perceptionId,
+      reason,
+      undefined,
+      (error) => showToast({ title: "Report not submitted", message: error instanceof Error ? error.message : "Please try again.", tone: "error" }),
     ).then((submitted) => {
-      if (submitted)
-        showToast({
-          title: "Report submitted",
-          message: "Thank you. Moderation will review this privately.",
-          tone: "success",
-        });
+      if (submitted) showToast({ title: "Report submitted", message: "Thank you. Moderation will review this privately.", tone: "success" });
     });
   };
 
@@ -663,7 +641,10 @@ export default function PerceptionDetailScreen() {
    * Hydrate the complete descendant tree after the root comments arrive.
    */
   useEffect(() => {
-    if (!comments.length || comments === hydratedCommentsRef.current) {
+    if (
+      !comments.length ||
+      comments === hydratedCommentsRef.current
+    ) {
       return;
     }
 
@@ -704,9 +685,7 @@ export default function PerceptionDetailScreen() {
       const created = await createComment(
         id,
         commentBody,
-        commentMedia
-          ? ({ uri: commentMedia.uri } satisfies CommentMedia)
-          : null,
+        commentMedia ? ({ uri: commentMedia.uri } satisfies CommentMedia) : null,
         (error) => {
           Alert.alert(
             "Couldn't comment",

@@ -400,10 +400,15 @@ export default function UserProfileScreen() {
                 <Text className="font-sans-semibold text-xl text-foreground">
                   {user.name}
                 </Text>
-                {user.primary_professional_role && (
+                {(user.primary_professional_role ||
+                  (user.verified_professional_roles?.length ?? 0) > 0) && (
                   <View className="ml-2">
                     <VerifiedBadge
-                      roleCode={user.primary_professional_role}
+                      roleCode={
+                        user.primary_professional_role ??
+                        user.verified_professional_roles?.[0] ??
+                        null
+                      }
                       label={
                         user.primary_professional_role_label ??
                         user.profession ??

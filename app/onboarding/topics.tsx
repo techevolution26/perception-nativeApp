@@ -37,14 +37,15 @@ export default function TopicOnboardingScreen() {
       else setLoading(true);
       setError(false);
       try {
-        const [raw, followed] = await Promise.all([
-          apiFetch<Topic[] | TopicsResponse>("/api/topics", { auth: false }),
-          apiFetch<Topic[]>(`/api/users/${user.id}/topics`, { auth: false }),
-        ]);
+        const raw = await apiFetch<Topic[] | TopicsResponse>("/api/topics", {
+          auth: true,
+        });
         const all = Array.isArray(raw) ? raw : raw.topics;
-        const ids = new Set(followed.map((topic) => topic.id));
         setTopics(
-          all.map((topic) => ({ ...topic, followed: ids.has(topic.id) })),
+          all.map((topic) => ({
+            ...topic,
+            followed: Boolean(topic.followed_by_user),
+          })),
         );
       } catch {
         setError(true);
@@ -69,7 +70,9 @@ export default function TopicOnboardingScreen() {
     const previous = topic.followed;
     setTopics((current) =>
       current.map((item) =>
-        item.id === topic.id ? { ...item, followed: !previous, busy: true } : item,
+        item.id === topic.id
+          ? { ...item, followed: !previous, busy: true }
+          : item,
       ),
     );
 
@@ -197,7 +200,14 @@ export default function TopicOnboardingScreen() {
           </Pressable>
         )}
       />
-      <Pressable onPress={() => router.replace("/(tabs)")} className="absolute right-5 bottom-[92px] px-2 py-1"><Text className="font-sans-medium text-xs text-foreground-subtle">Skip for now</Text></Pressable>
+      <Pressable
+        onPress={() => router.replace("/(tabs)")}
+        className="absolute right-5 bottom-[92px] px-2 py-1"
+      >
+        <Text className="font-sans-medium text-xs text-foreground-subtle">
+          Skip for now
+        </Text>
+      </Pressable>
       <View
         className="absolute bottom-0 left-0 right-0 border-t border-border-hairline bg-background px-5 pt-3"
         style={{ paddingBottom: Math.max(insets.bottom, 12) }}
