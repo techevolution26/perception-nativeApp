@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons";
 import PerceptionCard from "../../components/PerceptionCard";
 import useLikeToggle from "../../hooks/useLikeToggle";
 import useSaveToggle from "../../hooks/useSaveToggle";
+import useReportPerception from "../../hooks/useReportPerception";
 import useGuardAction from "../../hooks/useGuardAction";
 import { apiFetch } from "../../lib/api";
 import type { Perception } from "../../types/models";
@@ -20,6 +21,7 @@ export default function SearchScreen() {
   const guard = useGuardAction();
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
+  const reportPerception = useReportPerception();
 
   const updatePerception = (id: number, changes: Partial<Perception>) => {
     setResults((current) =>
@@ -46,6 +48,11 @@ export default function SearchScreen() {
     }, 350);
     return () => clearTimeout(timeout);
   }, [query]);
+
+
+  const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
+    void reportPerception(perceptionId, reason, undefined, () => {});
+  };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -98,6 +105,7 @@ export default function SearchScreen() {
                 toggleSave(item, (saved) => updatePerception(item.id, { saved_by_user: saved })),
               )
             }
+            onReport={handleReport}
           />
         )}
       />

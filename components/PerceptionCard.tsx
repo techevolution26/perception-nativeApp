@@ -20,12 +20,14 @@ import ActionMenu, { type ActionMenuItem } from "./ui/ActionMenu";
 
 import { resolveMediaUrl } from "../lib/api";
 import { recordPerceptionAnalyticsEvent } from "../lib/perceptionAnalytics";
+import { PERCEPTION_REPORT_REASONS, type PerceptionReportReason } from "../hooks/useReportPerception";
 import type { Perception } from "../types/models";
 
 interface PerceptionCardProps {
   perception: Perception;
   onLike?: (id: number) => void;
   onSave?: (id: number) => void;
+  onReport?: (id: number, reason: PerceptionReportReason) => void;
   onEdit?: (perception: Perception) => void;
   onDelete?: (perception: Perception) => void;
   onAnalytics?: (perception: Perception) => void;
@@ -131,6 +133,7 @@ export default function PerceptionCard({
   perception,
   onLike,
   onSave,
+  onReport,
   onEdit,
   onDelete,
   onAnalytics,
@@ -228,6 +231,23 @@ export default function PerceptionCard({
     onDelete?.(perception);
   };
 
+  const handleReport = () => {
+    setMenuOpen(false);
+    Alert.alert(
+      "Report perception",
+      "Choose the reason that best describes the problem. Your report is private and will be reviewed by moderation.",
+      [
+        ...PERCEPTION_REPORT_REASONS.map((reason) => ({
+          text: reason.label,
+          onPress: () => {
+            onReport?.(id, reason.value);
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ],
+    );
+  };
+
   const menuItems: ActionMenuItem[] = [
     {
       label: "Share",
@@ -252,6 +272,14 @@ export default function PerceptionCard({
           label: isOwner ? "Perception analytics" : "Perception intelligence",
           icon: "bar-chart-2" as const,
           onPress: () => onAnalytics(perception),
+        }]
+      : []),
+    ...(!isOwner && onReport
+      ? [{
+          label: "Report perception",
+          icon: "flag" as const,
+          onPress: handleReport,
+          destructive: true,
         }]
       : []),
     ...(showOwnerActions && isOwner

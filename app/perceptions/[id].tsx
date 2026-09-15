@@ -28,6 +28,7 @@ import VantageMark from "../../components/ui/VantageMark";
 import { usePerceptionDetail } from "../../hooks/usePerceptionDetail";
 import useLikeToggle from "../../hooks/useLikeToggle";
 import useSaveToggle from "../../hooks/useSaveToggle";
+import useReportPerception from "../../hooks/useReportPerception";
 import useCommentActions, { type CommentMedia } from "../../hooks/useCommentActions";
 import useGuardAction from "../../hooks/useGuardAction";
 import useAuthStore from "../../store/useAuthStore";
@@ -551,6 +552,7 @@ export default function PerceptionDetailScreen() {
   const guard = useGuardAction();
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
+  const reportPerception = useReportPerception();
 
   const { perception, comments, loading, error, setPerception, setComments } =
     usePerceptionDetail(id);
@@ -609,6 +611,10 @@ export default function PerceptionDetailScreen() {
         () => {},
       );
     });
+  };
+
+  const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
+    void reportPerception(perceptionId, reason, undefined, () => {});
   };
 
   /**
@@ -788,6 +794,7 @@ export default function PerceptionDetailScreen() {
           detailView
           isOwner={isOwner}
           onSave={handleSave}
+          onReport={handleReport}
           onLike={() =>
             guard(() =>
               toggleLike(perception, (likedId, liked, count) =>

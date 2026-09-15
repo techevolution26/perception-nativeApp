@@ -13,6 +13,7 @@ import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
 import useLikeToggle from "../../hooks/useLikeToggle";
 import useSaveToggle from "../../hooks/useSaveToggle";
+import useReportPerception from "../../hooks/useReportPerception";
 import usePerceptionsStore from "../../store/usePerceptionsStore";
 import useTopics from "../../hooks/useTopics";
 import type { Perception, Topic } from "../../types/models";
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const guard = useGuardAction();
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
+  const reportPerception = useReportPerception();
   const { data: topics = [] } = useTopics();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -110,6 +112,10 @@ export default function HomeScreen() {
         (error) => console.error("Save toggle failed:", error),
       );
     });
+
+  const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
+    void reportPerception(perceptionId, reason, undefined, () => {});
+  };
 
   const handleDelete = (p: Perception) => {
     Alert.alert("Delete perception?", "This action is permanent and cannot be undone.", [
@@ -218,6 +224,7 @@ export default function HomeScreen() {
                 index={row.itemIndex}
                 onLike={() => handleLike(row.item)}
                 onSave={() => handleSave(row.item)}
+                onReport={handleReport}
                 isOwner={user?.id === row.item.user.id}
                 showOwnerActions
                 onEdit={(p) => guard(() => router.push(`/perceptions/${p.id}/edit`))}

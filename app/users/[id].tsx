@@ -25,6 +25,7 @@ import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
 import useFollowToggle from "../../hooks/useFollowToggle";
 import useSaveToggle from "../../hooks/useSaveToggle";
+import useReportPerception from "../../hooks/useReportPerception";
 import useAuthStore from "../../store/useAuthStore";
 import type { UserProfile, Perception, Subscription } from "../../types/models";
 import { File } from "expo-file-system";
@@ -39,6 +40,7 @@ export default function UserProfileScreen() {
   const guard = useGuardAction();
   const followToggle = useFollowToggle();
   const toggleSave = useSaveToggle();
+  const reportPerception = useReportPerception();
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
@@ -213,6 +215,10 @@ export default function UserProfileScreen() {
         () => {},
       );
     });
+
+  const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
+    void reportPerception(perceptionId, reason, undefined, () => {});
+  };
 
   const handleDeletePerception = (perception: Perception) => {
     Alert.alert("Delete perception?", "This action is permanent and cannot be undone.", [
@@ -517,6 +523,7 @@ export default function UserProfileScreen() {
                       onDelete={handleDeletePerception}
                       onAnalytics={(item) => guard(() => router.push(`/perceptions/${item.id}/analytics`))}
                       onSave={() => handleSave(p)}
+                      onReport={handleReport}
                     />
                   ))}
                 </View>

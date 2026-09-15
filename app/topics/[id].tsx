@@ -11,6 +11,7 @@ import { apiFetch } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useLikeToggle from "../../hooks/useLikeToggle";
 import useSaveToggle from "../../hooks/useSaveToggle";
+import useReportPerception from "../../hooks/useReportPerception";
 import useGuardAction from "../../hooks/useGuardAction";
 import type { Topic, Perception } from "../../types/models";
 
@@ -20,6 +21,7 @@ export default function TopicScreen() {
   const { user } = useCurrentUser();
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
+  const reportPerception = useReportPerception();
   const guard = useGuardAction();
 
   const [topic, setTopic] = useState<Topic | null>(null);
@@ -44,8 +46,7 @@ export default function TopicScreen() {
     void Promise.resolve().then(() => load());
   }, [load]);
 
-  if (loading || !topic) {
-    const handleSave = (p: Perception) =>
+  const handleSave = (p: Perception) =>
     guard(async () => {
       await toggleSave(
         p,
@@ -59,7 +60,12 @@ export default function TopicScreen() {
       );
     });
 
-  return (
+  const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
+    void reportPerception(perceptionId, reason, undefined, () => {});
+  };
+
+  if (loading || !topic) {
+    return (
       <View className="flex-1 items-center justify-center bg-background" style={{ paddingTop: insets.top }}>
         <Spinner />
       </View>
@@ -98,6 +104,7 @@ export default function TopicScreen() {
           <PerceptionCard
             perception={item}
             onSave={() => handleSave(item)}
+            onReport={handleReport}
             index={index}
             isOwner={user?.id === item.user.id}
             onLike={() =>

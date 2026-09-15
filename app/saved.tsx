@@ -7,6 +7,7 @@ import PerceptionCard from "../components/PerceptionCard";
 import StateView from "../components/ui/StateView";
 import useLikeToggle from "../hooks/useLikeToggle";
 import useSaveToggle from "../hooks/useSaveToggle";
+import useReportPerception from "../hooks/useReportPerception";
 import useGuardAction from "../hooks/useGuardAction";
 import useAuthStore from "../store/useAuthStore";
 import { apiFetch } from "../lib/api";
@@ -18,6 +19,7 @@ export default function SavedPerceptionsScreen() {
   const guard = useGuardAction();
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
+  const reportPerception = useReportPerception();
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -73,6 +75,11 @@ export default function SavedPerceptionsScreen() {
     );
   }
 
+
+  const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
+    void reportPerception(perceptionId, reason, undefined, () => {});
+  };
+
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center gap-2 border-b border-border-hairline px-4 py-3">
@@ -115,6 +122,7 @@ export default function SavedPerceptionsScreen() {
                 }),
               )
             }
+            onReport={handleReport}
           />
         )}
       />
