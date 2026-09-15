@@ -369,13 +369,13 @@ export default function UserProfileScreen() {
                 <Text className="font-sans-semibold text-xl text-foreground">
                   {user.name}
                 </Text>
-                {(user.primary_professional_role || user.verification_status === "VERIFIED") && (
+                {user.primary_professional_role && (
                   <View className="ml-2">
                     <VerifiedBadge
-                      roleCode={user.primary_professional_role ?? user.verified_professional_roles?.[0] ?? null}
+                      roleCode={user.primary_professional_role}
                       label={user.primary_professional_role_label ?? user.profession ?? "Professional"}
                       industryCode={profileIndustry}
-                      verified={user.verification_status === "VERIFIED"}
+                      verified={user.verification_status === "VERIFIED" && (user.verified_professional_roles?.length ?? 0) > 0}
                     />
                   </View>
                 )}

@@ -161,7 +161,7 @@ export default function PerceptionCard({
   const surfaceColor = colorScheme === "dark" ? "#14151a" : "#ffffff";
   const professionalIndustry = user.primary_professional_industry ?? user.professional_industries?.[0] ?? null;
   const professionalTheme = professionalVisual(professionalIndustry);
-  const verifiedProfessional = user.verification_status === "VERIFIED";
+  const verifiedProfessional = user.verification_status === "VERIFIED" && (user.verified_professional_roles?.length ?? 0) > 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -356,10 +356,10 @@ export default function PerceptionCard({
                 >
                   {user.name}
                 </Text>
-                {(user.primary_professional_role || verifiedProfessional) && (
+                {user.primary_professional_role && (
                   <View className="ml-1.5">
                     <VerifiedBadge
-                      roleCode={user.primary_professional_role ?? user.verified_professional_roles?.[0] ?? null}
+                      roleCode={user.primary_professional_role}
                       industryCode={professionalIndustry}
                       compact
                       verified={verifiedProfessional}

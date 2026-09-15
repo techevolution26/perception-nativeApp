@@ -17,9 +17,14 @@ export default function ProfessionalIdentityScreen() {
   const [roles, setRoles] = useState<string[]>(user?.professional_roles ?? []);
   const [primaryRole, setPrimaryRole] = useState<string | null>(user?.primary_professional_role ?? null);
   const [saving, setSaving] = useState(false);
+  const identityComplete = industries.length > 0 && roles.length > 0 && Boolean(primaryRole);
   const { showToast } = useToast();
 
   const save = async () => {
+    if (!industries.length) {
+      Alert.alert("Choose an industry", "Select at least one industry so your professional role has a clear professional context.");
+      return;
+    }
     if (!roles.length) {
       Alert.alert("Choose a professional role", "Select at least one role so Perception can represent your professional identity.");
       return;
@@ -66,6 +71,12 @@ export default function ProfessionalIdentityScreen() {
           <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
             You can belong to multiple industries and hold multiple roles. One role is your primary focus and can receive the leading professional badge.
           </Text>
+          <View className="mt-3 flex-row items-center gap-2 rounded-control border border-border-hairline bg-surface-sunken px-3 py-2.5">
+            <Feather name={identityComplete ? "check-circle" : "info"} size={16} color={identityComplete ? "#2f9e62" : "#8b91a0"} />
+            <Text className="flex-1 font-sans-medium text-xs text-foreground">
+              {identityComplete ? "Professional identity complete" : "Complete your industry, role, and primary focus"}
+            </Text>
+          </View>
           <ProfessionalIdentityPicker
             industries={industries}
             roles={roles}
@@ -85,7 +96,7 @@ export default function ProfessionalIdentityScreen() {
             Your selected role can appear as a professional badge. Verification is a separate platform review and is never granted simply because you selected a role or paid for a plan.
           </Text>
         </View>
-        <Button label="Save professional identity" variant="accent" loading={saving} onPress={() => void save()} />
+        <Button label={isOnboarding ? "Continue to verification" : "Save professional identity"} variant="accent" loading={saving} onPress={() => void save()} />
         {isOnboarding && <Pressable onPress={() => router.replace("/verification?onboarding=1")} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip this step for now</Text></Pressable>}
       </ScrollView>
     </View>

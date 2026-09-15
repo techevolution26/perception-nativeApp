@@ -2,8 +2,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { View, Text } from "react-native";
 import { professionalVisual } from "./professionalVisuals";
 
-const VERIFIED_COLOR = "#2563eb";
-
 interface VerifiedBadgeProps {
   roleCode?: string | null;
   industryCode?: string | null;
@@ -37,25 +35,15 @@ export default function VerifiedBadge({ roleCode, industryCode, label, compact =
   const icon = ICONS[roleCode ?? ""] ?? visual.icon;
   const text = label ?? "Professional";
 
-  if (!roleCode && !verified) return null;
-
   if (compact) {
-    if (verified && !roleCode) {
-      return (
-        <View className="h-6 w-6 items-center justify-center" accessibilityLabel={`${text} verified`}>
-          <MaterialCommunityIcons name="check-decagram" size={17} color={verified ? VERIFIED_COLOR : visual.color} />
-        </View>
-      );
-    }
-
     return (
       <View className="relative h-6 w-6 items-center justify-center" accessibilityLabel={`${text}${verified ? " verified" : " professional"}`}>
-        {roleCode && <MaterialCommunityIcons name={icon} size={18} color={visual.color} />}
+        <MaterialCommunityIcons name={icon} size={18} color={visual.color} />
         {verified && (
           <View
             className="absolute -bottom-0.5 -right-1 h-3.5 w-3.5 items-center justify-center rounded-full border border-background bg-background"
           >
-            <MaterialCommunityIcons name="check-decagram" size={12} color={verified ? VERIFIED_COLOR : visual.color} />
+            <MaterialCommunityIcons name="check-decagram" size={12} color={visual.color} />
           </View>
         )}
       </View>
@@ -64,13 +52,11 @@ export default function VerifiedBadge({ roleCode, industryCode, label, compact =
 
   return (
     <View className="flex-row items-center" accessibilityLabel={`${text}${verified ? " verified" : " professional"}`}>
-      {roleCode && <MaterialCommunityIcons name={icon} size={18} color={visual.color} />}
-      {roleCode && (
-        <Text className="ml-1.5 font-sans-medium text-[11px]" style={{ color: visual.color }} numberOfLines={1}>
-          {text}
-        </Text>
-      )}
-      {verified && <MaterialCommunityIcons name="check-decagram" size={15} color={VERIFIED_COLOR} style={{ marginLeft: roleCode ? 3 : 0 }} />}
+      <MaterialCommunityIcons name={icon} size={18} color={visual.color} />
+      <Text className="ml-1.5 font-sans-medium text-[11px]" style={{ color: visual.color }} numberOfLines={1}>
+        {text}
+      </Text>
+      {verified && <MaterialCommunityIcons name="check-decagram" size={15} color={visual.color} style={{ marginLeft: 3 }} />}
     </View>
   );
 }

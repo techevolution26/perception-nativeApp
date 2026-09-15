@@ -11,7 +11,7 @@ interface ProfileListItemProps {
 export default function ProfileListItem({ user, onPress }: ProfileListItemProps) {
   const roleLabel = user.primary_professional_role_label ?? user.professional_role_labels?.[0] ?? user.profession;
   const industryCode = user.primary_professional_industry ?? user.professional_industries?.[0] ?? null;
-  const verified = user.verification_status === "VERIFIED";
+  const verified = user.verification_status === "VERIFIED" && (user.verified_professional_roles?.length ?? 0) > 0;
 
   return (
     <Pressable onPress={onPress} className="flex-row items-center gap-3 rounded-card border border-border-hairline bg-surface px-3.5 py-3">

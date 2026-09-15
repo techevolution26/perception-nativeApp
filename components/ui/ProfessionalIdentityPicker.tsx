@@ -42,10 +42,15 @@ export default function ProfessionalIdentityPicker({ industries, roles, primaryR
   }, [taxonomy, selectedIndustry]);
 
   const toggleIndustry = (code: string) => {
-    const next = industries.includes(code) ? industries.filter((item) => item !== code) : [...industries, code];
-    if (!industries.includes(code)) setSelectedIndustry(code);
-    else if (selectedIndustry === code) setSelectedIndustry(next[0] ?? null);
-    onChange({ industries: next, roles, primaryRole });
+    const removing = industries.includes(code);
+    const nextIndustries = removing ? industries.filter((item) => item !== code) : [...industries, code];
+    const nextRoles = removing
+      ? roles.filter((roleCode) => taxonomy.roles.find((role) => role.code === roleCode)?.industry_code !== code)
+      : roles;
+    const nextPrimary = primaryRole && nextRoles.includes(primaryRole) ? primaryRole : (nextRoles[0] ?? null);
+    if (!removing) setSelectedIndustry(code);
+    else if (selectedIndustry === code) setSelectedIndustry(nextIndustries[0] ?? null);
+    onChange({ industries: nextIndustries, roles: nextRoles, primaryRole: nextPrimary });
   };
 
   const toggleRole = (code: string) => {
@@ -55,8 +60,12 @@ export default function ProfessionalIdentityPicker({ industries, roles, primaryR
       return;
     }
     if (roles.length >= maxRoles) return;
+    const role = taxonomy.roles.find((item) => item.code === code);
+    if (!role) return;
+    const nextIndustries = industries.includes(role.industry_code) ? industries : [...industries, role.industry_code];
     const next = [...roles, code];
-    onChange({ industries, roles: next, primaryRole: primaryRole ?? code });
+    if (!industries.includes(role.industry_code)) setSelectedIndustry(role.industry_code);
+    onChange({ industries: nextIndustries, roles: next, primaryRole: primaryRole ?? code });
   };
 
   if (loading) return <Spinner className="mt-4" />;

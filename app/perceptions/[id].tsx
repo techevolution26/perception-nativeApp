@@ -444,12 +444,12 @@ function CommentItem({
                 >
                   {comment.user.name}
                 </Text>
-                {(comment.user.primary_professional_role || comment.user.verification_status === "VERIFIED") && (
+                {comment.user.primary_professional_role && (
                   <VerifiedBadge
-                    roleCode={comment.user.primary_professional_role ?? comment.user.verified_professional_roles?.[0] ?? null}
+                    roleCode={comment.user.primary_professional_role}
                     industryCode={comment.user.primary_professional_industry ?? comment.user.professional_industries?.[0] ?? null}
                     compact
-                    verified={comment.user.verification_status === "VERIFIED"}
+                    verified={comment.user.verification_status === "VERIFIED" && (comment.user.verified_professional_roles?.length ?? 0) > 0}
                   />
                 )}
 
