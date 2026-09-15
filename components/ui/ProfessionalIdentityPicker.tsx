@@ -45,7 +45,7 @@ export default function ProfessionalIdentityPicker({ industries, roles, primaryR
     const removing = industries.includes(code);
     const nextIndustries = removing ? industries.filter((item) => item !== code) : [...industries, code];
     const nextRoles = removing
-      ? roles.filter((roleCode) => taxonomy.roles.find((role) => role.code === roleCode)?.industry_code !== code)
+      ? roles.filter((roleCode) => taxonomy?.roles.find((role) => role.code === roleCode)?.industry_code !== code)
       : roles;
     const nextPrimary = primaryRole && nextRoles.includes(primaryRole) ? primaryRole : (nextRoles[0] ?? null);
     if (!removing) setSelectedIndustry(code);
@@ -60,7 +60,7 @@ export default function ProfessionalIdentityPicker({ industries, roles, primaryR
       return;
     }
     if (roles.length >= maxRoles) return;
-    const role = taxonomy.roles.find((item) => item.code === code);
+    const role = taxonomy?.roles.find((item) => item.code === code);
     if (!role) return;
     const nextIndustries = industries.includes(role.industry_code) ? industries : [...industries, role.industry_code];
     const next = [...roles, code];
@@ -123,7 +123,7 @@ export default function ProfessionalIdentityPicker({ industries, roles, primaryR
           <Text className="mb-2 font-sans-medium text-xs uppercase tracking-wider text-foreground-subtle">Primary professional focus</Text>
           <View className="flex-row flex-wrap gap-2">
             {roles.map((code) => {
-              const role = taxonomy.roles.find((item) => item.code === code);
+              const role = taxonomy?.roles.find((item) => item.code === code);
               if (!role) return null;
               const visual = professionalVisual(role.industry_code);
               return (
