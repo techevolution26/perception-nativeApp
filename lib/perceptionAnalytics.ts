@@ -23,6 +23,7 @@ export async function recordPerceptionAnalyticsEvent(
 
   await apiFetch<void>("/api/analytics/events", {
     method: "POST",
-    body: payload,
+    body: JSON.stringify(payload),
+    json: false,
   });
 }

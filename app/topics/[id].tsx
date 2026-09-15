@@ -10,6 +10,7 @@ import VantageMark from "../../components/ui/VantageMark";
 import { apiFetch } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useLikeToggle from "../../hooks/useLikeToggle";
+import useSaveToggle from "../../hooks/useSaveToggle";
 import useGuardAction from "../../hooks/useGuardAction";
 import type { Topic, Perception } from "../../types/models";
 
@@ -18,6 +19,7 @@ export default function TopicScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useCurrentUser();
   const toggleLike = useLikeToggle();
+  const toggleSave = useSaveToggle();
   const guard = useGuardAction();
 
   const [topic, setTopic] = useState<Topic | null>(null);
@@ -43,7 +45,21 @@ export default function TopicScreen() {
   }, [load]);
 
   if (loading || !topic) {
-    return (
+    const handleSave = (p: Perception) =>
+    guard(async () => {
+      await toggleSave(
+        p,
+        (saved) =>
+          setPerceptions((current) =>
+            current.map((item) =>
+              item.id === p.id ? { ...item, saved_by_user: saved } : item,
+            ),
+          ),
+        () => {},
+      );
+    });
+
+  return (
       <View className="flex-1 items-center justify-center bg-background" style={{ paddingTop: insets.top }}>
         <Spinner />
       </View>
@@ -81,6 +97,7 @@ export default function TopicScreen() {
         renderItem={({ item, index }) => (
           <PerceptionCard
             perception={item}
+            onSave={() => handleSave(item)}
             index={index}
             isOwner={user?.id === item.user.id}
             onLike={() =>

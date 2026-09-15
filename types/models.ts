@@ -9,7 +9,7 @@
 // does — that's the point of keeping them separate from the generated file.
 import type { components } from "./api";
 
-export type Perception = components["schemas"]["PerceptionOut"];
+export type Perception = components["schemas"]["PerceptionOut"] & { saved_by_user?: boolean };
 export type Topic = components["schemas"]["TopicOut"];
 export type TopicSlim = components["schemas"]["TopicSlim"];
 export type Comment = components["schemas"]["CommentOut"] & { ai_analysis_status?: "pending" | "analyzed" | "failed" | null };
@@ -18,6 +18,7 @@ export type UserWithUnread = components["schemas"]["UserWithUnread"];
 export type Notification = components["schemas"]["NotificationsListOut"]["data"][number];
 export type Message = components["schemas"]["MessageOut"];
 export type LikeToggle = components["schemas"]["LikeToggleOut"];
+export interface SaveToggle { saved: boolean; }
 export type FollowToggle = components["schemas"]["FollowToggleOut"];
 export type AuthResponse = components["schemas"]["AuthResponse"];
 

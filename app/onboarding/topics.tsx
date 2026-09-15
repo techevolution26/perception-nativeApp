@@ -10,6 +10,7 @@ import StateView from "../../components/ui/StateView";
 import VantageMark from "../../components/ui/VantageMark";
 import { apiFetch, resolveMediaUrl } from "../../lib/api";
 import useAuthStore from "../../store/useAuthStore";
+import useTopicFollowToggle from "../../hooks/useTopicFollowToggle";
 import type { Topic, TopicsResponse } from "../../types/models";
 
 interface TopicChoice extends Topic {
@@ -20,6 +21,7 @@ interface TopicChoice extends Topic {
 export default function TopicOnboardingScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
+  const topicFollowToggle = useTopicFollowToggle();
   const [topics, setTopics] = useState<TopicChoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -64,30 +66,32 @@ export default function TopicOnboardingScreen() {
   );
 
   const toggle = async (topic: TopicChoice) => {
-    const next = !topic.followed;
+    const previous = topic.followed;
     setTopics((current) =>
       current.map((item) =>
-        item.id === topic.id ? { ...item, followed: next, busy: true } : item,
+        item.id === topic.id ? { ...item, followed: !previous, busy: true } : item,
       ),
     );
-    try {
-      await apiFetch(`/api/topics/${topic.id}/follow`, {
-        method: next ? "POST" : "DELETE",
-      });
-    } catch {
-      setTopics((current) =>
-        current.map((item) =>
-          item.id === topic.id
-            ? { ...item, followed: topic.followed, busy: false }
-            : item,
-        ),
-      );
-      return;
-    }
-    setTopics((current) =>
-      current.map((item) =>
-        item.id === topic.id ? { ...item, busy: false } : item,
-      ),
+
+    await topicFollowToggle(
+      topic.id,
+      previous,
+      (followed) => {
+        setTopics((current) =>
+          current.map((item) =>
+            item.id === topic.id ? { ...item, followed, busy: false } : item,
+          ),
+        );
+      },
+      () => {
+        setTopics((current) =>
+          current.map((item) =>
+            item.id === topic.id
+              ? { ...item, followed: previous, busy: false }
+              : item,
+          ),
+        );
+      },
     );
   };
 

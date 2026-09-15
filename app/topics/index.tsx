@@ -11,6 +11,7 @@ import Card from "../../components/ui/Card";
 import { apiFetch, resolveMediaUrl } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
+import useTopicFollowToggle from "../../hooks/useTopicFollowToggle";
 import type { Topic, TopicsResponse } from "../../types/models";
 import { setTopicReminderPending } from "../../lib/topicReminder";
 
@@ -24,6 +25,7 @@ export default function TopicsIndexScreen() {
   const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
   const isOnboarding = onboarding === "1";
   const guard = useGuardAction();
+  const topicFollowToggle = useTopicFollowToggle();
   const [topics, setTopics] = useState<FollowableTopic[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,16 +59,22 @@ export default function TopicsIndexScreen() {
 
   const toggleFollow = (topic: FollowableTopic) =>
     guard(async () => {
-      const method = topic.followed ? "DELETE" : "POST";
-      // optimistic
-      setTopics((prev) => prev.map((t) => (t.id === topic.id ? { ...t, followed: !t.followed } : t)));
-      try {
-        await apiFetch(`/api/topics/${topic.id}/follow`, { method });
-        if (!topic.followed) await setTopicReminderPending(false);
-      } catch {
-        // roll back on failure
-        setTopics((prev) => prev.map((t) => (t.id === topic.id ? { ...t, followed: topic.followed } : t)));
-      }
+      const previous = topic.followed;
+      await topicFollowToggle(
+        topic.id,
+        previous,
+        (followed) => {
+          setTopics((current) =>
+            current.map((item) =>
+              item.id === topic.id ? { ...item, followed } : item,
+            ),
+          );
+          if (followed) void setTopicReminderPending(false);
+        },
+        () => {
+          // The canonical hook leaves state untouched on failure.
+        },
+      );
     });
 
   return (

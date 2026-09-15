@@ -635,6 +635,11 @@ export interface components {
             /** Body */
             body: string;
         };
+        /** SaveToggleOut */
+        SaveToggleOut: {
+            /** Saved */
+            saved: boolean;
+        };
         /** FollowToggleOut */
         FollowToggleOut: {
             /** Followed */
@@ -748,6 +753,8 @@ export interface components {
              * @default false
              */
             liked_by_user: boolean;
+            /** Saved By User */
+            saved_by_user: boolean;
         };
         /** RegisterRequest */
         RegisterRequest: {

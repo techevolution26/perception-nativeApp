@@ -1,4 +1,6 @@
 import Spinner from "../../components/ui/Spinner";
+// app/perceptions/[id].tsx
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
@@ -25,11 +27,13 @@ import VantageMark from "../../components/ui/VantageMark";
 
 import { usePerceptionDetail } from "../../hooks/usePerceptionDetail";
 import useLikeToggle from "../../hooks/useLikeToggle";
+import useSaveToggle from "../../hooks/useSaveToggle";
 import useCommentActions, { type CommentMedia } from "../../hooks/useCommentActions";
 import useGuardAction from "../../hooks/useGuardAction";
 import useAuthStore from "../../store/useAuthStore";
 import { apiFetch, resolveMediaUrl } from "../../lib/api";
 import { playPostSuccessSound } from "../../lib/sound";
+import { recordPerceptionAnalyticsEvent } from "../../lib/perceptionAnalytics";
 
 import type { Comment, Subscription } from "../../types/models";
 
@@ -346,6 +350,8 @@ function CommentItem({
   const [replying, setReplying] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [showReplies, setShowReplies] = useState(false);
+  const { createReply } = useCommentActions();
+
   const [sending, setSending] = useState(false);
 
   const replies = comment.replies || [];
@@ -544,10 +550,11 @@ export default function PerceptionDetailScreen() {
 
   const guard = useGuardAction();
   const toggleLike = useLikeToggle();
+  const toggleSave = useSaveToggle();
 
   const { perception, comments, loading, error, setPerception, setComments } =
     usePerceptionDetail(id);
-  const { createComment, createReply } = useCommentActions();
+  const { createComment } = useCommentActions();
 
   const [commentBody, setCommentBody] = useState("");
   const [posting, setPosting] = useState(false);
@@ -589,6 +596,20 @@ export default function PerceptionDetailScreen() {
       // Analytics telemetry must never interrupt the perception experience.
     });
   }, [token, perception]);
+
+  const handleSave = () => {
+    if (!perception) return;
+    void guard(async () => {
+      await toggleSave(
+        perception,
+        (saved) =>
+          setPerception((current) =>
+            current ? { ...current, saved_by_user: saved } : current,
+          ),
+        () => {},
+      );
+    });
+  };
 
   /**
    * Hydrate the complete descendant tree after the root comments arrive.
@@ -766,6 +787,7 @@ export default function PerceptionDetailScreen() {
           perception={perception}
           detailView
           isOwner={isOwner}
+          onSave={handleSave}
           onLike={() =>
             guard(() =>
               toggleLike(perception, (likedId, liked, count) =>

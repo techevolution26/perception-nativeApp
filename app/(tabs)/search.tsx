@@ -5,9 +5,10 @@ import { View, Text, TextInput, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import Avatar from "../../components/ui/Avatar";
-import Card from "../../components/ui/Card";
-import VerifiedBadge from "../../components/ui/VerifiedBadge";
+import PerceptionCard from "../../components/PerceptionCard";
+import useLikeToggle from "../../hooks/useLikeToggle";
+import useSaveToggle from "../../hooks/useSaveToggle";
+import useGuardAction from "../../hooks/useGuardAction";
 import { apiFetch } from "../../lib/api";
 import type { Perception } from "../../types/models";
 
@@ -16,6 +17,16 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(false);
+  const guard = useGuardAction();
+  const toggleLike = useLikeToggle();
+  const toggleSave = useSaveToggle();
+
+  const updatePerception = (id: number, changes: Partial<Perception>) => {
+    setResults((current) =>
+      current.map((item) => (item.id === id ? { ...item, ...changes } : item)),
+    );
+  };
+
 
   useEffect(() => {
     if (!query.trim()) {
@@ -69,23 +80,25 @@ export default function SearchScreen() {
             </Text>
           ) : null
         }
-        renderItem={({ item }) => (
-          <Pressable onPress={() => router.push(`/perceptions/${item.id}`)}>
-            <Card className="p-4">
-              <View className="mb-2 flex-row items-center gap-2.5">
-                <Avatar uri={item.user.avatar_url} size="sm" />
-                <View>
-                  <View className="flex-row items-center"><Text className="font-sans-medium text-foreground">{item.user.name}</Text>{item.user.primary_professional_role&&<VerifiedBadge roleCode={item.user.primary_professional_role} industryCode={item.user.professional_industries?.[0]} compact verified={item.user.verification_status === "VERIFIED" && (item.user.verified_professional_roles?.length ?? 0) > 0}/>}</View>
-                  {item.user.profession && (
-                    <Text className="font-sans text-sm text-foreground-subtle">{item.user.profession}</Text>
-                  )}
-                </View>
-              </View>
-              <Text numberOfLines={3} className="font-sans text-foreground">
-                {item.body}
-              </Text>
-            </Card>
-          </Pressable>
+        renderItem={({ item, index }) => (
+          <PerceptionCard
+            perception={item}
+            index={index}
+            onLike={() =>
+              guard(() =>
+                toggleLike(
+                  item,
+                  (id, liked, likesCount) =>
+                    updatePerception(id, { liked_by_user: liked, likes_count: likesCount }),
+                ),
+              )
+            }
+            onSave={() =>
+              guard(() =>
+                toggleSave(item, (saved) => updatePerception(item.id, { saved_by_user: saved })),
+              )
+            }
+          />
         )}
       />
     </View>

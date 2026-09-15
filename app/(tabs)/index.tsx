@@ -11,9 +11,11 @@ import VantageMark from "../../components/ui/VantageMark";
 import { apiFetch } from "../../lib/api";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
+import useLikeToggle from "../../hooks/useLikeToggle";
+import useSaveToggle from "../../hooks/useSaveToggle";
 import usePerceptionsStore from "../../store/usePerceptionsStore";
 import useTopics from "../../hooks/useTopics";
-import type { Perception, LikeToggle, Topic } from "../../types/models";
+import type { Perception, Topic } from "../../types/models";
 import { playLikeSound } from "../../lib/sound";
 import { setTopicReminderPending } from "../../lib/topicReminder";
 
@@ -25,6 +27,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useCurrentUser();
   const guard = useGuardAction();
+  const toggleLike = useLikeToggle();
+  const toggleSave = useSaveToggle();
   const { data: topics = [] } = useTopics();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -88,14 +92,23 @@ export default function HomeScreen() {
 
   const handleLike = (p: Perception) =>
     guard(async () => {
-      const method = p.liked_by_user ? "DELETE" : "POST";
-      try {
-        const result = await apiFetch<LikeToggle>(`/api/perceptions/${p.id}/like`, { method });
-        updatePerception(p.id, { liked_by_user: result.liked, likes_count: result.likes_count });
-        if (result.liked) void playLikeSound();
-      } catch (err) {
-        console.error("Like toggle failed:", err);
-      }
+      await toggleLike(
+        p,
+        (id, liked, likesCount) => {
+          updatePerception(id, { liked_by_user: liked, likes_count: likesCount });
+          if (liked) void playLikeSound();
+        },
+        (error) => console.error("Like toggle failed:", error),
+      );
+    });
+
+  const handleSave = (p: Perception) =>
+    guard(async () => {
+      await toggleSave(
+        p,
+        (saved) => updatePerception(p.id, { saved_by_user: saved }),
+        (error) => console.error("Save toggle failed:", error),
+      );
     });
 
   const handleDelete = (p: Perception) => {
@@ -204,6 +217,7 @@ export default function HomeScreen() {
                 perception={row.item}
                 index={row.itemIndex}
                 onLike={() => handleLike(row.item)}
+                onSave={() => handleSave(row.item)}
                 isOwner={user?.id === row.item.user.id}
                 showOwnerActions
                 onEdit={(p) => guard(() => router.push(`/perceptions/${p.id}/edit`))}

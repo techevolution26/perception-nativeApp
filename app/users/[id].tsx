@@ -23,6 +23,8 @@ import { apiFetch, API_BASE } from "../../lib/api";
 import { getToken } from "../../lib/storage";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useGuardAction from "../../hooks/useGuardAction";
+import useFollowToggle from "../../hooks/useFollowToggle";
+import useSaveToggle from "../../hooks/useSaveToggle";
 import useAuthStore from "../../store/useAuthStore";
 import type { UserProfile, Perception, Subscription } from "../../types/models";
 import { File } from "expo-file-system";
@@ -35,6 +37,8 @@ export default function UserProfileScreen() {
   const { user: me } = useCurrentUser();
   const refreshMe = useAuthStore((s) => s.refreshMe);
   const guard = useGuardAction();
+  const followToggle = useFollowToggle();
+  const toggleSave = useSaveToggle();
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
@@ -89,17 +93,29 @@ export default function UserProfileScreen() {
       Alert.alert("Sign in required", "Log in to follow this user.");
       return;
     }
+
+    const previous = isFollowing;
     setFollowBusy(true);
-    try {
-      await apiFetch(`/api/users/${id}/follow`, {
-        method: isFollowing ? "DELETE" : "POST",
-      });
-      await load();
-    } catch {
-      Alert.alert("Something went wrong", "Please try again.");
-    } finally {
-      setFollowBusy(false);
-    }
+    await followToggle(
+      Number(id),
+      Boolean(previous),
+      (followed) => {
+        setIsFollowing(followed);
+        setUser((current) =>
+          current
+            ? {
+                ...current,
+                followers_count: Math.max(
+                  0,
+                  current.followers_count + (followed === previous ? 0 : followed ? 1 : -1),
+                ),
+              }
+            : current,
+        );
+      },
+      () => Alert.alert("Something went wrong", "Please try again."),
+    );
+    setFollowBusy(false);
   };
 
   const startEditing = () => {
@@ -183,6 +199,20 @@ export default function UserProfileScreen() {
       setSaving(false);
     }
   };
+
+  const handleSave = (p: Perception) =>
+    guard(async () => {
+      await toggleSave(
+        p,
+        (saved) =>
+          setPerceptions((current) =>
+            current.map((item) =>
+              item.id === p.id ? { ...item, saved_by_user: saved } : item,
+            ),
+          ),
+        () => {},
+      );
+    });
 
   const handleDeletePerception = (perception: Perception) => {
     Alert.alert("Delete perception?", "This action is permanent and cannot be undone.", [
@@ -454,9 +484,20 @@ export default function UserProfileScreen() {
         ) : (
           !editing && (
             <View className="px-4">
-              <Text className="mb-3 mt-4 font-sans-semibold text-lg text-foreground">
-                Recent perceptions
-              </Text>
+              <View className="mb-3 mt-4 flex-row items-center justify-between">
+                <Text className="font-sans-semibold text-lg text-foreground">Recent perceptions</Text>
+                {isOwnProfile && (
+                  <Pressable
+                    onPress={() => guard(() => router.push("/saved"))}
+                    className="flex-row items-center gap-1.5 rounded-control px-2 py-1.5"
+                    accessibilityRole="button"
+                    accessibilityLabel="Open saved perceptions"
+                  >
+                    <Feather name="bookmark" size={15} color="#f2a33c" />
+                    <Text className="font-sans-medium text-xs text-accent">Saved</Text>
+                  </Pressable>
+                )}
+              </View>
               {perceptions.length === 0 ? (
                 <Text className="py-8 text-center font-sans italic text-foreground-subtle">
                   No perceptions yet.
@@ -475,6 +516,7 @@ export default function UserProfileScreen() {
                       onEdit={(item) => guard(() => router.push(`/perceptions/${item.id}/edit`))}
                       onDelete={handleDeletePerception}
                       onAnalytics={(item) => guard(() => router.push(`/perceptions/${item.id}/analytics`))}
+                      onSave={() => handleSave(p)}
                     />
                   ))}
                 </View>

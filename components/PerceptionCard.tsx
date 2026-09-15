@@ -25,6 +25,7 @@ import type { Perception } from "../types/models";
 interface PerceptionCardProps {
   perception: Perception;
   onLike?: (id: number) => void;
+  onSave?: (id: number) => void;
   onEdit?: (perception: Perception) => void;
   onDelete?: (perception: Perception) => void;
   onAnalytics?: (perception: Perception) => void;
@@ -129,6 +130,7 @@ function MediaPreview({ uri: rawUri }: { uri: string }) {
 export default function PerceptionCard({
   perception,
   onLike,
+  onSave,
   onEdit,
   onDelete,
   onAnalytics,
@@ -237,6 +239,13 @@ export default function PerceptionCard({
       icon: "link",
       onPress: handleCopyLink,
     },
+    ...(onSave
+      ? [{
+          label: perception.saved_by_user ? "Remove from saved" : "Save perception",
+          icon: (perception.saved_by_user ? "bookmark" : "bookmark") as const,
+          onPress: () => onSave(id),
+        }]
+      : []),
 
     ...(onAnalytics
       ? [{
