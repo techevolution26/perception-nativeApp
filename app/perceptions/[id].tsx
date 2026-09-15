@@ -646,10 +646,7 @@ export default function PerceptionDetailScreen() {
   // an inflated view count.
   useEffect(() => {
     if (!token || !perception) return;
-    apiFetch(`/api/analytics/events`, {
-      method: "POST",
-      body: { perception_id: perception.id, event_type: "VIEW" },
-    }).catch(() => {
+    recordPerceptionAnalyticsEvent(perception.id, "VIEW").catch(() => {
       // Analytics telemetry must never interrupt the perception experience.
     });
   }, [token, perception]);

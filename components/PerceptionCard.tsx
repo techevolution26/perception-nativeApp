@@ -19,6 +19,7 @@ import { professionalVisual } from "./ui/professionalVisuals";
 import ActionMenu, { type ActionMenuItem } from "./ui/ActionMenu";
 
 import { resolveMediaUrl } from "../lib/api";
+import { recordPerceptionAnalyticsEvent } from "../lib/perceptionAnalytics";
 import type { Perception } from "../types/models";
 
 interface PerceptionCardProps {
@@ -184,7 +185,7 @@ export default function PerceptionCard({
     const preview = body.length > 140 ? `${body.slice(0, 140)}…` : body;
 
     try {
-      await Share.share(
+      const result = await Share.share(
         url
           ? {
               message: `"${preview}" — ${user.name} on Perception\n${url}`,
@@ -194,8 +195,16 @@ export default function PerceptionCard({
               message: `"${preview}" — ${user.name} on Perception`,
             },
       );
+
+      // Only count a SHARE when the native share sheet reports a completed
+      // share. Dismissals must not become engagement data.
+      if (result.action === Share.sharedAction) {
+        void recordPerceptionAnalyticsEvent(id, "SHARE").catch(() => {
+          // Telemetry must never interrupt the sharing experience.
+        });
+      }
     } catch {
-      // User dismissed the native share sheet.
+      // User dismissed the native share sheet or the native share action failed.
     }
   };
 
