@@ -5,7 +5,7 @@ import "react-native-reanimated";
 import { useEffect, useState } from "react";
 import { Animated, Easing, StyleSheet, Text } from "react-native";
 import Svg, { Circle, Line, Rect } from "react-native-svg";
-import { Stack } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -45,6 +45,8 @@ export default function RootLayout() {
   const hydrateAuth = useAuthStore((s) => s.hydrate);
   const authHydrated = useAuthStore((s) => s.hydrated);
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
+  const needsTopicOnboarding = useAuthStore((s) => s.needsTopicOnboarding);
+  const segments = useSegments();
   const settingsHydrated = useSettingsStore((s) => s.hydrated);
 
   // Previously re-implemented system-theme tracking by hand (React
@@ -74,6 +76,19 @@ export default function RootLayout() {
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [appReady]);
+
+  useEffect(() => {
+    if (!appReady || !needsTopicOnboarding) return;
+    const path = segments.join("/");
+    const alreadyInSetup =
+      path.includes("topics") ||
+      path.includes("professional-identity") ||
+      path.includes("verification") ||
+      path.includes("auth");
+    if (!alreadyInSetup) {
+      router.replace("/topics?onboarding=1");
+    }
+  }, [appReady, needsTopicOnboarding, segments]);
 
   if (!appReady) {
     return null; // splash screen stays up

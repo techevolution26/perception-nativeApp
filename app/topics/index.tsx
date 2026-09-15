@@ -32,9 +32,7 @@ export default function TopicsIndexScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const raw = await apiFetch<Topic[] | TopicsResponse>("/api/topics", {
-        auth: Boolean(user),
-      });
+      const raw = await apiFetch<Topic[] | TopicsResponse>("/api/topics", { auth: Boolean(user) });
       const topicsData: Topic[] = Array.isArray(raw) ? raw : raw.topics;
 
       setTopics(
@@ -77,17 +75,10 @@ export default function TopicsIndexScreen() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center gap-2 px-4 py-3">
-        {!isOnboarding && (
-          <Pressable
-            onPress={() => router.back()}
-            className="rounded-control p-1"
-          >
-            <Feather name="chevron-left" size={22} color="#8b91a0" />
-          </Pressable>
-        )}
-        <Text className="font-sans-semibold text-xl text-foreground">
-          {isOnboarding ? "Choose your topics" : "Topics"}
-        </Text>
+        {!isOnboarding && <Pressable onPress={() => router.back()} className="rounded-control p-1">
+          <Feather name="chevron-left" size={22} color="#8b91a0" />
+        </Pressable>}
+        <Text className="font-sans-semibold text-xl text-foreground">{isOnboarding ? "Choose your topics" : "Topics"}</Text>
       </View>
 
       {loading ? (
@@ -101,18 +92,11 @@ export default function TopicsIndexScreen() {
             <View className="mb-2">
               {isOnboarding && (
                 <View className="mb-3 rounded-card border border-accent/20 bg-accent-soft px-4 py-4">
-                  <Text className="font-sans-semibold text-base text-foreground">
-                    Your Perception starts with what matters to you.
-                  </Text>
-                  <Text className="mt-1.5 font-sans text-sm leading-5 text-foreground-muted">
-                    Choose a few topics to shape the ideas, people, and
-                    conversations you see first. You can change this anytime.
-                  </Text>
+                  <Text className="font-sans-semibold text-base text-foreground">Your Perception starts with what matters to you.</Text>
+                  <Text className="mt-1.5 font-sans text-sm leading-5 text-foreground-muted">Choose a few topics to shape the ideas, people, and conversations you see first. You can change these anytime.</Text>
                   <View className="mt-3 flex-row items-center gap-2">
                     <View className="h-1.5 flex-1 rounded-full bg-accent" />
-                    <Text className="font-sans-medium text-[11px] text-accent">
-                      1 of 3
-                    </Text>
+                    <Text className="font-sans-medium text-[11px] text-accent">1 of 3</Text>
                   </View>
                 </View>
               )}
@@ -122,67 +106,43 @@ export default function TopicsIndexScreen() {
                   : "Follow the topics you care about — they'll shape your home feed."}
               </Text>
               {isOnboarding && (
-                <Text className="mt-1 font-sans-medium text-xs text-accent">
-                  {topics.filter((topic) => topic.followed).length} selected
-                </Text>
+                <Text className="mt-1 font-sans-medium text-xs text-accent">{topics.filter((topic) => topic.followed).length} selected</Text>
               )}
             </View>
           }
-          ListFooterComponent={
-            isOnboarding ? (
-              <View className="mt-3">
-                <Button
-                  label="Continue to professional identity"
-                  variant="accent"
-                  size="lg"
-                  onPress={() => {
-                    const hasTopics = topics.some((topic) => topic.followed);
-                    void setTopicReminderPending(!hasTopics);
-                    router.replace("/professional-identity?onboarding=1");
-                  }}
-                />
-                <Pressable
-                  onPress={() => router.replace("/(tabs)")}
-                  className="items-center py-3"
-                >
-                  <Text className="font-sans-medium text-sm text-foreground-subtle">
-                    Skip setup for now
-                  </Text>
-                </Pressable>
-              </View>
-            ) : null
-          }
+          ListFooterComponent={isOnboarding ? (
+            <View className="mt-3">
+              <Button
+                label="Continue to professional identity"
+                variant="accent"
+                size="lg"
+                onPress={() => {
+                  const hasTopics = topics.some((topic) => topic.followed);
+                  void setTopicReminderPending(!hasTopics);
+                  router.replace("/professional-identity?onboarding=1");
+                }}
+              />
+              <Pressable onPress={() => router.replace("/(tabs)")} className="items-center py-3">
+                <Text className="font-sans-medium text-sm text-foreground-subtle">Skip setup for now</Text>
+              </Pressable>
+            </View>
+          ) : null}
           renderItem={({ item }) => (
             <Card className="flex-row items-center justify-between p-4">
-              <Pressable
-                onPress={() => router.push(`/topics/${item.id}`)}
-                className="min-w-0 flex-1 flex-row items-center gap-3.5"
-              >
+              <Pressable onPress={() => router.push(`/topics/${item.id}`)} className="min-w-0 flex-1 flex-row items-center gap-3.5">
                 {item.image_url ? (
-                  <Image
-                    source={{ uri: resolveMediaUrl(item.image_url) }}
-                    style={{ width: 40, height: 40, borderRadius: 20 }}
-                    contentFit="cover"
-                  />
+                  <Image source={{ uri: resolveMediaUrl(item.image_url) }} style={{ width: 40, height: 40, borderRadius: 20 }} contentFit="cover" />
                 ) : (
                   <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-sunken">
-                    <Text className="font-sans-medium text-sm text-foreground-muted">
-                      {item.name[0]}
-                    </Text>
+                    <Text className="font-sans-medium text-sm text-foreground-muted">{item.name[0]}</Text>
                   </View>
                 )}
                 <View className="min-w-0 flex-1">
-                  <Text
-                    numberOfLines={1}
-                    className="font-sans-medium text-foreground"
-                  >
+                  <Text numberOfLines={1} className="font-sans-medium text-foreground">
                     {item.name}
                   </Text>
                   {item.description && (
-                    <Text
-                      numberOfLines={1}
-                      className="font-sans text-sm text-foreground-subtle"
-                    >
+                    <Text numberOfLines={1} className="font-sans text-sm text-foreground-subtle">
                       {item.description}
                     </Text>
                   )}

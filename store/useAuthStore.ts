@@ -7,7 +7,13 @@
 // of truth — hydrated once at launch, updated on login/logout.
 import { create } from "zustand";
 import { apiFetch, ApiError, setUnauthorizedHandler } from "../lib/api";
-import { getToken, setToken, clearToken } from "../lib/storage";
+import {
+  getToken,
+  setToken,
+  clearToken,
+  getTopicOnboardingPending,
+  setTopicOnboardingPending,
+} from "../lib/storage";
 import type { UserMe, AuthResponse } from "../types/models";
 
 interface AuthState {
@@ -22,6 +28,7 @@ interface AuthState {
   register: (name: string, email: string, password: string, passwordConfirmation: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
+  completeTopicOnboarding: () => Promise<void>;
 }
 
 const useAuthStore = create<AuthState>((set, get) => ({
@@ -39,7 +46,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
     }
     try {
       const user = await apiFetch<UserMe>("/api/user", { auth: true });
-      set({ token, user, hydrated: true });
+      const needsTopicOnboarding = await getTopicOnboardingPending();
+      set({ token, user, hydrated: true, needsTopicOnboarding });
     } catch {
       // stored token is invalid/expired
       await clearToken();
@@ -57,6 +65,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
       });
       await setToken(res.token);
       const user = await apiFetch<UserMe>("/api/user", { auth: true });
+      await setTopicOnboardingPending(false);
       set({ token: res.token, user, loading: false, needsTopicOnboarding: false });
     } catch (err) {
       set({ loading: false });
@@ -70,7 +79,9 @@ const useAuthStore = create<AuthState>((set, get) => ({
       const res = await apiFetch<AuthResponse>("/api/google", { method: "POST", auth: false, body: { id_token: idToken } });
       await setToken(res.token);
       const user = await apiFetch<UserMe>("/api/user", { auth: true });
-      set({ token: res.token, user, loading: false, needsTopicOnboarding: Boolean(res.is_new_user) });
+      const needsTopicOnboarding = Boolean(res.is_new_user);
+      await setTopicOnboardingPending(needsTopicOnboarding);
+      set({ token: res.token, user, loading: false, needsTopicOnboarding });
     } catch (err) { set({ loading: false }); throw err; }
   },
 
@@ -84,6 +95,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
       });
       await setToken(res.token);
       const user = await apiFetch<UserMe>("/api/user", { auth: true });
+      await setTopicOnboardingPending(true);
       set({ token: res.token, user, loading: false, needsTopicOnboarding: true });
     } catch (err) {
       set({ loading: false });
@@ -105,6 +117,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
       // Local credential removal is still mandatory if the server is unavailable.
     } finally {
       await clearToken();
+      await setTopicOnboardingPending(false);
       set({ token: null, user: null, needsTopicOnboarding: false });
     }
   },
@@ -113,6 +126,11 @@ const useAuthStore = create<AuthState>((set, get) => ({
     if (!get().token) return;
     const user = await apiFetch<UserMe>("/api/user");
     set({ user });
+  },
+
+  completeTopicOnboarding: async () => {
+    await setTopicOnboardingPending(false);
+    set({ needsTopicOnboarding: false });
   },
 }));
 

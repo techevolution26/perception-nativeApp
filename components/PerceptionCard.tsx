@@ -20,10 +20,7 @@ import ActionMenu, { type ActionMenuItem } from "./ui/ActionMenu";
 
 import { resolveMediaUrl } from "../lib/api";
 import { recordPerceptionAnalyticsEvent } from "../lib/perceptionAnalytics";
-import {
-  PERCEPTION_REPORT_REASONS,
-  type PerceptionReportReason,
-} from "../hooks/useReportPerception";
+import { PERCEPTION_REPORT_REASONS, type PerceptionReportReason } from "../hooks/useReportPerception";
 import type { Perception } from "../types/models";
 
 interface PerceptionCardProps {
@@ -162,14 +159,9 @@ export default function PerceptionCard({
   const { colorScheme } = useColorScheme();
 
   const surfaceColor = colorScheme === "dark" ? "#14151a" : "#ffffff";
-  const professionalIndustry =
-    user.primary_professional_industry ??
-    user.professional_industries?.[0] ??
-    null;
+  const professionalIndustry = user.primary_professional_industry ?? user.professional_industries?.[0] ?? null;
   const professionalTheme = professionalVisual(professionalIndustry);
-  const verifiedProfessional =
-    user.verification_status === "VERIFIED" &&
-    (user.verified_professional_roles?.length ?? 0) > 0;
+  const verifiedProfessional = user.verification_status === "VERIFIED";
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -268,35 +260,27 @@ export default function PerceptionCard({
       onPress: handleCopyLink,
     },
     ...(onSave
-      ? [
-          {
-            label: perception.saved_by_user
-              ? "Remove from saved"
-              : "Save perception",
-            icon: "bookmark" as const,
-            onPress: () => onSave(id),
-          },
-        ]
+      ? [{
+          label: perception.saved_by_user ? "Remove from saved" : "Save perception",
+          icon: "bookmark" as const,
+          onPress: () => onSave(id),
+        }]
       : []),
 
     ...(onAnalytics
-      ? [
-          {
-            label: isOwner ? "Perception analytics" : "Perception intelligence",
-            icon: "bar-chart-2" as const,
-            onPress: () => onAnalytics(perception),
-          },
-        ]
+      ? [{
+          label: isOwner ? "Perception analytics" : "Perception intelligence",
+          icon: "bar-chart-2" as const,
+          onPress: () => onAnalytics(perception),
+        }]
       : []),
     ...(!isOwner && onReport
-      ? [
-          {
-            label: "Report perception",
-            icon: "flag" as const,
-            onPress: handleReport,
-            destructive: true,
-          },
-        ]
+      ? [{
+          label: "Report perception",
+          icon: "flag" as const,
+          onPress: handleReport,
+          destructive: true,
+        }]
       : []),
     ...(showOwnerActions && isOwner
       ? [
@@ -341,12 +325,7 @@ export default function PerceptionCard({
     >
       <Card
         className="overflow-hidden"
-        style={{
-          borderLeftWidth: professionalIndustry ? 3 : 1,
-          borderLeftColor: professionalIndustry
-            ? professionalTheme.color
-            : undefined,
-        }}
+        style={{ borderLeftWidth: professionalIndustry ? 3 : 1, borderLeftColor: professionalIndustry ? professionalTheme.color : undefined }}
       >
         {/* ------------------------------------------------------------- */}
         {/* Main navigation area                                         */}
@@ -363,15 +342,7 @@ export default function PerceptionCard({
 
           <View className="flex-row items-start px-3.5 pt-3.5">
             {/* Avatar */}
-            <Pressable
-              className="mr-3"
-              onPress={(event) => {
-                event.stopPropagation?.();
-                router.push(`/users/${user.id}`);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`Open ${user.name}'s profile`}
-            >
+            <Pressable className="mr-3" onPress={(event) => { event.stopPropagation?.(); router.push(`/users/${user.id}`); }} accessibilityRole="button" accessibilityLabel={`Open ${user.name}'s profile`}>
               <Avatar uri={user.avatar_url} size="md" />
             </Pressable>
 
@@ -388,11 +359,7 @@ export default function PerceptionCard({
                 {(user.primary_professional_role || verifiedProfessional) && (
                   <View className="ml-1.5">
                     <VerifiedBadge
-                      roleCode={
-                        user.primary_professional_role ??
-                        user.verified_professional_roles?.[0] ??
-                        null
-                      }
+                      roleCode={user.primary_professional_role ?? user.verified_professional_roles?.[0] ?? null}
                       industryCode={professionalIndustry}
                       compact
                       verified={verifiedProfessional}

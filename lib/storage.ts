@@ -11,6 +11,7 @@
 import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "perception_auth_token";
+const TOPIC_ONBOARDING_KEY = "perception_topic_onboarding_pending";
 
 export async function getToken(): Promise<string | null> {
   try {
@@ -26,4 +27,21 @@ export async function setToken(token: string): Promise<void> {
 
 export async function clearToken(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
+}
+
+
+export async function getTopicOnboardingPending(): Promise<boolean> {
+  try {
+    return (await SecureStore.getItemAsync(TOPIC_ONBOARDING_KEY)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export async function setTopicOnboardingPending(pending: boolean): Promise<void> {
+  if (pending) {
+    await SecureStore.setItemAsync(TOPIC_ONBOARDING_KEY, "1");
+  } else {
+    await SecureStore.deleteItemAsync(TOPIC_ONBOARDING_KEY);
+  }
 }

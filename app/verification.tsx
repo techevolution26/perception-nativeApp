@@ -16,6 +16,7 @@ export default function VerificationScreen() {
   const isOnboarding = onboarding === "1";
   const user = useAuthStore((s) => s.user);
   const { showToast } = useToast();
+  const completeTopicOnboarding = useAuthStore((state) => state.completeTopicOnboarding);
   const [taxonomy, setTaxonomy] = useState<ProfessionalTaxonomy | null>(null);
   const [industries, setIndustries] = useState<string[]>(user?.professional_industries ?? []);
   const [roles, setRoles] = useState<string[]>(user?.professional_roles ?? []);
@@ -162,7 +163,7 @@ export default function VerificationScreen() {
             <Button label={saving ? "Submitting…" : "Submit application"} variant="accent" loading={saving} onPress={submit} />
           </>
         )}
-        {isOnboarding && <Pressable onPress={() => router.replace("/(tabs)")} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip verification and finish setup</Text></Pressable>}
+        {isOnboarding && <Pressable onPress={() => { void completeTopicOnboarding(); router.replace("/(tabs)"); }} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip verification and finish setup</Text></Pressable>}
       </ScrollView>
     </View>
   );
