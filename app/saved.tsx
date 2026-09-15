@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import PerceptionCard from "../components/PerceptionCard";
@@ -41,25 +41,16 @@ export default function SavedPerceptionsScreen() {
     }
   }, [token]);
 
-  useEffect(() => {
-    if (!token) return undefined;
-
-    let active = true;
-    void apiFetch<Perception[]>("/api/users/me/saved-perceptions")
-      .then((data) => {
-        if (active) setPerceptions(data);
-      })
-      .catch(() => {
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      if (!token) return undefined;
+      void load().catch(() => {
         if (active) setError(true);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
       });
-
-    return () => {
-      active = false;
-    };
-  }, [token]);
+      return () => { active = false; };
+    }, [load, token]),
+  );
 
   if (!token) {
     return (

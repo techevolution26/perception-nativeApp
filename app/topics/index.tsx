@@ -1,7 +1,7 @@
 import Spinner from "../../components/ui/Spinner";
 // app/topics/index.tsx
-import { useEffect, useState, useCallback } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import { useState, useCallback } from "react";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -48,9 +48,12 @@ export default function TopicsIndexScreen() {
     }
   }, [user]);
 
-  useEffect(() => {
-    void Promise.resolve().then(() => load());
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void Promise.resolve().then(() => load());
+      return undefined;
+    }, [load]),
+  );
 
   const toggleFollow = (topic: FollowableTopic) =>
     guard(async () => {

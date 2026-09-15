@@ -11,11 +11,13 @@ import useSaveToggle from "../hooks/useSaveToggle";
 import useReportPerception from "../hooks/useReportPerception";
 import useGuardAction from "../hooks/useGuardAction";
 import { apiFetch } from "../lib/api";
+import useCurrentUser from "../hooks/useCurrentUser";
 import { useToast } from "../contexts/ToastContext";
 import type { Perception } from "../types/models";
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useCurrentUser();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function SearchScreen() {
     const timeout = setTimeout(async () => {
       setLoading(true);
       try {
-        const data = await apiFetch<Perception[]>(`/api/search?query=${encodeURIComponent(query.trim())}`);
+        const data = await apiFetch<Perception[]>(`/api/search?query=${encodeURIComponent(query.trim())}`, { auth: Boolean(user) });
         setResults(data);
       } catch (err) {
         console.error("Search failed:", err);
@@ -49,7 +51,7 @@ export default function SearchScreen() {
       }
     }, 350);
     return () => clearTimeout(timeout);
-  }, [query]);
+  }, [query, user]);
 
 
   const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {

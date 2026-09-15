@@ -41,7 +41,7 @@ export default function ProfessionalIdentityScreen() {
       });
       await refreshMe();
       if (isOnboarding) {
-        router.replace("/verification?onboarding=1");
+        router.replace("/geographic-context?onboarding=1");
         return;
       }
       showToast({ title: "Professional identity updated", message: "Your role and industry colors are now in sync.", tone: "success" });
@@ -97,7 +97,7 @@ export default function ProfessionalIdentityScreen() {
           </Text>
         </View>
         <Button label={isOnboarding ? "Continue to verification" : "Save professional identity"} variant="accent" loading={saving} onPress={() => void save()} />
-        {isOnboarding && <Pressable onPress={() => router.replace("/verification?onboarding=1")} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip this step for now</Text></Pressable>}
+        {isOnboarding && <Pressable onPress={() => router.replace("/geographic-context?onboarding=1")} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip this step for now</Text></Pressable>}
       </ScrollView>
     </View>
   );

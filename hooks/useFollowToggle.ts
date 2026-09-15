@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { apiFetch } from "../lib/api";
+import { queryClient } from "../lib/queryClient";
 import type { FollowToggle } from "../types/models";
 
 type UpdateFn = (followed: boolean) => void;
@@ -32,6 +33,7 @@ export default function useFollowToggle() {
           { method },
         );
         const followed = result.followed ?? !isFollowing;
+        queryClient.invalidateQueries({ queryKey: ["profile", userId] });
         updateFn(followed);
         return followed;
       } catch (error) {

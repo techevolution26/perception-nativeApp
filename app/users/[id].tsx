@@ -27,7 +27,7 @@ import useFollowToggle from "../../hooks/useFollowToggle";
 import useSaveToggle from "../../hooks/useSaveToggle";
 import useReportPerception from "../../hooks/useReportPerception";
 import useAuthStore from "../../store/useAuthStore";
-import type { UserProfile, Perception, Subscription } from "../../types/models";
+import type { UserProfile, Perception, Subscription, Topic } from "../../types/models";
 import { File } from "expo-file-system";
 import { useToast } from "../../contexts/ToastContext";
 
@@ -50,6 +50,7 @@ export default function UserProfileScreen() {
   const [followBusy, setFollowBusy] = useState(false);
   const [tab, setTab] = useState<ProfileTab>("posts");
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [followedTopics, setFollowedTopics] = useState<Topic[]>([]);
 
   // Edit mode
   const [editing, setEditing] = useState(false);
@@ -66,12 +67,14 @@ export default function UserProfileScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [u, p] = await Promise.all([
+      const [u, p, t] = await Promise.all([
         apiFetch<UserProfile>(`/api/users/${id}`, { auth: Boolean(me) }),
         apiFetch<Perception[]>(`/api/users/${id}/perceptions`, { auth: false }),
+        apiFetch<Topic[]>(`/api/users/${id}/topics`, { auth: false }),
       ]);
       setUser(u);
       setPerceptions(p);
+      setFollowedTopics(t);
 
       if (me && isOwnProfile) {
         const sub = await apiFetch<Subscription>("/api/subscription");
@@ -331,6 +334,12 @@ export default function UserProfileScreen() {
                 onPress={() => router.push("/professional-identity")}
                 disabled={saving}
               />
+              <Button
+                label="Edit geographic context"
+                variant="outline"
+                onPress={() => router.push("/geographic-context")}
+                disabled={saving}
+              />
               <View>
                 <Text className="mb-1 font-sans-medium text-xs text-foreground-subtle">
                   Bio
@@ -396,6 +405,12 @@ export default function UserProfileScreen() {
                   {user.bio}
                 </Text>
               )}
+              {user.location_label && (
+                <View className="mt-2 flex-row items-center gap-1.5">
+                  <Feather name="map-pin" size={13} color="#8b91a0" />
+                  <Text className="font-sans text-xs text-foreground-subtle">{user.location_label}</Text>
+                </View>
+              )}
 
               {!isOwnProfile && (
                 <View className="mt-4 flex-row gap-2">
@@ -442,6 +457,83 @@ export default function UserProfileScreen() {
             </>
           )}
         </View>
+
+        {!editing && (
+          <View className="mx-4 mt-4 rounded-card border border-border-hairline bg-surface p-4">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1 pr-3">
+                <Text className="font-sans-semibold text-base text-foreground">Professional context</Text>
+                <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+                  {user.primary_professional_role_label || user.profession
+                    ? `${user.primary_professional_role_label ?? user.profession}`
+                    : "Professional identity not added yet."}
+                </Text>
+              </View>
+              {user.primary_professional_role ? (
+                <VerifiedBadge
+                  roleCode={user.primary_professional_role}
+                  industryCode={profileIndustry}
+                  compact
+                  verified={
+                    user.verification_status === "VERIFIED" &&
+                    (user.verified_professional_roles?.length ?? 0) > 0
+                  }
+                />
+              ) : null}
+            </View>
+
+            {(user.professional_role_labels?.length ?? 0) > 0 ? (
+              <View className="mt-3 flex-row flex-wrap gap-1.5">
+                {user.professional_role_labels.slice(0, 6).map((label) => (
+                  <Pill key={label} label={label} />
+                ))}
+                {user.professional_role_labels.length > 6 ? (
+                  <Pill label={`+${user.professional_role_labels.length - 6}`} />
+                ) : null}
+              </View>
+            ) : null}
+
+            {user.location_label ? (
+              <View className="mt-4">
+                <Text className="font-sans-medium text-xs uppercase tracking-wide text-foreground-subtle">
+                  Geographic context
+                </Text>
+                <View className="mt-2 flex-row items-center gap-2">
+                  <Feather name="map-pin" size={14} color="#8b91a0" />
+                  <Text className="font-sans text-sm text-foreground">{user.location_label}</Text>
+                </View>
+              </View>
+            ) : isOwnProfile ? (
+              <View className="mt-4 rounded-control border border-border-hairline bg-surface-sunken p-3">
+                <Text className="font-sans-medium text-xs text-foreground">Geographic context is private</Text>
+                <Text className="mt-1 font-sans text-xs leading-5 text-foreground-subtle">
+                  Add broad location context and choose what, if anything, appears publicly.
+                </Text>
+                <Pressable onPress={() => router.push("/geographic-context")} className="mt-2 self-start">
+                  <Text className="font-sans-medium text-xs text-accent">Manage geographic context</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {followedTopics.length > 0 ? (
+              <View className="mt-4">
+                <Text className="font-sans-medium text-xs uppercase tracking-wide text-foreground-subtle">
+                  Topics
+                </Text>
+                <View className="mt-2 flex-row flex-wrap gap-1.5">
+                  {followedTopics.slice(0, 6).map((topic) => (
+                    <Pressable key={topic.id} onPress={() => router.push(`/topics/${topic.id}`)}>
+                      <Pill label={topic.name} tone="accent" />
+                    </Pressable>
+                  ))}
+                  {followedTopics.length > 6 ? (
+                    <Pill label={`+${followedTopics.length - 6}`} />
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+          </View>
+        )}
 
         {isOwnProfile && !editing && (
           <View className="mx-4 mb-2 mt-2 flex-row rounded-control border border-border-hairline bg-surface p-1">

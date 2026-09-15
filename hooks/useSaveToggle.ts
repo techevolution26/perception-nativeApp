@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import { apiFetch } from "../lib/api";
 import type { Perception, SaveToggle } from "../types/models";
+import usePerceptionsStore from "../store/usePerceptionsStore";
 
 type UpdateFn = (saved: boolean) => void;
 type ErrorFn = (error: unknown) => void;
@@ -25,6 +26,7 @@ export default function useSaveToggle() {
           `/api/perceptions/${perception.id}/save`,
           { method },
         );
+        usePerceptionsStore.getState().updatePerception(perception.id, { saved_by_user: result.saved });
         updateFn(result.saved);
         return result.saved;
       } catch (error) {

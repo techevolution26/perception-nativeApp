@@ -83,6 +83,7 @@ export default function RootLayout() {
     const alreadyInSetup =
       path.includes("topics") ||
       path.includes("professional-identity") ||
+      path.includes("geographic-context") ||
       path.includes("verification") ||
       path.includes("auth");
     if (!alreadyInSetup) {

@@ -1,9 +1,9 @@
 import Spinner from "../../components/ui/Spinner";
 // app/topics/[id].tsx
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { View, Text, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import PerceptionCard from "../../components/PerceptionCard";
 import Button from "../../components/ui/Button";
@@ -48,9 +48,12 @@ export default function TopicScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    void Promise.resolve().then(() => load());
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void Promise.resolve().then(() => load());
+      return undefined;
+    }, [load]),
+  );
 
   const handleSave = (p: Perception) =>
     guard(async () => {

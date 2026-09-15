@@ -279,6 +279,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/perceptions/personalized": {
+      get: {
+        responses: {
+          /** Successful Response */
+          200: {
+            content: {
+              "application/json": components["schemas"]["PerceptionOut"][];
+            };
+          };
+        };
+      };
+    };
     "/api/perceptions": {
         parameters: {
             query?: never;
@@ -812,6 +824,15 @@ export interface components {
             name?: string | null;
             /** Bio */
             bio?: string | null;
+            profession?: string | null;
+            professional_focus?: string | null;
+            country_code?: string | null;
+            region?: string | null;
+            city?: string | null;
+            professional_industries?: string[] | null;
+            professional_roles?: string[] | null;
+            primary_professional_role?: string | null;
+            location_visibility?: "private" | "country" | "region" | null;
         };
         /**
          * UserMe
@@ -856,6 +877,7 @@ export interface components {
             primary_professional_role_label?: string | null;
             professional_role_labels?: string[];
             verified_professional_roles?: string[];
+            location_visibility?: "private" | "country" | "region";
         };
         /**
          * UserProfile
@@ -881,6 +903,7 @@ export interface components {
             primary_professional_role_label?: string | null;
             professional_role_labels?: string[];
             verified_professional_roles?: string[];
+            location_label?: string | null;
             /**
              * Created At
              * Format: date-time

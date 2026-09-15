@@ -91,8 +91,8 @@ export interface AnalyticsProfileFields {
   verified_professional_roles: string[];
 }
 
-export type UserMe = components["schemas"]["UserMe"] & AnalyticsProfileFields;
-export type UserProfile = components["schemas"]["UserProfile"] & AnalyticsProfileFields & { is_following: boolean; can_message: boolean };
+export type UserMe = components["schemas"]["UserMe"] & AnalyticsProfileFields & { location_visibility?: "private" | "country" | "region" };
+export type UserProfile = components["schemas"]["UserProfile"] & AnalyticsProfileFields & { is_following: boolean; can_message: boolean; location_label?: string | null };
 
 export interface Plan {
   id: number;

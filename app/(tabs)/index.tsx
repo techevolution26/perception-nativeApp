@@ -1,6 +1,6 @@
 import Spinner from "../../components/ui/Spinner";
 // app/(tabs)/index.tsx
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { View, Text, FlatList, RefreshControl, Alert, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
@@ -53,6 +53,11 @@ export default function HomeScreen() {
     return order.map((id) => byId[id]).filter(Boolean);
   }, [order, byId]);
 
+  // Authenticated users receive the context-aware feed. Guests retain the
+  // public chronological/topic-grouped experience. The card contract stays
+  // identical on both paths.
+  const isPersonalized = Boolean(user);
+
   /*
     FIXED: Dynamically calculate bottom padding based on your custom tab bar
     layout heights so content scrolls neatly above the floating buttons.
@@ -63,10 +68,10 @@ export default function HomeScreen() {
 
   const load = useCallback(async () => {
     try {
-      // Public now — no token required. Guests get the same feed, just
-      // without liked_by_user personalization (the backend still returns
-      // it as false for anonymous requests).
-      const perData = await apiFetch<Perception[]>("/api/perceptions", { auth: true });
+      const endpoint = isPersonalized
+        ? "/api/perceptions/personalized"
+        : "/api/perceptions";
+      const perData = await apiFetch<Perception[]>(endpoint, { auth: isPersonalized });
       hydrateFeed(perData);
     } catch (err) {
       console.error("Failed to load feed:", err);
@@ -74,11 +79,14 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [hydrateFeed]);
+  }, [hydrateFeed, isPersonalized]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+      return undefined;
+    }, [load]),
+  );
 
   useFocusEffect(useCallback(() => {
     if (!user) { setTopicReminder(false); return undefined; }
@@ -158,11 +166,21 @@ export default function HomeScreen() {
 
   const flatData = useMemo(() => {
     let itemIndex = 0;
+
+    if (isPersonalized) {
+      return perceptions.map((item) => ({
+        type: "item" as const,
+        item,
+        groupId: item.topic?.id ?? 0,
+        itemIndex: itemIndex++,
+      }));
+    }
+
     return byTopic.flatMap((group) => [
       { type: "header" as const, group },
       ...group.items.map((item) => ({ type: "item" as const, item, groupId: group.id, itemIndex: itemIndex++ })),
     ]);
-  }, [byTopic]);
+  }, [byTopic, isPersonalized, perceptions]);
 
   if (loading) {
     return (
@@ -199,6 +217,13 @@ export default function HomeScreen() {
             <Feather name="chevron-right" size={17} color="#f2a33c" />
           </View>
         </Pressable>
+      )}
+
+      {isPersonalized && (
+        <View className="px-4 pb-1">
+          <Text className="font-sans-semibold text-lg text-foreground">For you</Text>
+          <Text className="mt-0.5 font-sans text-xs text-foreground-muted">Based on the topics, people, professional context, and places you choose to engage with.</Text>
+        </View>
       )}
 
       <FlatList

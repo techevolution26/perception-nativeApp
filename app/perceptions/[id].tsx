@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { AIAnalysisBadge } from "../../components/ui/AIAnalysisBadge";
 import * as ImagePicker from "expo-image-picker";
@@ -565,7 +565,7 @@ export default function PerceptionDetailScreen() {
   const reportPerception = useReportPerception();
   const { showToast } = useToast();
 
-  const { perception, comments, loading, error, setPerception, setComments } =
+  const { perception, comments, loading, error, reload, setPerception, setComments } =
     usePerceptionDetail(id);
   const { createComment } = useCommentActions();
 
@@ -576,6 +576,13 @@ export default function PerceptionDetailScreen() {
   const hydratedCommentsRef = useRef<Comment[] | null>(null);
   const canRequestAiAnalysis =
     aiAnalysis === "1" && !!me && !!perception && me.id === perception.user.id;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id) void reload();
+      return undefined;
+    }, [id, reload]),
+  );
 
   // AI-analysis labels are an owner-only subscription feature. The profile
   // route may request the label, but the detail screen verifies ownership and
