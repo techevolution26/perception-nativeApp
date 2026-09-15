@@ -1,6 +1,4 @@
 import Spinner from "../../components/ui/Spinner";
-// app/perceptions/[id].tsx
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
@@ -18,7 +16,6 @@ import { AIAnalysisBadge } from "../../components/ui/AIAnalysisBadge";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { File } from "expo-file-system";
 
 import PerceptionCard from "../../components/PerceptionCard";
 import PerceiveComposer from "../../components/PerceiveComposer";
@@ -28,10 +25,10 @@ import VantageMark from "../../components/ui/VantageMark";
 
 import { usePerceptionDetail } from "../../hooks/usePerceptionDetail";
 import useLikeToggle from "../../hooks/useLikeToggle";
+import useCommentActions, { type CommentMedia } from "../../hooks/useCommentActions";
 import useGuardAction from "../../hooks/useGuardAction";
 import useAuthStore from "../../store/useAuthStore";
-import { API_BASE, apiFetch, resolveMediaUrl } from "../../lib/api";
-import { getToken } from "../../lib/storage";
+import { apiFetch, resolveMediaUrl } from "../../lib/api";
 import { playPostSuccessSound } from "../../lib/sound";
 
 import type { Comment, Subscription } from "../../types/models";
@@ -85,73 +82,6 @@ async function pickCommentMedia(): Promise<MediaAsset | null> {
   }
 
   return result.assets[0];
-}
-
-/**
- * Upload a comment/reply using the same native-safe multipart strategy
- * already proven by NewPerceptionScreen.
- *
- * IMPORTANT:
- * Do not construct the file as:
- *
- *   { uri, name, type } as Blob
- *
- * Expo SDK 57's File API gives us a real File object that can be appended
- * directly to FormData.
- */
-async function postCommentWithMedia(
-  path: string,
-  body: string,
-  media: MediaAsset | null,
-): Promise<Comment> {
-  const form = new FormData();
-
-  if (body.trim()) {
-    form.append("body", body.trim());
-  }
-
-  if (media) {
-    const file = new File(media.uri);
-    form.append("media", file);
-  }
-
-  const token = await getToken();
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: form,
-  });
-
-  const text = await res.text();
-
-  let data: unknown = null;
-
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
-    }
-  }
-
-  if (!res.ok) {
-    const detail =
-      typeof data === "object" &&
-      data !== null &&
-      "detail" in data &&
-      typeof data.detail === "string"
-        ? data.detail
-        : typeof data === "string"
-          ? data
-          : `Request failed with status ${res.status}`;
-
-    throw new Error(detail);
-  }
-
-  return data as Comment;
 }
 
 /**
@@ -431,11 +361,19 @@ function CommentItem({
     setSending(true);
 
     try {
-      const created = await postCommentWithMedia(
-        `/api/comments/${comment.id}/replies`,
+      const created = await createReply(
+        comment.id,
         replyBody,
-        replyMedia,
+        replyMedia ? ({ uri: replyMedia.uri } satisfies CommentMedia) : null,
+        (error) => {
+          Alert.alert(
+            "Couldn't reply",
+            error instanceof Error ? error.message : "Please try again.",
+          );
+        },
       );
+
+      if (!created) return;
 
       onReplyAdded(comment.id, {
         ...created,
@@ -609,6 +547,7 @@ export default function PerceptionDetailScreen() {
 
   const { perception, comments, loading, error, setPerception, setComments } =
     usePerceptionDetail(id);
+  const { createComment, createReply } = useCommentActions();
 
   const [commentBody, setCommentBody] = useState("");
   const [posting, setPosting] = useState(false);
@@ -696,11 +635,19 @@ export default function PerceptionDetailScreen() {
     setPosting(true);
 
     try {
-      const created = await postCommentWithMedia(
-        `/api/perceptions/${id}/comments`,
+      const created = await createComment(
+        id,
         commentBody,
-        commentMedia,
+        commentMedia ? ({ uri: commentMedia.uri } satisfies CommentMedia) : null,
+        (error) => {
+          Alert.alert(
+            "Couldn't comment",
+            error instanceof Error ? error.message : "Please try again.",
+          );
+        },
       );
+
+      if (!created) return;
 
       setComments((current) => [
         {
@@ -710,13 +657,14 @@ export default function PerceptionDetailScreen() {
         ...current,
       ]);
 
+      setPerception((current) =>
+        current
+          ? { ...current, comments_count: current.comments_count + 1 }
+          : current,
+      );
+
       playPostSuccessSound();
       setCommentBody("");
-    } catch (err) {
-      Alert.alert(
-        "Couldn't comment",
-        err instanceof Error ? err.message : "Please try again.",
-      );
     } finally {
       setPosting(false);
     }
