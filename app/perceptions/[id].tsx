@@ -38,7 +38,7 @@ import { playPostSuccessSound } from "../../lib/sound";
 import { recordPerceptionAnalyticsEvent } from "../../lib/perceptionAnalytics";
 import { useToast } from "../../contexts/ToastContext";
 
-import type { Comment, PerceptionIntelligence, RelatedPerceptionsResponse, Subscription } from "../../types/models";
+import type { Comment, InvestigationThread, PerceptionIntelligence, RelatedPerceptionsResponse, Subscription } from "../../types/models";
 
 type MediaAsset = ImagePicker.ImagePickerAsset;
 
@@ -587,7 +587,10 @@ export default function PerceptionDetailScreen() {
   const [showRelated, setShowRelated] = useState(false);
   const [conversationIntelligence, setConversationIntelligence] = useState<PerceptionIntelligence | null>(null);
   const [intelligenceLoading, setIntelligenceLoading] = useState(false);
+  const [savingInvestigationQuestion, setSavingInvestigationQuestion] = useState<string | null>(null);
   const [showIntelligence, setShowIntelligence] = useState(false);
+  const [expandedEvidenceTrace, setExpandedEvidenceTrace] = useState<string | null>(null);
+  const [decisionIntent, setDecisionIntent] = useState<PerceptionIntelligence["decision_context"]["intent"]>("general_exploration");
   const hydratedCommentsRef = useRef<Comment[] | null>(null);
   const canRequestAiAnalysis =
     aiAnalysis === "1" && !!me && !!perception && me.id === perception.user.id;
@@ -642,6 +645,8 @@ export default function PerceptionDetailScreen() {
       setRelatedLoading(false);
       setConversationIntelligence(null);
       setShowIntelligence(false);
+      setExpandedEvidenceTrace(null);
+      setDecisionIntent("general_exploration");
       setIntelligenceLoading(false);
 
       if (!token) return undefined;
@@ -669,7 +674,7 @@ export default function PerceptionDetailScreen() {
     let active = true;
     setIntelligenceLoading(true);
 
-    apiFetch<PerceptionIntelligence>(`/api/analytics/perceptions/${id}?days=180`)
+    apiFetch<PerceptionIntelligence>(`/api/analytics/perceptions/${id}?days=180&decision_intent=${decisionIntent}`)
       .then((response) => {
         if (active) setConversationIntelligence(response);
       })
@@ -683,7 +688,7 @@ export default function PerceptionDetailScreen() {
     return () => {
       active = false;
     };
-  }, [conversationIntelligence, id, intelligenceEligible, showIntelligence]);
+  }, [conversationIntelligence, decisionIntent, id, intelligenceEligible, showIntelligence]);
 
   useEffect(() => {
     if (!relatedEligible || !showRelated || !id) return;
@@ -1037,20 +1042,169 @@ export default function PerceptionDetailScreen() {
                 ) : conversationIntelligence?.semantic.status === "available" ? (
                   <>
                     <View className="mb-3 flex-row items-center justify-between">
-                      <Text className="font-sans-semibold text-sm text-foreground">What the conversation is revealing</Text>
-                      <Text className="font-sans text-[11px] text-foreground-subtle">
+                      <View className="flex-1 pr-3">
+                        <Text className="font-sans-semibold text-sm text-foreground">What the conversation is revealing</Text>
+                        <Text className="font-sans text-[11px] text-foreground-subtle">
                         {conversationIntelligence.semantic.analyzed_comment_count} analyzed
-                      </Text>
-                    </View>
-                    {conversationIntelligence.patterns.slice(0, 3).map((pattern) => (
-                      <View key={`${pattern.label}-${pattern.provenance.trace_id}`} className="mb-3 last:mb-0 rounded-control border border-border-hairline p-3">
-                        <Text className="font-sans-semibold text-xs text-foreground">{pattern.label}</Text>
-                        <Text className="mt-1 font-sans text-xs leading-4 text-foreground-muted">{pattern.description}</Text>
+                        </Text>
                       </View>
-                    ))}
+                      <Pressable onPress={() => router.push("/investigations")} className="rounded-full border border-border-hairline px-2.5 py-1.5" accessibilityRole="button">
+                        <Text className="font-sans-medium text-[10px] text-foreground-muted">Notebook</Text>
+                      </Pressable>
+                    </View>
+                    {conversationIntelligence.patterns.slice(0, 3).map((pattern) => {
+                      const trace = pattern.provenance;
+                      const traceOpen = expandedEvidenceTrace === trace.trace_id;
+                      return (
+                        <View key={`${pattern.label}-${trace.trace_id}`} className="mb-3 last:mb-0 rounded-control border border-border-hairline p-3">
+                          <Text className="font-sans-semibold text-xs text-foreground">{pattern.label}</Text>
+                          <Text className="mt-1 font-sans text-xs leading-4 text-foreground-muted">{pattern.description}</Text>
+                          <Pressable
+                            onPress={() => setExpandedEvidenceTrace(traceOpen ? null : trace.trace_id)}
+                            className="mt-2 flex-row items-center gap-1.5 self-start"
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: traceOpen }}
+                          >
+                            <Feather name={traceOpen ? "chevron-up" : "chevron-down"} size={13} color="#8b91a0" />
+                            <Text className="font-sans-medium text-[10px] text-foreground-subtle">Evidence trail</Text>
+                          </Pressable>
+                          {traceOpen && (
+                            <View className="mt-2 rounded-control bg-background p-2.5">
+                              <Text className="font-sans text-[10px] leading-4 text-foreground-muted">
+                                {trace.sample_size} qualifying observations · {trace.source.replaceAll("_", " ")}
+                              </Text>
+                              <Text className="mt-1 font-sans text-[10px] leading-4 text-foreground-muted">
+                                {trace.period_start.slice(0, 10)} → {trace.period_end.slice(0, 10)}
+                              </Text>
+                              <Text className="mt-1 font-sans text-[10px] leading-4 text-foreground-muted">
+                                Chain: {trace.evidence_chain.join(" → ")}
+                              </Text>
+                              <Text className="mt-1 font-sans text-[10px] leading-4 text-foreground-muted">
+                                {trace.qualification}
+                              </Text>
+                              {trace.limitations.slice(0, 2).map((limitation) => (
+                                <Text key={limitation} className="mt-1 font-sans text-[10px] leading-4 text-foreground-subtle">
+                                  • {limitation}
+                                </Text>
+                              ))}
+                              <Text className="mt-2 font-sans text-[9px] leading-4 text-foreground-subtle">
+                                Trace: {trace.trace_id}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
                     <Text className="mt-1 font-sans text-[10px] leading-4 text-foreground-subtle">
                       These are observed patterns in this discussion, not proof of causation or population-wide opinion.
                     </Text>
+
+                    {conversationIntelligence.context.access_tier === "full" && (
+                      <View className="mt-4 border-t border-border-hairline pt-4">
+                        <Text className="font-sans-semibold text-sm text-foreground">Perspective lens</Text>
+                        <Text className="mt-1 font-sans text-[11px] leading-4 text-foreground-subtle">
+                          Reframe the same evidence for a purpose. The lens changes context, not the evidence.
+                        </Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2">
+                          <View className="flex-row gap-2">
+                            {[
+                              "general_exploration",
+                              "research",
+                              "business",
+                              "education",
+                              "product",
+                              "professional",
+                              "journalism",
+                              "policy",
+                            ].map((intent) => {
+                              const selected = decisionIntent === intent;
+                              return (
+                                <Pressable
+                                  key={intent}
+                                  onPress={() => {
+                                    if (intent === decisionIntent) return;
+                                    setConversationIntelligence(null);
+                                    setDecisionIntent(intent as PerceptionIntelligence["decision_context"]["intent"]);
+                                  }}
+                                  className={`rounded-full border px-3 py-1.5 ${selected ? "border-foreground bg-foreground" : "border-border-hairline bg-background"}`}
+                                  accessibilityRole="button"
+                                  accessibilityState={{ selected }}
+                                >
+                                  <Text className={`font-sans-medium text-[11px] ${selected ? "text-background" : "text-foreground-muted"}`}>
+                                    {intent.split("_").join(" ")}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
+                          </View>
+                        </ScrollView>
+                        {conversationIntelligence.decision_context.observations.length > 0 && (
+                          <View className="mt-3 rounded-control bg-background p-3">
+                            <Text className="font-sans-semibold text-xs text-foreground">
+                              {conversationIntelligence.decision_context.summary}
+                            </Text>
+                            <Text className="mt-1 font-sans text-[11px] leading-4 text-foreground-muted">
+                              {conversationIntelligence.decision_context.observations[0].description}
+                            </Text>
+                          </View>
+                        )}
+
+                        {conversationIntelligence.decision_context.investigation_paths.length > 0 && (
+                          <View className="mt-4 border-t border-border-hairline pt-4">
+                            <View className="flex-row items-center gap-2">
+                              <Feather name="compass" size={15} color="#8b91a0" />
+                              <Text className="font-sans-semibold text-sm text-foreground">Investigate next</Text>
+                            </View>
+                            <Text className="mt-1 font-sans text-[11px] leading-4 text-foreground-subtle">
+                              Useful questions to take beyond this conversation. Nothing here is a conclusion or recommendation.
+                            </Text>
+                            {conversationIntelligence.decision_context.investigation_paths.slice(0, 3).map((path) => (
+                              <View key={`${path.title}-${path.question}`} className="mt-3 rounded-control border border-border-hairline bg-background p-3">
+                                <Text className="font-sans-semibold text-xs text-foreground">{path.title}</Text>
+                                <Text className="mt-1 font-sans-medium text-[11px] leading-4 text-foreground">{path.question}</Text>
+                                <Text className="mt-2 font-sans text-[10px] leading-4 text-foreground-muted">{path.validation_step}</Text>
+                                <Pressable
+                                  disabled={savingInvestigationQuestion === path.question}
+                                  onPress={async () => {
+                                    if (!id) return;
+                                    setSavingInvestigationQuestion(path.question);
+                                    try {
+                                      await apiFetch<InvestigationThread>("/api/investigation-threads", {
+                                        method: "POST",
+                                        json: true,
+                                        body: {
+                                          perception_id: Number(id),
+                                          title: path.title,
+                                          question: path.question,
+                                          rationale: path.rationale,
+                                          evidence_basis: path.evidence_basis,
+                                          validation_step: path.validation_step,
+                                          evidence_trace_id: conversationIntelligence.provenance.trace_id,
+                                        },
+                                      });
+                                      showToast({ title: "Investigation saved", message: "Added to your private investigation notebook.", tone: "success" });
+                                    } catch (error) {
+                                      showToast({ title: "Couldn’t save investigation", message: error instanceof Error ? error.message : "Please try again.", tone: "error" });
+                                    } finally {
+                                      setSavingInvestigationQuestion(null);
+                                    }
+                                  }}
+                                  className="mt-3 flex-row items-center gap-1.5 self-start rounded-full border border-border-hairline px-2.5 py-1.5"
+                                  accessibilityRole="button"
+                                >
+                                  <Feather name="bookmark" size={12} color="#8b91a0" />
+                                  <Text className="font-sans-medium text-[10px] text-foreground-muted">{savingInvestigationQuestion === path.question ? "Saving…" : "Save to notebook"}</Text>
+                                </Pressable>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+
+                        <Text className="mt-2 font-sans text-[10px] leading-4 text-foreground-subtle">
+                          Decision framing is a structured way to investigate the discussion. It is not a prediction, proof, or substitute for independent evidence.
+                        </Text>
+                      </View>
+                    )}
                   </>
                 ) : conversationIntelligence ? (
                   <View className="py-1">

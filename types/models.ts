@@ -454,6 +454,14 @@ export interface EvidenceGovernance {
   patterns_eligible: boolean; signals_eligible: boolean; reasons: string[]; rules: string[];
 }
 
+export interface InvestigationPath {
+  title: string;
+  question: string;
+  rationale: string;
+  evidence_basis: string;
+  validation_step: string;
+}
+
 export interface PerceptionIntelligence {
   context: {
     schema_version: string;
@@ -591,6 +599,7 @@ export interface DecisionContext {
   status: "available" | "insufficient_sample";
   summary: string;
   observations: DecisionObservation[];
+  investigation_paths: InvestigationPath[];
   considerations: DecisionConsideration[];
   evidence_invariant: boolean;
   guardrail: string;
@@ -715,4 +724,24 @@ export interface RelatedPerceptionItem {
 export interface RelatedPerceptionsResponse {
   source_perception_id: number;
   items: RelatedPerceptionItem[];
+}
+
+
+export interface InvestigationThread {
+  id: number;
+  perception_id: number;
+  title: string;
+  question: string;
+  rationale: string;
+  evidence_basis: string;
+  validation_step: string;
+  evidence_trace_id: string | null;
+  status: "open" | "in_progress" | "verified" | "dismissed";
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvestigationThreadListResponse {
+  items: InvestigationThread[];
 }
