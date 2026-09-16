@@ -38,7 +38,7 @@ import { playPostSuccessSound } from "../../lib/sound";
 import { recordPerceptionAnalyticsEvent } from "../../lib/perceptionAnalytics";
 import { useToast } from "../../contexts/ToastContext";
 
-import type { Comment, RelatedPerceptionsResponse, Subscription } from "../../types/models";
+import type { Comment, PerceptionIntelligence, RelatedPerceptionsResponse, Subscription } from "../../types/models";
 
 type MediaAsset = ImagePicker.ImagePickerAsset;
 
@@ -585,6 +585,9 @@ export default function PerceptionDetailScreen() {
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [relatedUnlocked, setRelatedUnlocked] = useState(false);
   const [showRelated, setShowRelated] = useState(false);
+  const [conversationIntelligence, setConversationIntelligence] = useState<PerceptionIntelligence | null>(null);
+  const [intelligenceLoading, setIntelligenceLoading] = useState(false);
+  const [showIntelligence, setShowIntelligence] = useState(false);
   const hydratedCommentsRef = useRef<Comment[] | null>(null);
   const canRequestAiAnalysis =
     aiAnalysis === "1" && !!me && !!perception && me.id === perception.user.id;
@@ -637,6 +640,9 @@ export default function PerceptionDetailScreen() {
       setShowRelated(false);
       setRelatedPerceptions([]);
       setRelatedLoading(false);
+      setConversationIntelligence(null);
+      setShowIntelligence(false);
+      setIntelligenceLoading(false);
 
       if (!token) return undefined;
 
@@ -649,6 +655,35 @@ export default function PerceptionDetailScreen() {
   );
 
   const relatedEligible = relatedUnlocked && hasMeaningfulInteraction;
+
+  const intelligenceEligible = relatedUnlocked && hasMeaningfulInteraction;
+
+  // Perception Intelligence is contextual and opt-in on the conversation
+  // screen. Sustained attention plus meaningful interaction unlocks the
+  // invitation; the server remains authoritative about evidence/sample
+  // eligibility. We do not fetch or display intelligence immediately on
+  // entering a Perception.
+  useEffect(() => {
+    if (!intelligenceEligible || !showIntelligence || !id || conversationIntelligence) return;
+
+    let active = true;
+    setIntelligenceLoading(true);
+
+    apiFetch<PerceptionIntelligence>(`/api/analytics/perceptions/${id}?days=180`)
+      .then((response) => {
+        if (active) setConversationIntelligence(response);
+      })
+      .catch(() => {
+        if (active) setConversationIntelligence(null);
+      })
+      .finally(() => {
+        if (active) setIntelligenceLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [conversationIntelligence, id, intelligenceEligible, showIntelligence]);
 
   useEffect(() => {
     if (!relatedEligible || !showRelated || !id) return;
@@ -963,6 +998,73 @@ export default function PerceptionDetailScreen() {
                 ) : (
                   <Text className="px-1 py-4 text-center font-sans text-xs text-foreground-subtle">
                     No closely connected perceptions yet.
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {intelligenceEligible && (
+          <View className="mb-7 mt-2">
+            <Pressable
+              onPress={() => setShowIntelligence((value) => !value)}
+              className="flex-row items-center justify-between rounded-card border border-border-hairline bg-surface px-3.5 py-3"
+              accessibilityRole="switch"
+              accessibilityState={{ checked: showIntelligence }}
+              accessibilityLabel="Show Perception Intelligence"
+            >
+              <View className="flex-1 flex-row items-center gap-2 pr-3">
+                <Feather name="activity" size={16} color="#f2a33c" />
+                <View className="flex-1">
+                  <Text className="font-sans-semibold text-sm text-foreground">Perception Intelligence</Text>
+                  <Text className="mt-0.5 font-sans text-[11px] leading-4 text-foreground-subtle">
+                    See the patterns emerging from this conversation when enough responses qualify.
+                  </Text>
+                </View>
+              </View>
+              <View className={showIntelligence ? "rounded-full bg-accent px-2.5 py-1" : "rounded-full border border-border-hairline px-2.5 py-1"}>
+                <Text className={showIntelligence ? "font-sans-semibold text-[11px] text-white" : "font-sans-semibold text-[11px] text-foreground-muted"}>
+                  {showIntelligence ? "On" : "Off"}
+                </Text>
+              </View>
+            </Pressable>
+
+            {showIntelligence && (
+              <View className="mt-3 rounded-card border border-border-hairline bg-surface p-4">
+                {intelligenceLoading ? (
+                  <View className="items-center py-4"><Spinner size={18} /></View>
+                ) : conversationIntelligence?.semantic.status === "available" ? (
+                  <>
+                    <View className="mb-3 flex-row items-center justify-between">
+                      <Text className="font-sans-semibold text-sm text-foreground">What the conversation is revealing</Text>
+                      <Text className="font-sans text-[11px] text-foreground-subtle">
+                        {conversationIntelligence.semantic.analyzed_comment_count} analyzed
+                      </Text>
+                    </View>
+                    {conversationIntelligence.patterns.slice(0, 3).map((pattern) => (
+                      <View key={`${pattern.label}-${pattern.provenance.trace_id}`} className="mb-3 last:mb-0 rounded-control border border-border-hairline p-3">
+                        <Text className="font-sans-semibold text-xs text-foreground">{pattern.label}</Text>
+                        <Text className="mt-1 font-sans text-xs leading-4 text-foreground-muted">{pattern.description}</Text>
+                      </View>
+                    ))}
+                    <Text className="mt-1 font-sans text-[10px] leading-4 text-foreground-subtle">
+                      These are observed patterns in this discussion, not proof of causation or population-wide opinion.
+                    </Text>
+                  </>
+                ) : conversationIntelligence ? (
+                  <View className="py-1">
+                    <Text className="font-sans-semibold text-sm text-foreground">Still forming</Text>
+                    <Text className="mt-1 font-sans text-xs leading-4 text-foreground-muted">
+                      Intelligence appears after at least {conversationIntelligence.semantic.sample_minimum} comments have completed semantic analysis.
+                    </Text>
+                    <Text className="mt-2 font-sans text-[11px] text-foreground-subtle">
+                      {conversationIntelligence.semantic.analyzed_comment_count} analyzed so far.
+                    </Text>
+                  </View>
+                ) : (
+                  <Text className="py-2 font-sans text-xs leading-4 text-foreground-muted">
+                    Conversation intelligence could not be loaded right now. Try again when you are ready.
                   </Text>
                 )}
               </View>

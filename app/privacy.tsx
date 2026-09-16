@@ -1,10 +1,7 @@
-import { Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import Card from "../components/ui/Card";
-import useAuthStore from "../store/useAuthStore";
-import { apiFetch, ApiError } from "../lib/api";
-import { useToast } from "../contexts/ToastContext";
 
 const SECTIONS = [
   [
@@ -30,46 +27,6 @@ const SECTIONS = [
 ];
 
 export default function PrivacyScreen() {
-  const user = useAuthStore((state) => state.user);
-  const refreshMe = useAuthStore((state) => state.refreshMe);
-  const { showToast } = useToast();
-  const preferences = user?.privacy_preferences ?? {};
-  const intelligenceParticipation =
-    preferences.intelligence_participation !== false;
-  const creatorDiscoverability = preferences.creator_discoverability !== false;
-
-  const updatePreference = async (
-    key: "intelligence_participation" | "creator_discoverability",
-    value: boolean,
-  ) => {
-    try {
-      await apiFetch("/api/user/preferences", {
-        method: "PUT",
-        body: { privacy_preferences: { [key]: value } },
-      });
-      await refreshMe();
-      showToast({
-        title: "Privacy preference updated",
-        message:
-          key === "intelligence_participation"
-            ? value
-              ? "Your qualifying conversation contributions may be included in aggregate intelligence."
-              : "Your conversation contributions will be excluded from aggregate intelligence."
-            : value
-              ? "Your creator profile may appear in contextual discovery."
-              : "Your creator profile will be excluded from contextual creator discovery.",
-        tone: "success",
-      });
-    } catch (error) {
-      showToast({
-        title: "Privacy preference not saved",
-        message:
-          error instanceof ApiError ? error.message : "Please try again.",
-        tone: "error",
-      });
-    }
-  };
-
   return (
     <View className="flex-1 bg-background">
       <View className="flex-row items-center px-4 pb-3 pt-14">

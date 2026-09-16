@@ -128,116 +128,73 @@ export default function VerificationScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <View className="px-4 pb-3 pt-14">
-        <View className="flex-row items-center">
-          <Pressable
-            onPress={() => router.back()}
-            className="rounded-control p-2"
-            hitSlop={8}
-          >
-            <Feather name="chevron-left" size={22} color="#8b91a0" />
-          </Pressable>
-          <View className="ml-2 flex-1">
-            <Text className="font-sans-semibold text-xl text-foreground">
-              Professional verification
-            </Text>
-          </View>
+      <View className="flex-row items-center px-4 pb-3 pt-14">
+        <Pressable
+          onPress={() => router.back()}
+          className="rounded-control p-2"
+          hitSlop={8}
+        >
+          <Feather name="chevron-left" size={22} color="#8b91a0" />
+        </Pressable>
+        <View className="ml-2 flex-1">
+          <Text className="font-sans-semibold text-xl text-foreground">
+            Professional verification
+          </Text>
+          <Text className="font-sans text-sm text-foreground-muted">
+            Professional identity and verification are separate signals. A plan
+            can make you eligible to apply; only a super administrator can
+            approve verification.
+          </Text>
         </View>
-        <Text className="ml-12 mt-1 font-sans text-sm leading-5 text-foreground-muted">
-          A reviewed signal that helps people understand who is speaking
-          professionally.
-        </Text>
       </View>
 
-      <ScrollView contentContainerClassName="gap-3 px-4 pb-12">
+      <ScrollView contentContainerClassName="gap-4 px-4 pb-12">
         {isOnboarding && (
           <View className="rounded-card border border-accent/20 bg-accent-soft p-4">
             <View className="flex-row items-center gap-2">
               <Feather name="shield" size={17} color="#c97412" />
               <Text className="font-sans-semibold text-sm text-foreground">
-                Step 3 · optional
+                Step 3 of your setup
               </Text>
             </View>
             <Text className="mt-1.5 font-sans text-xs leading-5 text-foreground-muted">
-              Apply only if you want your professional identity reviewed. Public
-              portfolio, employer, directory, publication or certificate links
-              can help. Never submit passwords, private access links or secrets.
+              Verification is optional. If you apply, give the reviewer enough
+              context to understand your professional claim. You may include
+              public links to portfolios, employer pages, professional
+              directories, publications, certificates or other relevant
+              evidence. Never submit passwords, private access links or secrets.
             </Text>
           </View>
         )}
         {!canApply && !application ? (
           <View className="rounded-card border border-border-hairline bg-surface p-4">
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-sunken">
-              <Feather name="shield" size={19} color="#2563eb" />
+            <View className="flex-row items-center gap-2">
+              <Feather name="info" size={17} color="#8b91a0" />
+              <Text className="font-sans-semibold text-base text-foreground">
+                Verification is optional and plan-dependent
+              </Text>
             </View>
-            <Text className="mt-3 font-sans-semibold text-base text-foreground">
-              Verification is optional
-            </Text>
             <Text className="mt-1.5 font-sans text-sm leading-5 text-foreground-muted">
-              Your professional identity remains available without verification.
-              Eligibility depends on your plan; approval is a separate human
-              review.
+              Your professional identity is saved independently. You can return
+              later when you have a plan that includes professional
+              verification.
             </Text>
           </View>
         ) : application ? (
           <View className="rounded-card border border-border-hairline bg-surface p-4">
-            <View className="flex-row items-center gap-3">
-              <View className="h-11 w-11 items-center justify-center rounded-full bg-surface-sunken">
-                <Feather
-                  name={
-                    application.status === "APPROVED"
-                      ? "check-circle"
-                      : application.status === "REJECTED"
-                        ? "x-circle"
-                        : "clock"
-                  }
-                  size={21}
-                  color={
-                    application.status === "APPROVED"
-                      ? "#2563eb"
-                      : application.status === "REJECTED"
-                        ? "#c0392b"
-                        : "#8b91a0"
-                  }
-                />
-              </View>
-              <View className="flex-1">
-                <Text className="font-sans-semibold text-base text-foreground">
-                  Application {application.status.toLowerCase()}
-                </Text>
-                <Text className="mt-0.5 font-sans text-xs text-foreground-subtle">
-                  {application.profession} · {application.focus}
-                </Text>
-              </View>
-            </View>
-            {application.status === "PENDING" && (
-              <Text className="mt-4 font-sans text-sm leading-5 text-foreground-muted">
-                Your application is with the review team. You do not need to
-                submit it again while it is pending.
-              </Text>
-            )}
-            {application.status === "APPROVED" && (
-              <Text className="mt-4 font-sans text-sm leading-5 text-foreground-muted">
-                Your professional verification has been approved for the
-                submitted professional identity.
-              </Text>
-            )}
-            {application.status === "REJECTED" && (
-              <Text className="mt-4 font-sans text-sm leading-5 text-foreground-muted">
-                The application was not approved. Review the note below before
-                deciding whether to update your professional identity and apply
-                again.
-              </Text>
+            <Text className="font-sans-semibold text-base text-foreground">
+              Application {application.status.toLowerCase()}
+            </Text>
+            <Text className="mt-2 font-sans text-sm text-foreground-muted">
+              {application.profession} · {application.focus}
+            </Text>
+            {application.badge && (
+              <Text className="mt-3 text-3xl">{application.badge}</Text>
             )}
             {application.reviewer_note && (
-              <View className="mt-3 rounded-control bg-surface-sunken p-3">
-                <Text className="font-sans-medium text-xs text-foreground-subtle">
-                  Reviewer note
-                </Text>
-                <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
-                  {application.reviewer_note}
-                </Text>
-              </View>
+              <Text className="mt-2 font-sans text-sm text-foreground-muted">
+                {application.reviewer_note}
+              </Text>
             )}
           </View>
         ) : (
@@ -285,17 +242,10 @@ export default function VerificationScreen() {
             </View>
 
             <View className="rounded-card border border-border-hairline bg-surface-sunken p-4">
-              <View className="flex-row items-center gap-2">
-                <Feather name="check-circle" size={16} color="#2563eb" />
-                <Text className="font-sans-semibold text-sm text-foreground">
-                  What the badge means
-                </Text>
-              </View>
-              <Text className="mt-1.5 font-sans text-xs leading-5 text-foreground-muted">
-                It indicates that the submitted professional identity was
-                reviewed and approved. It does not certify every statement,
-                expertise in every subject, or turn community observations into
-                scientific proof.
+              <Text className="font-sans text-xs leading-5 text-foreground-muted">
+                Verification is a reviewed professional signal. A badge
+                identifies the approved area; it does not certify every
+                statement or turn community observations into scientific proof.
               </Text>
             </View>
 
