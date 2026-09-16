@@ -548,6 +548,14 @@ function CommentItem({
   );
 }
 
+function commentTreeContainsUser(comments: Comment[], userId: number): boolean {
+  return comments.some((comment) =>
+    comment.user.id === userId || commentTreeContainsUser(comment.replies ?? [], userId),
+  );
+}
+
+const RELATED_PERCEPTIONS_DWELL_MS = 2 * 60 * 1000;
+
 export default function PerceptionDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id, fromProfile, aiAnalysis } = useLocalSearchParams<{
@@ -575,6 +583,8 @@ export default function PerceptionDetailScreen() {
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
   const [relatedPerceptions, setRelatedPerceptions] = useState<RelatedPerceptionsResponse["items"]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedUnlocked, setRelatedUnlocked] = useState(false);
+  const [showRelated, setShowRelated] = useState(false);
   const hydratedCommentsRef = useRef<Comment[] | null>(null);
   const canRequestAiAnalysis =
     aiAnalysis === "1" && !!me && !!perception && me.id === perception.user.id;
@@ -584,29 +594,6 @@ export default function PerceptionDetailScreen() {
       if (id) void reload();
       return undefined;
     }, [id, reload]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!id) return undefined;
-
-      let active = true;
-      setRelatedLoading(true);
-      apiFetch<RelatedPerceptionsResponse>(`/api/perceptions/${id}/related`)
-        .then((response) => {
-          if (active) setRelatedPerceptions(response.items);
-        })
-        .catch(() => {
-          if (active) setRelatedPerceptions([]);
-        })
-        .finally(() => {
-          if (active) setRelatedLoading(false);
-        });
-
-      return () => {
-        active = false;
-      };
-    }, [id]),
   );
 
   // AI-analysis labels are an owner-only subscription feature. The profile
@@ -631,6 +618,59 @@ export default function PerceptionDetailScreen() {
       mounted = false;
     };
   }, [canRequestAiAnalysis]);
+
+  const hasMeaningfulInteraction = Boolean(
+    me &&
+      perception &&
+      (perception.liked_by_user ||
+        perception.saved_by_user ||
+        commentTreeContainsUser(comments, me.id)),
+  );
+
+  // Related perceptions are deliberately gated behind sustained attention in
+  // this conversation. The timer is continuous for the current detail-screen
+  // visit and is cancelled when the user leaves, so background time does not
+  // qualify as interest.
+  useFocusEffect(
+    useCallback(() => {
+      setRelatedUnlocked(false);
+      setShowRelated(false);
+      setRelatedPerceptions([]);
+      setRelatedLoading(false);
+
+      if (!token) return undefined;
+
+      const timer = setTimeout(() => {
+        setRelatedUnlocked(true);
+      }, RELATED_PERCEPTIONS_DWELL_MS);
+
+      return () => clearTimeout(timer);
+    }, [token, id]),
+  );
+
+  const relatedEligible = relatedUnlocked && hasMeaningfulInteraction;
+
+  useEffect(() => {
+    if (!relatedEligible || !showRelated || !id) return;
+
+    let active = true;
+    setRelatedLoading(true);
+
+    apiFetch<RelatedPerceptionsResponse>(`/api/perceptions/${id}/related`)
+      .then((response) => {
+        if (active) setRelatedPerceptions(response.items);
+      })
+      .catch(() => {
+        if (active) setRelatedPerceptions([]);
+      })
+      .finally(() => {
+        if (active) setRelatedLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id, relatedEligible, showRelated]);
 
   // Count one authenticated view per perception per day. The backend
   // deduplicates the event, so revisiting a perception does not manufacture
@@ -799,7 +839,7 @@ export default function PerceptionDetailScreen() {
 
   const isOwner = me?.id === perception.user.id;
 
-  const hasCommented = comments.some((comment) => comment.user.id === me?.id);
+  const hasCommented = Boolean(me && commentTreeContainsUser(comments, me.id));
 
   return (
     <KeyboardAvoidingView
@@ -864,61 +904,69 @@ export default function PerceptionDetailScreen() {
           }
         />
 
-        {(relatedLoading || relatedPerceptions.length > 0) && (
+        {relatedEligible && (
           <View className="mb-7 mt-6">
-            <View className="mb-3 flex-row items-center justify-between">
-              <View className="flex-row items-center gap-1.5">
+            <Pressable
+              onPress={() => setShowRelated((value) => !value)}
+              className="flex-row items-center justify-between rounded-card border border-border-hairline bg-surface px-3.5 py-3"
+              accessibilityRole="switch"
+              accessibilityState={{ checked: showRelated }}
+              accessibilityLabel="Show related perceptions"
+            >
+              <View className="flex-row items-center gap-2">
                 <Feather name="git-branch" size={16} color="#f2a33c" />
-                <Text className="font-sans-semibold text-lg text-foreground">
-                  Related perceptions
+                <View>
+                  <Text className="font-sans-semibold text-sm text-foreground">Related perceptions</Text>
+                  <Text className="mt-0.5 font-sans text-[11px] text-foreground-subtle">Explore connected conversations when you want to.</Text>
+                </View>
+              </View>
+              <View className={showRelated ? "rounded-full bg-accent px-2.5 py-1" : "rounded-full border border-border-hairline px-2.5 py-1"}>
+                <Text className={showRelated ? "font-sans-semibold text-[11px] text-white" : "font-sans-semibold text-[11px] text-foreground-muted"}>
+                  {showRelated ? "On" : "Off"}
                 </Text>
               </View>
+            </Pressable>
 
-              {relatedLoading && <Spinner size={16} />}
-            </View>
-
-            {relatedPerceptions.map((item) => (
-              <Pressable
-                key={item.perception.id}
-                onPress={() => router.push(`/perceptions/${item.perception.id}`)}
-                className="mb-3 rounded-card border border-border-hairline bg-surface p-3.5"
-              >
-                <View className="mb-2 flex-row items-center gap-2">
-                  <Avatar uri={item.perception.user.avatar_url} size="sm" />
-                  <View className="min-w-0 flex-1">
-                    <Text
-                      numberOfLines={1}
-                      className="font-sans-medium text-sm text-foreground"
+            {showRelated && (
+              <View className="mt-3">
+                {relatedLoading ? (
+                  <View className="items-center py-5"><Spinner size={18} /></View>
+                ) : relatedPerceptions.length > 0 ? (
+                  relatedPerceptions.map((item) => (
+                    <Pressable
+                      key={item.perception.id}
+                      onPress={() => router.push(`/perceptions/${item.perception.id}`)}
+                      className="mb-3 rounded-card border border-border-hairline bg-surface p-3.5"
                     >
-                      {item.perception.user.name}
-                    </Text>
-                    {item.perception.topic && (
-                      <Text
-                        numberOfLines={1}
-                        className="font-sans text-[11px] text-foreground-subtle"
-                      >
-                        {item.perception.topic.name}
+                      <View className="mb-2 flex-row items-center gap-2">
+                        <Avatar uri={item.perception.user.avatar_url} size="sm" />
+                        <View className="min-w-0 flex-1">
+                          <Text numberOfLines={1} className="font-sans-medium text-sm text-foreground">
+                            {item.perception.user.name}
+                          </Text>
+                          {item.perception.topic && (
+                            <Text numberOfLines={1} className="font-sans text-[11px] text-foreground-subtle">
+                              {item.perception.topic.name}
+                            </Text>
+                          )}
+                        </View>
+                        <Feather name="arrow-up-right" size={15} color="#8b91a0" />
+                      </View>
+                      <Text numberOfLines={3} className="font-sans text-sm leading-5 text-foreground">
+                        {item.perception.body}
                       </Text>
-                    )}
-                  </View>
-                  <Feather name="arrow-up-right" size={15} color="#8b91a0" />
-                </View>
-
-                <Text
-                  numberOfLines={3}
-                  className="font-sans text-sm leading-5 text-foreground"
-                >
-                  {item.perception.body}
-                </Text>
-
-                <Text
-                  numberOfLines={2}
-                  className="mt-2 font-sans text-[11px] leading-4 text-foreground-subtle"
-                >
-                  {item.reason}
-                </Text>
-              </Pressable>
-            ))}
+                      <Text numberOfLines={2} className="mt-2 font-sans text-[11px] leading-4 text-foreground-subtle">
+                        {item.reason}
+                      </Text>
+                    </Pressable>
+                  ))
+                ) : (
+                  <Text className="px-1 py-4 text-center font-sans text-xs text-foreground-subtle">
+                    No closely connected perceptions yet.
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         )}
 

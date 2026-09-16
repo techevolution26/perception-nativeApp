@@ -10,7 +10,7 @@ import { useToast } from "../contexts/ToastContext";
 
 type LocationVisibility = "private" | "country" | "region";
 
-const VISIBILITY_OPTIONS: Array<{ value: LocationVisibility; label: string; description: string }> = [
+const VISIBILITY_OPTIONS: { value: LocationVisibility; label: string; description: string }[] = [
   { value: "private", label: "Private", description: "Used as personal context only. Nothing is shown on your public profile." },
   { value: "country", label: "Country", description: "Show your country on your public profile." },
   { value: "region", label: "Country + region", description: "Show your country and user-provided region on your public profile." },

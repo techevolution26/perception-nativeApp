@@ -2,8 +2,14 @@ import Spinner from "../components/ui/Spinner";
 import Avatar from "../components/ui/Avatar";
 import PerceptionCard from "../components/PerceptionCard";
 import useCurrentUser from "../hooks/useCurrentUser";
+import useGuardAction from "../hooks/useGuardAction";
+import useLikeToggle from "../hooks/useLikeToggle";
+import useSaveToggle from "../hooks/useSaveToggle";
+import useReportPerception from "../hooks/useReportPerception";
+import { useToast } from "../contexts/ToastContext";
+import { playLikeSound } from "../lib/sound";
 import { apiFetch } from "../lib/api";
-import type { Recommendations } from "../types/models";
+import type { Recommendations, Perception } from "../types/models";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +21,11 @@ export default function RecommendationsScreen() {
   const { user, loading: userLoading } = useCurrentUser();
   const [data, setData] = useState<Recommendations | null>(null);
   const [loading, setLoading] = useState(true);
+  const guard = useGuardAction();
+  const toggleLike = useLikeToggle();
+  const toggleSave = useSaveToggle();
+  const reportPerception = useReportPerception();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!userLoading && !user) router.replace("/(auth)/login");
@@ -44,6 +55,86 @@ export default function RecommendationsScreen() {
       </View>
     );
   }
+
+  const handleLike = (perception: Perception) =>
+    guard(async () => {
+      await toggleLike(perception, (id, liked, likesCount) => {
+        setData((current) =>
+          current
+            ? {
+                ...current,
+                perceptions: current.perceptions.map((item) =>
+                  item.perception.id === id
+                    ? {
+                        ...item,
+                        perception: {
+                          ...item.perception,
+                          liked_by_user: liked,
+                          likes_count: likesCount,
+                        },
+                      }
+                    : item,
+                ),
+              }
+            : current,
+        );
+        if (liked) void playLikeSound();
+      });
+    });
+
+  const handleSave = (perception: Perception) =>
+    guard(async () => {
+      await toggleSave(
+        perception,
+        (saved) => {
+          setData((current) =>
+            current
+              ? {
+                  ...current,
+                  perceptions: current.perceptions.map((item) =>
+                    item.perception.id === perception.id
+                      ? { ...item, perception: { ...item.perception, saved_by_user: saved } }
+                      : item,
+                  ),
+                }
+              : current,
+          );
+          showToast({
+            title: saved ? "Perception bookmarked" : "Bookmark removed",
+            message: saved ? "Saved to your private collection." : "Removed from your saved perceptions.",
+            tone: "success",
+          });
+        },
+        (error) =>
+          showToast({
+            title: "Bookmark failed",
+            message: error instanceof Error ? error.message : "Please try again.",
+            tone: "error",
+          }),
+      );
+    });
+
+  const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
+    void reportPerception(
+      perceptionId,
+      reason,
+      undefined,
+      (error) =>
+        showToast({
+          title: "Report not submitted",
+          message: error instanceof Error ? error.message : "Please try again.",
+          tone: "error",
+        }),
+    ).then((submitted) => {
+      if (submitted) {
+        showToast({
+          title: "Report submitted",
+          message: "Thank you. Moderation will review this privately.",
+          tone: "success",
+        });
+      }
+    });
+  };
 
   const hasAny = data.topics.length > 0 || data.creators.length > 0 || data.perceptions.length > 0;
 
@@ -116,7 +207,13 @@ export default function RecommendationsScreen() {
                 {data.perceptions.map((item, index) => (
                   <View key={item.perception.id} className="mb-3">
                     <Text className="mb-1 px-1 font-sans text-xs text-foreground-muted">{item.reason}</Text>
-                    <PerceptionCard perception={item.perception} index={index} />
+                    <PerceptionCard
+                      perception={item.perception}
+                      index={index}
+                      onLike={() => handleLike(item.perception)}
+                      onSave={() => handleSave(item.perception)}
+                      onReport={handleReport}
+                    />
                   </View>
                 ))}
               </View>

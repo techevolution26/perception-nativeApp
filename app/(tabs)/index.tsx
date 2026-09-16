@@ -206,6 +206,8 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
+      <TopicsCarousel topics={topics} />
+
       {topicReminder && (
         <Pressable onPress={() => router.push("/topics")} className="mx-4 mb-2 rounded-card border border-accent/25 bg-accent-soft px-4 py-3">
           <View className="flex-row items-center">
@@ -219,26 +221,27 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
+
       {isPersonalized && (
-        <Pressable
-          onPress={() => router.push("/recommendations")}
-          className="mx-4 mb-2 flex-row items-center rounded-card border border-border-hairline bg-surface px-4 py-3"
-        >
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-accent-soft">
-            <Feather name="compass" size={18} color="#2563eb" />
+        <View className="mx-4 mb-2 mt-1 flex-row rounded-control border border-border-hairline bg-surface-sunken p-1">
+          <View className="flex-1 flex-row items-center justify-center rounded-control bg-surface px-3 py-2">
+            <Feather name="home" size={14} color="#f2a33c" />
+            <Text className="ml-1.5 font-sans-semibold text-xs text-foreground">For you</Text>
           </View>
-          <View className="ml-3 flex-1">
-            <Text className="font-sans-medium text-sm text-foreground">Explore recommendations</Text>
-            <Text className="mt-0.5 font-sans text-xs text-foreground-muted">Topics, people, and perceptions with a reason behind each suggestion.</Text>
-          </View>
-          <Feather name="chevron-right" size={17} color="#8b91a0" />
-        </Pressable>
+          <Pressable
+            onPress={() => router.push("/recommendations")}
+            className="flex-1 flex-row items-center justify-center rounded-control px-3 py-2"
+          >
+            <Feather name="compass" size={14} color="#8b91a0" />
+            <Text className="ml-1.5 font-sans-medium text-xs text-foreground-muted">Recommendations</Text>
+          </Pressable>
+        </View>
       )}
 
       {isPersonalized && (
-        <View className="px-4 pb-1">
+        <View className="px-4 pb-1 pt-1">
           <Text className="font-sans-semibold text-lg text-foreground">For you</Text>
-          <Text className="mt-0.5 font-sans text-xs text-foreground-muted">Based on the topics, people, professional context, and places you choose to engage with.</Text>
+          <Text className="mt-0.5 font-sans text-xs text-foreground-muted">A focused view shaped by the topics and conversations you choose to engage with.</Text>
         </View>
       )}
 
@@ -246,7 +249,6 @@ export default function HomeScreen() {
         data={flatData}
         keyExtractor={(row, i) => (row.type === "header" ? `h-${row.group.id}` : `i-${row.item.id}-${i}`)}
         contentContainerStyle={{ paddingBottom: bottomTabBarPadding }}
-        ListHeaderComponent={<TopicsCarousel topics={topics} />}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
