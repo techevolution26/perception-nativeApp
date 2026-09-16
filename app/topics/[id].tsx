@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons";
 import PerceptionCard from "../../components/PerceptionCard";
 import Button from "../../components/ui/Button";
 import VantageMark from "../../components/ui/VantageMark";
+import ProfileListItem from "../../components/ui/ProfileListItem";
 import { apiFetch } from "../../lib/api";
 import { useToast } from "../../contexts/ToastContext";
 import useCurrentUser from "../../hooks/useCurrentUser";
@@ -16,7 +17,7 @@ import useSaveToggle from "../../hooks/useSaveToggle";
 import useReportPerception from "../../hooks/useReportPerception";
 import useGuardAction from "../../hooks/useGuardAction";
 import useTopicFollowToggle from "../../hooks/useTopicFollowToggle";
-import type { Topic, Perception } from "../../types/models";
+import type { Topic, Perception, RelatedTopicsResponse, RelatedCreatorsResponse } from "../../types/models";
 
 export default function TopicScreen() {
   const insets = useSafeAreaInsets();
@@ -33,6 +34,10 @@ export default function TopicScreen() {
   const [perceptions, setPerceptions] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(true);
   const [followBusy, setFollowBusy] = useState(false);
+  const [relatedTopics, setRelatedTopics] = useState<RelatedTopicsResponse["items"]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedCreators, setRelatedCreators] = useState<RelatedCreatorsResponse["items"]>([]);
+  const [relatedCreatorsLoading, setRelatedCreatorsLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -43,10 +48,30 @@ export default function TopicScreen() {
       ]);
       setTopic(t);
       setPerceptions(p);
+
+      setRelatedLoading(true);
+      setRelatedCreatorsLoading(true);
+      const [relatedResult, creatorsResult] = await Promise.allSettled([
+        apiFetch<RelatedTopicsResponse>(`/api/topics/${id}/related`, { auth: Boolean(user) }),
+        apiFetch<RelatedCreatorsResponse>(`/api/topics/${id}/related-creators`, { auth: Boolean(user) }),
+      ]);
+
+      if (relatedResult.status === "fulfilled") {
+        setRelatedTopics(relatedResult.value.items);
+      } else {
+        setRelatedTopics([]);
+      }
+      if (creatorsResult.status === "fulfilled") {
+        setRelatedCreators(creatorsResult.value.items);
+      } else {
+        setRelatedCreators([]);
+      }
+      setRelatedLoading(false);
+      setRelatedCreatorsLoading(false);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, user]);
 
   useFocusEffect(
     useCallback(() => {
@@ -168,9 +193,68 @@ export default function TopicScreen() {
         keyExtractor={(item) => String(item.id)}
         contentContainerClassName="gap-4 px-4 pb-10"
         ListHeaderComponent={
-          topic.description ? (
-            <Text className="mb-4 font-sans text-sm text-foreground-subtle">{topic.description}</Text>
-          ) : null
+          <View>
+            {topic.description ? (
+              <Text className="mb-4 font-sans text-sm text-foreground-subtle">{topic.description}</Text>
+            ) : null}
+
+            {(relatedLoading || relatedTopics.length > 0) && (
+              <View className="mb-5">
+                <View className="mb-2 flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-1.5">
+                    <Feather name="git-branch" size={16} color="#f2a33c" />
+                    <Text className="font-sans-semibold text-base text-foreground">Related topics</Text>
+                  </View>
+                  {relatedLoading && <Spinner size={16} />}
+                </View>
+
+                {relatedTopics.map((item) => (
+                  <Pressable
+                    key={item.topic.id}
+                    onPress={() => router.push(`/topics/${item.topic.id}`)}
+                    className="mb-2 flex-row items-center rounded-card border border-border-hairline bg-surface px-3 py-3"
+                  >
+                    <View className="h-10 w-10 items-center justify-center rounded-full bg-accent-soft">
+                      <Feather name="hash" size={18} color="#2563eb" />
+                    </View>
+                    <View className="ml-3 min-w-0 flex-1">
+                      <Text numberOfLines={1} className="font-sans-medium text-foreground">
+                        {item.topic.name}
+                      </Text>
+                      <Text numberOfLines={2} className="mt-0.5 font-sans text-xs text-foreground-muted">
+                        {item.reason}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={16} color="#8b91a0" />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {(relatedCreatorsLoading || relatedCreators.length > 0) && (
+              <View className="mb-5">
+                <View className="mb-2 flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-1.5">
+                    <Feather name="users" size={16} color="#f2a33c" />
+                    <Text className="font-sans-semibold text-base text-foreground">Related creators</Text>
+                  </View>
+                  {relatedCreatorsLoading && <Spinner size={16} />}
+                </View>
+
+                {relatedCreators.map((item) => (
+                  <View key={item.creator.id} className="mb-2">
+                    <ProfileListItem
+                      user={item.creator}
+                      onPress={() => router.push(`/users/${item.creator.id}`)}
+                    />
+                    <Text numberOfLines={2} className="ml-14 mt-1 font-sans text-xs text-foreground-muted">
+                      {item.reason}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
         }
         ListEmptyComponent={
           <View className="items-center gap-3 py-16">

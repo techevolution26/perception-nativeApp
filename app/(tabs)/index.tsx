@@ -220,6 +220,22 @@ export default function HomeScreen() {
       )}
 
       {isPersonalized && (
+        <Pressable
+          onPress={() => router.push("/recommendations")}
+          className="mx-4 mb-2 flex-row items-center rounded-card border border-border-hairline bg-surface px-4 py-3"
+        >
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-accent-soft">
+            <Feather name="compass" size={18} color="#2563eb" />
+          </View>
+          <View className="ml-3 flex-1">
+            <Text className="font-sans-medium text-sm text-foreground">Explore recommendations</Text>
+            <Text className="mt-0.5 font-sans text-xs text-foreground-muted">Topics, people, and perceptions with a reason behind each suggestion.</Text>
+          </View>
+          <Feather name="chevron-right" size={17} color="#8b91a0" />
+        </Pressable>
+      )}
+
+      {isPersonalized && (
         <View className="px-4 pb-1">
           <Text className="font-sans-semibold text-lg text-foreground">For you</Text>
           <Text className="mt-0.5 font-sans text-xs text-foreground-muted">Based on the topics, people, professional context, and places you choose to engage with.</Text>

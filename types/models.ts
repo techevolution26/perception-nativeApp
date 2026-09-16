@@ -649,3 +649,69 @@ export interface ProfileIntelligence {
   patterns: Array<{ label: string; description: string; sample_size: number; limitations: string[] }>;
   limitations: string[];
 }
+
+
+export interface RecommendationTopicItem {
+  type: "topic";
+  reason: string;
+  score: number;
+  topic: Topic;
+}
+
+export interface RecommendationCreatorItem {
+  type: "creator";
+  reason: string;
+  score: number;
+  creator: UserSlim;
+}
+
+export interface RecommendationPerceptionItem {
+  type: "perception";
+  reason: string;
+  score: number;
+  perception: Perception;
+}
+
+export interface Recommendations {
+  topics: RecommendationTopicItem[];
+  creators: RecommendationCreatorItem[];
+  perceptions: RecommendationPerceptionItem[];
+}
+
+
+
+
+
+
+export interface RelatedTopicItem {
+  reason: string;
+  score: number;
+  topic: Topic;
+}
+
+export interface RelatedTopicsResponse {
+  source_topic_id: number;
+  items: RelatedTopicItem[];
+}
+
+export interface RelatedCreatorItem {
+  reason: string;
+  score: number;
+  creator: UserProfile;
+}
+
+export interface RelatedCreatorsResponse {
+  source_topic_id: number;
+  items: RelatedCreatorItem[];
+}
+
+export interface RelatedPerceptionItem {
+  reason: string;
+  score: number;
+  perception: Perception;
+}
+
+export interface RelatedPerceptionsResponse {
+  source_perception_id: number;
+  items: RelatedPerceptionItem[];
+}

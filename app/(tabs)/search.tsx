@@ -1,7 +1,7 @@
 import Spinner from "../../components/ui/Spinner";
 // app/(tabs)/search.tsx
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, FlatList } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import PerceptionCard from "../../components/PerceptionCard";
@@ -20,6 +20,7 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Perception[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sort, setSort] = useState<"relevance" | "recent">("relevance");
   const guard = useGuardAction();
   const toggleLike = useLikeToggle();
   const toggleSave = useSaveToggle();
@@ -41,7 +42,7 @@ export default function SearchScreen() {
     const timeout = setTimeout(async () => {
       setLoading(true);
       try {
-        const data = await apiFetch<Perception[]>(`/api/search?query=${encodeURIComponent(query.trim())}`, { auth: Boolean(user) });
+        const data = await apiFetch<Perception[]>(`/api/search?query=${encodeURIComponent(query.trim())}&sort=${sort}`, { auth: Boolean(user) });
         setResults(data);
       } catch (err) {
         console.error("Search failed:", err);
@@ -50,7 +51,7 @@ export default function SearchScreen() {
       }
     }, 350);
     return () => clearTimeout(timeout);
-  }, [query, user]);
+  }, [query, sort, user]);
 
 
   const handleReport = (perceptionId: number, reason: Parameters<typeof reportPerception>[1]) => {
@@ -77,6 +78,23 @@ export default function SearchScreen() {
             className="ml-2.5 flex-1 py-3 font-sans text-sm text-foreground"
           />
         </View>
+      </View>
+
+      <View className="flex-row gap-2 px-4 pb-2">
+        <Pressable
+          onPress={() => setSort("relevance")}
+          className={`flex-row items-center gap-1 rounded-pill border px-3 py-1.5 ${sort === "relevance" ? "border-accent bg-accent/10" : "border-border-hairline bg-surface"}`}
+        >
+          <Feather name="compass" size={13} color={sort === "relevance" ? "#2563eb" : "#8b91a0"} />
+          <Text className="font-sans-medium text-xs text-foreground">Relevant</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setSort("recent")}
+          className={`flex-row items-center gap-1 rounded-pill border px-3 py-1.5 ${sort === "recent" ? "border-accent bg-accent/10" : "border-border-hairline bg-surface"}`}
+        >
+          <Feather name="clock" size={13} color={sort === "recent" ? "#2563eb" : "#8b91a0"} />
+          <Text className="font-sans-medium text-xs text-foreground">Recent</Text>
+        </Pressable>
       </View>
 
       {loading && (

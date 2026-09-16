@@ -38,7 +38,7 @@ import { playPostSuccessSound } from "../../lib/sound";
 import { recordPerceptionAnalyticsEvent } from "../../lib/perceptionAnalytics";
 import { useToast } from "../../contexts/ToastContext";
 
-import type { Comment, Subscription } from "../../types/models";
+import type { Comment, RelatedPerceptionsResponse, Subscription } from "../../types/models";
 
 type MediaAsset = ImagePicker.ImagePickerAsset;
 
@@ -573,6 +573,8 @@ export default function PerceptionDetailScreen() {
   const [posting, setPosting] = useState(false);
   const [hydratingComments, setHydratingComments] = useState(false);
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
+  const [relatedPerceptions, setRelatedPerceptions] = useState<RelatedPerceptionsResponse["items"]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
   const hydratedCommentsRef = useRef<Comment[] | null>(null);
   const canRequestAiAnalysis =
     aiAnalysis === "1" && !!me && !!perception && me.id === perception.user.id;
@@ -582,6 +584,29 @@ export default function PerceptionDetailScreen() {
       if (id) void reload();
       return undefined;
     }, [id, reload]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) return undefined;
+
+      let active = true;
+      setRelatedLoading(true);
+      apiFetch<RelatedPerceptionsResponse>(`/api/perceptions/${id}/related`)
+        .then((response) => {
+          if (active) setRelatedPerceptions(response.items);
+        })
+        .catch(() => {
+          if (active) setRelatedPerceptions([]);
+        })
+        .finally(() => {
+          if (active) setRelatedLoading(false);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [id]),
   );
 
   // AI-analysis labels are an owner-only subscription feature. The profile
@@ -838,6 +863,64 @@ export default function PerceptionDetailScreen() {
             )
           }
         />
+
+        {(relatedLoading || relatedPerceptions.length > 0) && (
+          <View className="mb-7 mt-6">
+            <View className="mb-3 flex-row items-center justify-between">
+              <View className="flex-row items-center gap-1.5">
+                <Feather name="git-branch" size={16} color="#f2a33c" />
+                <Text className="font-sans-semibold text-lg text-foreground">
+                  Related perceptions
+                </Text>
+              </View>
+
+              {relatedLoading && <Spinner size={16} />}
+            </View>
+
+            {relatedPerceptions.map((item) => (
+              <Pressable
+                key={item.perception.id}
+                onPress={() => router.push(`/perceptions/${item.perception.id}`)}
+                className="mb-3 rounded-card border border-border-hairline bg-surface p-3.5"
+              >
+                <View className="mb-2 flex-row items-center gap-2">
+                  <Avatar uri={item.perception.user.avatar_url} size="sm" />
+                  <View className="min-w-0 flex-1">
+                    <Text
+                      numberOfLines={1}
+                      className="font-sans-medium text-sm text-foreground"
+                    >
+                      {item.perception.user.name}
+                    </Text>
+                    {item.perception.topic && (
+                      <Text
+                        numberOfLines={1}
+                        className="font-sans text-[11px] text-foreground-subtle"
+                      >
+                        {item.perception.topic.name}
+                      </Text>
+                    )}
+                  </View>
+                  <Feather name="arrow-up-right" size={15} color="#8b91a0" />
+                </View>
+
+                <Text
+                  numberOfLines={3}
+                  className="font-sans text-sm leading-5 text-foreground"
+                >
+                  {item.perception.body}
+                </Text>
+
+                <Text
+                  numberOfLines={2}
+                  className="mt-2 font-sans text-[11px] leading-4 text-foreground-subtle"
+                >
+                  {item.reason}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         <View className="mb-3 mt-6 flex-row items-center gap-1.5">
           <VantageMark size={16} color="#f2a33c" />
