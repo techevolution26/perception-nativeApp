@@ -17,12 +17,13 @@ export default function TopicsCarousel({ topics }: { topics: Topic[] }) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={{ height: 118 }}
       className="border-b border-border-hairline"
-      contentContainerClassName="gap-4 px-4 py-3"
+      contentContainerClassName="gap-2 px-3 py-2.5"
     >
       {topics.map((topic) => (
-        <Pressable key={topic.id} onPress={() => router.push(`/topics/${topic.id}`)} className="w-20 items-center gap-1.5">
-          <View className="h-16 w-16 overflow-hidden rounded-full border border-border-hairline bg-surface-sunken">
+        <Pressable key={topic.id} onPress={() => router.push(`/topics/${topic.id}`)} className="w-20 items-center gap-1">
+          <View className="h-14 w-14 overflow-hidden rounded-full border border-border-hairline bg-surface-sunken">
             {topic.image_url ? (
               <Image source={{ uri: resolveMediaUrl(topic.image_url) }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
             ) : (
@@ -33,7 +34,7 @@ export default function TopicsCarousel({ topics }: { topics: Topic[] }) {
               </View>
             )}
           </View>
-          <Text numberOfLines={2} className="w-full text-center font-sans-medium text-xs leading-4 text-foreground">
+          <Text numberOfLines={2} className="min-h-8 w-full px-0.5 text-center font-sans-medium text-xs leading-4 text-foreground">
             {topic.name}
           </Text>
         </Pressable>
@@ -43,8 +44,8 @@ export default function TopicsCarousel({ topics }: { topics: Topic[] }) {
           point either — this is a deliberate small addition, since
           otherwise the only way to reach /topics on mobile is via the
           profile page's topic-count pill. */}
-      <Pressable onPress={() => router.push("/topics")} className="w-20 items-center gap-1.5">
-        <View className="h-16 w-16 items-center justify-center rounded-full border border-dashed border-border-strong bg-surface-sunken">
+      <Pressable onPress={() => router.push("/topics")} className="w-20 items-center gap-1">
+        <View className="h-14 w-14 items-center justify-center rounded-full border border-dashed border-border-strong bg-surface-sunken">
           <Feather name="grid" size={18} color="#8b91a0" />
         </View>
         <Text numberOfLines={1} className="w-full text-center font-sans text-xs text-foreground-muted">

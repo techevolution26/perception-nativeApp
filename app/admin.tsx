@@ -24,6 +24,19 @@ interface AdminUser {
   is_active: boolean;
   created_at: string;
 }
+interface ModerationQueueItem {
+  perception_id: number;
+  body: string;
+  topic_id: number | null;
+  topic_name: string | null;
+  author_id: number;
+  author_name: string;
+  status: "pending_review" | "approved" | "removed" | "published";
+  risk_level: string;
+  flags: string[];
+  checked_at: string;
+  created_at: string;
+}
 interface AdminAudit {
   id: number;
   actor_user_id: number;
@@ -46,6 +59,7 @@ export default function AdminScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [applications, setApplications] = useState<VerificationApplication[]>([]);
+  const [moderationQueue, setModerationQueue] = useState<ModerationQueueItem[]>([]);
   const [reviewingId, setReviewingId] = useState<number | null>(null);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
@@ -61,11 +75,13 @@ export default function AdminScreen() {
       apiFetch<AdminUser[]>(`/api/admin/users?query=${encodeURIComponent(query)}`, options),
       apiFetch<AdminAudit[]>("/api/admin/audit?limit=50", options),
       apiFetch<VerificationApplication[]>("/api/verification/admin/applications", options),
+      apiFetch<ModerationQueueItem[]>("/api/admin/perceptions/review?status=pending_review", options),
     ]);
     setStats(overview);
     setUsers(adminUsers);
     setAudit(auditRows);
     setApplications(verificationRows);
+    setModerationQueue(moderationRows);
   }, [query]);
 
   const unlock = async () => {
@@ -102,13 +118,34 @@ export default function AdminScreen() {
         setStats(null);
         setUsers([]);
         setAudit([]);
-        setApplications([]);
+        setApplications([]); setModerationQueue([]);
         Alert.alert("Admin session ended", "Unlock the control room again to continue.");
       } else {
         Alert.alert("Refresh failed", "The control room could not be refreshed.");
       }
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const reviewModeration = async (item: ModerationQueueItem, approved: boolean) => {
+    if (!adminToken) return;
+    setReviewingId(item.perception_id);
+    try {
+      await apiFetch(`/api/admin/perceptions/${item.perception_id}/review`, {
+        method: "PATCH",
+        auth: false,
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: {
+          status: approved ? "approved" : "removed",
+          review_note: approved ? "Intake review approved." : "Removed during intake review.",
+        },
+      });
+      await loadControlRoom(adminToken);
+    } catch (error) {
+      Alert.alert("Review failed", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      setReviewingId(null);
     }
   };
 
@@ -204,7 +241,7 @@ export default function AdminScreen() {
           <Text className="mt-1 font-sans text-sm text-foreground-muted">Platform administration</Text>
         </View>
         <Pressable
-          onPress={() => { setAdminToken(null); setStats(null); setUsers([]); setAudit([]); setApplications([]); }}
+          onPress={() => { setAdminToken(null); setStats(null); setUsers([]); setAudit([]); setApplications([]); setModerationQueue([]); }}
           className="rounded-control border border-border-hairline px-3 py-2 active:opacity-70"
         >
           <Text className="font-sans-medium text-xs text-foreground">Lock</Text>
@@ -250,6 +287,49 @@ export default function AdminScreen() {
                     <Text className="font-sans-medium text-xs text-foreground">{target.is_active ? "Suspend" : "Restore"}</Text>
                   </Pressable>
                 )}
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View className="mt-8">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
+            <Text className="font-sans-semibold text-lg text-foreground">Perception intake review</Text>
+            <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
+              New perceptions with multiple observable spam or privacy-risk signals pause here before entering the public conversation. The guard does not judge viewpoints.
+            </Text>
+          </View>
+          {moderationQueue.length > 0 && (
+            <View className="ml-3 rounded-pill bg-accent-soft px-2.5 py-1">
+              <Text className="font-mono text-xs text-accent-strong">{moderationQueue.length}</Text>
+            </View>
+          )}
+        </View>
+        <View className="mt-3 gap-2">
+          {moderationQueue.length === 0 ? (
+            <Text className="font-sans text-sm text-foreground-muted">No perceptions waiting for intake review.</Text>
+          ) : moderationQueue.map((item) => (
+            <View key={item.perception_id} className="rounded-card border border-border-hairline bg-surface p-4">
+              <View className="flex-row items-center justify-between gap-3">
+                <View className="flex-1">
+                  <Text className="font-sans-medium text-sm text-foreground">{item.author_name}</Text>
+                  <Text className="mt-0.5 font-sans text-xs text-foreground-muted">{item.topic_name ?? "Unassigned topic"}</Text>
+                </View>
+                <Text className="font-sans-medium text-[10px] uppercase tracking-wider text-accent-strong">{item.risk_level}</Text>
+              </View>
+              <Text className="mt-3 font-sans text-sm leading-5 text-foreground">{item.body}</Text>
+              <View className="mt-3 flex-row flex-wrap gap-1.5">
+                {item.flags.map((flag) => (
+                  <View key={flag} className="rounded-pill border border-border-hairline bg-surface-sunken px-2 py-1">
+                    <Text className="font-sans text-[10px] text-foreground-muted">{flag.replaceAll("_", " ")}</Text>
+                  </View>
+                ))}
+              </View>
+              <View className="mt-4 flex-row gap-2">
+                <Button label="Remove" variant="outline" size="sm" loading={reviewingId === item.perception_id} onPress={() => void reviewModeration(item, false)} />
+                <Button label="Approve" variant="accent" size="sm" loading={reviewingId === item.perception_id} onPress={() => void reviewModeration(item, true)} />
               </View>
             </View>
           ))}

@@ -238,13 +238,6 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {isPersonalized && (
-        <View className="px-4 pb-1 pt-1">
-          <Text className="font-sans-semibold text-lg text-foreground">For you</Text>
-          <Text className="mt-0.5 font-sans text-xs text-foreground-muted">A focused view shaped by the topics and conversations you choose to engage with.</Text>
-        </View>
-      )}
-
       <FlatList
         data={flatData}
         keyExtractor={(row, i) => (row.type === "header" ? `h-${row.group.id}` : `i-${row.item.id}-${i}`)}
