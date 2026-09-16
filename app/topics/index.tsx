@@ -105,7 +105,7 @@ export default function TopicsIndexScreen() {
               )}
               <Text className="font-sans text-sm text-foreground-subtle">
                 {isOnboarding
-                  ? "Pick the topics you care about. This is optional — you can continue now and shape your feed later."
+                  ? "Choose the topics you care about. You can refine them later from your profile."
                   : "Follow the topics you care about — they'll shape your home feed."}
               </Text>
               {isOnboarding && (
@@ -125,9 +125,7 @@ export default function TopicsIndexScreen() {
                   router.replace("/professional-identity?onboarding=1");
                 }}
               />
-              <Pressable onPress={() => router.replace("/(tabs)")} className="items-center py-3">
-                <Text className="font-sans-medium text-sm text-foreground-subtle">Skip setup for now</Text>
-              </Pressable>
+
             </View>
           ) : null}
           renderItem={({ item }) => (

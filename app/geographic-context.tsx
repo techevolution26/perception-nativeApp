@@ -44,7 +44,7 @@ export default function GeographicContextScreen() {
       });
       await refreshMe();
       showToast({ title: "Geographic context updated", message: visibility === "private" ? "Your location remains private." : "Your public location display follows your visibility choice.", tone: "success" });
-      if (isOnboarding) router.replace("/verification?onboarding=1");
+      if (isOnboarding) router.replace("/subscription?onboarding=1");
     } catch (error) {
       showToast({ title: "Location context not saved", message: error instanceof ApiError ? error.message : "Please try again.", tone: "error" });
     } finally {
@@ -55,9 +55,11 @@ export default function GeographicContextScreen() {
   return (
     <View className="flex-1 bg-background">
       <View className="flex-row items-center px-4 pb-3 pt-14">
-        <Pressable onPress={() => router.back()} className="rounded-control p-2" hitSlop={8}>
-          <Feather name="chevron-left" size={22} color="#8b91a0" />
-        </Pressable>
+        {!isOnboarding && (
+          <Pressable onPress={() => router.back()} className="rounded-control p-2" hitSlop={8}>
+            <Feather name="chevron-left" size={22} color="#8b91a0" />
+          </Pressable>
+        )}
         <View className="ml-2 flex-1">
           <Text className="font-sans-semibold text-xl text-foreground">Geographic context</Text>
           <Text className="mt-1 font-sans text-sm text-foreground-muted">Add broad location context without sharing precise device location.</Text>
@@ -120,8 +122,7 @@ export default function GeographicContextScreen() {
           </Text>
         </View>
 
-        <Button label={isOnboarding ? "Continue to verification" : "Save geographic context"} variant="accent" loading={saving} onPress={() => void save()} />
-        {isOnboarding && <Pressable onPress={() => router.replace("/verification?onboarding=1")} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip this step for now</Text></Pressable>}
+        <Button label={isOnboarding ? "See plans & verification" : "Save geographic context"} variant="accent" loading={saving} onPress={() => void save()} />
       </ScrollView>
     </View>
   );

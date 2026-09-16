@@ -70,7 +70,7 @@ export default function AdminScreen() {
 
   const loadControlRoom = useCallback(async (token: string) => {
     const options = { auth: false, headers: { Authorization: `Bearer ${token}` } };
-    const [overview, adminUsers, auditRows, verificationRows] = await Promise.all([
+    const [overview, adminUsers, auditRows, verificationRows, moderationRows] = await Promise.all([
       apiFetch<AdminOverview>("/api/admin/overview", options),
       apiFetch<AdminUser[]>(`/api/admin/users?query=${encodeURIComponent(query)}`, options),
       apiFetch<AdminAudit[]>("/api/admin/audit?limit=50", options),

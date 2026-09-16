@@ -1,14 +1,18 @@
 import Spinner from "../components/ui/Spinner";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import Button from "../components/ui/Button";
 import { ApiError, apiFetch } from "../lib/api";
 import type { Plan, Subscription } from "../types/models";
+import useAuthStore from "../store/useAuthStore";
 
 export default function SubscriptionScreen() {
+  const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
+  const isOnboarding = onboarding === "1";
+  const completeTopicOnboarding = useAuthStore((state) => state.completeTopicOnboarding);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,18 +102,33 @@ export default function SubscriptionScreen() {
   return (
     <View className="flex-1 bg-background">
       <View className="flex-row items-center px-4 pb-3 pt-14">
-        <Pressable onPress={() => router.back()} className="rounded-control p-2" hitSlop={8}>
-          <Feather name="chevron-left" size={22} color="#8b91a0" />
-        </Pressable>
+        {!isOnboarding && (
+          <Pressable onPress={() => router.back()} className="rounded-control p-2" hitSlop={8}>
+            <Feather name="chevron-left" size={22} color="#8b91a0" />
+          </Pressable>
+        )}
         <View className="ml-2 flex-1">
-          <Text className="font-sans-semibold text-xl text-foreground">Analytics access</Text>
+          <Text className="font-sans-semibold text-xl text-foreground">{isOnboarding ? "Plans & verification" : "Analytics access"}</Text>
           <Text className="font-sans text-sm text-foreground-muted">
-            Turn community perceptions into decision signals.
+            {isOnboarding
+              ? "Review the plans that can make professional verification available to you."
+              : "Turn community perceptions into decision signals."}
           </Text>
         </View>
       </View>
 
       <ScrollView contentContainerClassName="gap-4 px-4 pb-12">
+        {isOnboarding && (
+          <View className="rounded-card border border-accent/20 bg-accent-soft p-4">
+            <View className="flex-row items-center gap-2">
+              <Feather name="shield" size={17} color="#c97412" />
+              <Text className="font-sans-semibold text-sm text-foreground">Your professional setup is complete</Text>
+            </View>
+            <Text className="mt-1.5 font-sans text-sm leading-5 text-foreground-muted">
+              Professional identity and geographic context are saved. Professional verification is a separate reviewed signal available only when your plan includes it. Review the plans now, then choose whether to subscribe.
+            </Text>
+          </View>
+        )}
         {active && subscription?.plan && (
           <View className="rounded-card border border-accent/30 bg-accent-soft p-4">
             <Text className="font-sans-semibold text-base text-foreground">
@@ -146,7 +165,7 @@ export default function SubscriptionScreen() {
                   • {plan.max_topics} analytics topics
                 </Text>
                 <Text className="font-sans text-sm text-foreground-muted">
-                  • Professional verification eligibility
+                  • {plan.verification_included ? "Professional verification eligibility" : "Professional verification not included"}
                 </Text>
                 {plan.trial_days > 0 && (
                   <Text className="font-sans text-sm text-accent">
@@ -186,6 +205,21 @@ export default function SubscriptionScreen() {
             conclusions or proof of causation.
           </Text>
         </View>
+
+        {isOnboarding && (
+          <View className="mt-1 rounded-card border border-border-hairline bg-surface-sunken p-4">
+            <Text className="font-sans-semibold text-sm text-foreground">Not ready to subscribe?</Text>
+            <Text className="mt-1 font-sans text-xs leading-5 text-foreground-muted">
+              You can finish setup and return to plans later. Verification remains unavailable until a qualifying plan is active.
+            </Text>
+            <Button
+              label="Finish setup"
+              variant="outline"
+              size="sm"
+              onPress={() => { void completeTopicOnboarding(); router.replace("/(tabs)"); }}
+            />
+          </View>
+        )}
       </ScrollView>
     </View>
   );

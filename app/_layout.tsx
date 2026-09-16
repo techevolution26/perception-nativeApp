@@ -84,7 +84,7 @@ export default function RootLayout() {
       path.includes("topics") ||
       path.includes("professional-identity") ||
       path.includes("geographic-context") ||
-      path.includes("verification") ||
+      path.includes("subscription") ||
       path.includes("auth");
     if (!alreadyInSetup) {
       router.replace("/topics?onboarding=1");

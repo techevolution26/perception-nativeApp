@@ -583,10 +583,11 @@ export default function PerceptionDetailScreen() {
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
   const [relatedPerceptions, setRelatedPerceptions] = useState<RelatedPerceptionsResponse["items"]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedError, setRelatedError] = useState(false);
   const [relatedUnlocked, setRelatedUnlocked] = useState(false);
   const [showRelated, setShowRelated] = useState(false);
   const [conversationIntelligence, setConversationIntelligence] = useState<PerceptionIntelligence | null>(null);
-  const [intelligenceLoading, setIntelligenceLoading] = useState(false);
+  const [intelligenceError, setIntelligenceError] = useState(false);
   const [savingInvestigationQuestion, setSavingInvestigationQuestion] = useState<string | null>(null);
   const [showIntelligence, setShowIntelligence] = useState(false);
   const [expandedEvidenceTrace, setExpandedEvidenceTrace] = useState<string | null>(null);
@@ -643,11 +644,12 @@ export default function PerceptionDetailScreen() {
       setShowRelated(false);
       setRelatedPerceptions([]);
       setRelatedLoading(false);
+      setRelatedError(false);
       setConversationIntelligence(null);
       setShowIntelligence(false);
       setExpandedEvidenceTrace(null);
       setDecisionIntent("general_exploration");
-      setIntelligenceLoading(false);
+      setIntelligenceError(false);
 
       if (!token) return undefined;
 
@@ -656,7 +658,7 @@ export default function PerceptionDetailScreen() {
       }, RELATED_PERCEPTIONS_DWELL_MS);
 
       return () => clearTimeout(timer);
-    }, [token, id]),
+    }, [token]),
   );
 
   const relatedEligible = relatedUnlocked && hasMeaningfulInteraction;
@@ -672,17 +674,15 @@ export default function PerceptionDetailScreen() {
     if (!intelligenceEligible || !showIntelligence || !id || conversationIntelligence) return;
 
     let active = true;
-    setIntelligenceLoading(true);
-
     apiFetch<PerceptionIntelligence>(`/api/analytics/perceptions/${id}?days=180&decision_intent=${decisionIntent}`)
       .then((response) => {
         if (active) setConversationIntelligence(response);
       })
       .catch(() => {
-        if (active) setConversationIntelligence(null);
-      })
-      .finally(() => {
-        if (active) setIntelligenceLoading(false);
+        if (active) {
+          setConversationIntelligence(null);
+          setIntelligenceError(true);
+        }
       });
 
     return () => {
@@ -694,14 +694,16 @@ export default function PerceptionDetailScreen() {
     if (!relatedEligible || !showRelated || !id) return;
 
     let active = true;
-    setRelatedLoading(true);
 
     apiFetch<RelatedPerceptionsResponse>(`/api/perceptions/${id}/related`)
       .then((response) => {
         if (active) setRelatedPerceptions(response.items);
       })
       .catch(() => {
-        if (active) setRelatedPerceptions([]);
+        if (active) {
+          setRelatedPerceptions([]);
+          setRelatedError(true);
+        }
       })
       .finally(() => {
         if (active) setRelatedLoading(false);
@@ -947,7 +949,7 @@ export default function PerceptionDetailScreen() {
         {relatedEligible && (
           <View className="mb-7 mt-6">
             <Pressable
-              onPress={() => setShowRelated((value) => !value)}
+              onPress={() => { const next = !showRelated; setRelatedError(false); if (next) setRelatedLoading(true); setShowRelated(next); }}
               className="flex-row items-center justify-between rounded-card border border-border-hairline bg-surface px-3.5 py-3"
               accessibilityRole="switch"
               accessibilityState={{ checked: showRelated }}
@@ -971,6 +973,13 @@ export default function PerceptionDetailScreen() {
               <View className="mt-3">
                 {relatedLoading ? (
                   <View className="items-center py-5"><Spinner size={18} /></View>
+                ) : relatedError ? (
+                  <View className="items-center py-4">
+                    <Text className="font-sans text-xs text-foreground-muted">Related perceptions could not be loaded right now.</Text>
+                    <Pressable onPress={() => { setRelatedError(false); setRelatedLoading(true); setShowRelated(false); requestAnimationFrame(() => setShowRelated(true)); }} className="mt-2 rounded-full border border-border-hairline px-3 py-1.5">
+                      <Text className="font-sans-medium text-[11px] text-foreground">Try again</Text>
+                    </Pressable>
+                  </View>
                 ) : relatedPerceptions.length > 0 ? (
                   relatedPerceptions.map((item) => (
                     <Pressable
@@ -1013,7 +1022,7 @@ export default function PerceptionDetailScreen() {
         {intelligenceEligible && (
           <View className="mb-7 mt-2">
             <Pressable
-              onPress={() => setShowIntelligence((value) => !value)}
+              onPress={() => { const next = !showIntelligence; setIntelligenceError(false); if (next) setConversationIntelligence(null); setShowIntelligence(next); }}
               className="flex-row items-center justify-between rounded-card border border-border-hairline bg-surface px-3.5 py-3"
               accessibilityRole="switch"
               accessibilityState={{ checked: showIntelligence }}
@@ -1037,8 +1046,15 @@ export default function PerceptionDetailScreen() {
 
             {showIntelligence && (
               <View className="mt-3 rounded-card border border-border-hairline bg-surface p-4">
-                {intelligenceLoading ? (
+                {(!conversationIntelligence && !intelligenceError) ? (
                   <View className="items-center py-4"><Spinner size={18} /></View>
+                ) : intelligenceError ? (
+                  <View className="items-center py-4">
+                    <Text className="font-sans text-xs text-foreground-muted">Intelligence could not be loaded right now.</Text>
+                    <Pressable onPress={() => { setIntelligenceError(false); setConversationIntelligence(null); }} className="mt-2 rounded-full border border-border-hairline px-3 py-1.5">
+                      <Text className="font-sans-medium text-[11px] text-foreground">Try again</Text>
+                    </Pressable>
+                  </View>
                 ) : conversationIntelligence?.semantic.status === "available" ? (
                   <>
                     <View className="mb-3 flex-row items-center justify-between">

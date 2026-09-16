@@ -57,9 +57,11 @@ export default function ProfessionalIdentityScreen() {
   return (
     <View className="flex-1 bg-background">
       <View className="flex-row items-center px-4 pb-3 pt-14">
-        <Pressable onPress={() => router.back()} className="rounded-control p-2" hitSlop={8}>
-          <Feather name="chevron-left" size={22} color="#8b91a0" />
-        </Pressable>
+        {!isOnboarding && (
+          <Pressable onPress={() => router.back()} className="rounded-control p-2" hitSlop={8}>
+            <Feather name="chevron-left" size={22} color="#8b91a0" />
+          </Pressable>
+        )}
         <View className="ml-2 flex-1">
           <Text className="font-sans-semibold text-xl text-foreground">Professional identity</Text>
           <Text className="mt-1 font-sans text-sm text-foreground-muted">Choose the fields that best describe what you do.</Text>
@@ -96,8 +98,7 @@ export default function ProfessionalIdentityScreen() {
             Your selected role can appear as a professional badge. Verification is a separate platform review and is never granted simply because you selected a role or paid for a plan.
           </Text>
         </View>
-        <Button label={isOnboarding ? "Continue to verification" : "Save professional identity"} variant="accent" loading={saving} onPress={() => void save()} />
-        {isOnboarding && <Pressable onPress={() => router.replace("/geographic-context?onboarding=1")} className="items-center py-2"><Text className="font-sans-medium text-sm text-foreground-subtle">Skip this step for now</Text></Pressable>}
+        <Button label={isOnboarding ? "Continue to geographic context" : "Save professional identity"} variant="accent" loading={saving} onPress={() => void save()} />
       </ScrollView>
     </View>
   );

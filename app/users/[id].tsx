@@ -389,17 +389,16 @@ export default function UserProfileScreen() {
                   </View>
                 )}
               </View>
-              {user.primary_professional_role_label ? (
-                <Text className="font-sans text-accent">{user.primary_professional_role_label}</Text>
-              ) : user.profession ? (
-                <Text className="font-sans text-accent">{user.profession}</Text>
-              ) : null}
-              {isOwnProfile && (user.professional_role_labels?.length ?? 0) > 0 && (
-                <View className="mt-2 flex-row flex-wrap justify-center gap-1.5">
-                  {user.professional_role_labels.slice(0, 4).map((label) => <Pill key={label} label={label} />)}
-                  {user.professional_role_labels.length > 4 && <Pill label={`+${user.professional_role_labels.length - 4}`} />}
-                </View>
-              )}
+              {isOwnProfile && (() => {
+                const primaryLabel = user.primary_professional_role_label ?? user.profession ?? null;
+                const additionalRoles = (user.professional_role_labels ?? []).filter((label) => label !== primaryLabel);
+                return additionalRoles.length > 0 ? (
+                  <View className="mt-2 flex-row flex-wrap justify-center gap-1.5">
+                    {additionalRoles.slice(0, 4).map((label) => <Pill key={label} label={label} />)}
+                    {additionalRoles.length > 4 && <Pill label={`+${additionalRoles.length - 4}`} />}
+                  </View>
+                ) : null;
+              })()}
               {user.bio && (
                 <Text className="mt-2 text-center font-sans text-foreground-muted">
                   {user.bio}
@@ -462,11 +461,9 @@ export default function UserProfileScreen() {
           <View className="mx-4 mt-4 rounded-card border border-border-hairline bg-surface p-4">
             <View className="flex-row items-center justify-between">
               <View className="flex-1 pr-3">
-                <Text className="font-sans-semibold text-base text-foreground">Professional context</Text>
+                <Text className="font-sans-semibold text-base text-foreground">Professional identity</Text>
                 <Text className="mt-1 font-sans text-sm leading-5 text-foreground-muted">
-                  {user.primary_professional_role_label || user.profession
-                    ? `${user.primary_professional_role_label ?? user.profession}`
-                    : "Professional identity not added yet."}
+                  Supporting roles and context appear here; your primary focus is already shown beside your name.
                 </Text>
               </View>
               {user.primary_professional_role ? (
@@ -482,16 +479,20 @@ export default function UserProfileScreen() {
               ) : null}
             </View>
 
-            {(user.professional_role_labels?.length ?? 0) > 0 ? (
-              <View className="mt-3 flex-row flex-wrap gap-1.5">
-                {user.professional_role_labels.slice(0, 6).map((label) => (
-                  <Pill key={label} label={label} />
-                ))}
-                {user.professional_role_labels.length > 6 ? (
-                  <Pill label={`+${user.professional_role_labels.length - 6}`} />
-                ) : null}
-              </View>
-            ) : null}
+            {(() => {
+              const primaryLabel = user.primary_professional_role_label ?? user.profession ?? null;
+              const additionalRoles = (user.professional_role_labels ?? []).filter((label) => label !== primaryLabel);
+              return additionalRoles.length > 0 ? (
+                <View className="mt-3 flex-row flex-wrap gap-1.5">
+                  {additionalRoles.slice(0, 6).map((label) => (
+                    <Pill key={label} label={label} />
+                  ))}
+                  {additionalRoles.length > 6 ? (
+                    <Pill label={`+${additionalRoles.length - 6}`} />
+                  ) : null}
+                </View>
+              ) : null;
+            })()}
 
             {user.location_label ? (
               <View className="mt-4">
