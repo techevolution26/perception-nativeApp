@@ -661,6 +661,154 @@ export interface ProfileIntelligence {
 }
 
 
+export interface TopicMeasurement {
+  value: number | null;
+  available: boolean;
+  description: string;
+}
+
+export interface TopicPerceptionSegment {
+  perception_id: number;
+  sample_size: number;
+  topic_name: string;
+}
+
+export interface TopicSemantic {
+  status: "insufficient_sample" | "insufficient_breadth" | "insufficient_participants" | "available";
+  note: string;
+  sample_minimum: number;
+  perception_minimum: number;
+  participant_minimum: number;
+  analyzed_comment_count: number;
+  qualifying_perception_count: number;
+  quality_score: number | null;
+  sentiment_distribution: IntelligenceDistribution[];
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
+  question_count: number;
+  concern_themes: IntelligenceTheme[];
+  agreement_themes: IntelligenceTheme[];
+  disagreement_themes: IntelligenceTheme[];
+}
+
+export interface TopicPerspective {
+  role_code?: string;
+  role_label?: string;
+  geography?: string;
+  sample_size: number;
+  sentiment_distribution: IntelligenceDistribution[];
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
+  question_count: number;
+  quality_score: number | null;
+  participant_count: number;
+}
+
+export interface TopicPerspectives {
+  cross_analysis_status: "insufficient_sample" | "insufficient_segments" | "available";
+  cross_analysis_sample_minimum: number;
+  cross_analysis_participant_minimum?: number;
+  cross_analysis_comment_count: number;
+  cross_analysis_note: string;
+  professional_semantic_segments: TopicPerspective[];
+  geographic_semantic_segments: TopicPerspective[];
+  professional_geographic_segments: TopicPerspective[];
+}
+
+export interface TopicTemporalBucket {
+  period_start: string;
+  period_end: string;
+  sample_size: number;
+  status: "available" | "insufficient_sample";
+  sentiment_distribution: IntelligenceDistribution[];
+  stance_distribution: IntelligenceDistribution[];
+  top_themes: IntelligenceTheme[];
+  question_count: number;
+  quality_score: number | null;
+}
+
+export interface TopicTemporal {
+  bucket_days: number;
+  qualifying_bucket_count: number;
+  buckets: TopicTemporalBucket[];
+  status: "available" | "insufficient_sample";
+  note: string;
+}
+
+export interface TopicPattern {
+  label: string;
+  description: string;
+  sample_size: number;
+  evidence_type: string;
+  limitations: string[];
+}
+
+export interface TopicSignal extends TopicPattern {
+  status: "observed_signal";
+}
+
+export interface TopicDecisionContext {
+  intent: string;
+  status: "available" | "insufficient_sample";
+  summary: string;
+  evidence_invariant: string;
+  guardrail: string;
+  limitations: string[];
+}
+
+export interface TopicIntelligenceProvenance {
+  trace_id: string;
+  evidence_chain: string[];
+  source: "topic_intelligence";
+  evidence_types: string[];
+  sample_size: number;
+  period_start: string;
+  period_end: string;
+  scope: "topic_intelligence";
+  viewer_lens: "observer";
+  quality_score: number | null;
+  qualification: string;
+  limitations: string[];
+}
+
+export interface TopicIntelligence {
+  schema_version: string;
+  context: {
+    schema_version: string;
+    topic_id: number;
+    topic_name: string;
+    period_start: string;
+    period_end: string;
+    period_days: number;
+    scope: "topic_intelligence";
+    viewer_lens: "observer";
+    access_tier: "full" | "free_teaser";
+    upgrade_available: boolean;
+    upgrade_message: string | null;
+  };
+  measurements: {
+    perceptions: TopicMeasurement;
+    qualifying_perceptions: TopicMeasurement;
+    analyzed_comments: TopicMeasurement;
+    unique_participants: TopicMeasurement;
+  };
+  perceptions: TopicPerceptionSegment[];
+  semantic: TopicSemantic;
+  perspectives: TopicPerspectives;
+  temporal: TopicTemporal;
+  patterns: TopicPattern[];
+  signals: TopicSignal[];
+  convergence_divergence: CrossLensComparisonAnalysis;
+  decision_context: TopicDecisionContext;
+  provenance: TopicIntelligenceProvenance;
+  quality: IntelligenceQuality;
+  freshness: IntelligenceFreshness;
+  evidence_governance: EvidenceGovernance;
+  semantic_model_governance: SemanticModelGovernance;
+  limitations: string[];
+}
+
+
 export interface RecommendationTopicItem {
   type: "topic";
   reason: string;

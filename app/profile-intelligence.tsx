@@ -94,16 +94,23 @@ export default function ProfileIntelligenceScreen() {
           ) : data.topics.map((topic) => {
             const stance = topic.stance_distribution[0];
             const theme = topic.top_themes[0];
+            const Row = topic.topic_id ? Pressable : View;
             return (
-              <View key={`${topic.topic_id ?? "none"}-${topic.topic_name}`} className="mt-3 rounded-control bg-surface-sunken p-3">
+              <Row
+                key={`${topic.topic_id ?? "none"}-${topic.topic_name}`}
+                {...(topic.topic_id ? { onPress: () => router.push(`/topic-intelligence/${topic.topic_id}`) } : {})}
+                className="mt-3 rounded-control bg-surface-sunken p-3"
+              >
                 <View className="flex-row items-center justify-between gap-2">
                   <Text className="flex-1 font-sans-medium text-sm text-foreground">{topic.topic_name}</Text>
                   <Text className="font-mono text-xs text-foreground-muted">n={topic.sample_size}</Text>
+                  {topic.topic_id && <Feather name="chevron-right" size={16} color="#8b91a0" />}
                 </View>
                 {stance && <View className="mt-2 flex-row items-center gap-2"><AnalyticsBadge label={stance.label} kind={stanceKind(stance.label)} /><Text className="font-mono text-xs text-foreground-muted">{percent(stance.share)}</Text></View>}
                 {theme && <View className="mt-2 flex-row items-center gap-2"><AnalyticsBadge label="Recurring theme" kind="info" /><Text className="flex-1 font-sans text-xs text-foreground-muted">{theme.theme} · {percent(theme.share)}</Text></View>}
                 <Text className="mt-1 font-sans text-xs text-foreground-subtle">{topic.perception_count} authored Perception{topic.perception_count === 1 ? "" : "s"}</Text>
-              </View>
+                {topic.topic_id && <Text className="mt-2 font-sans-medium text-[11px] uppercase tracking-wider text-accent-strong">View Topic intelligence →</Text>}
+              </Row>
             );
           })}
         </View>
